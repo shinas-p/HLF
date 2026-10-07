@@ -158,7 +158,7 @@ const POSTS=[{cat:"Announcement",title:"A new chapter. A shared celebration.",te
 {cat:"Festival",title:"See you in Chemmad.",text:"Hosted at Darul Huda Islamic University. Powered by the Department of Hadith and Related Sciences.",date:"18–20 Oct 2026",c:"--amb"}];
 const SCHEDULE=[{date:"18 October 2026",items:[]},{date:"19 October 2026",items:[]},{date:"20 October 2026",items:[]}]; // items:[{time,title,desc}]
 window.SCHEDULE=SCHEDULE; window.POSTS=POSTS;
-const TIERS=[["Minimal",199,"--red"],["Bronze",313,"--amb"],["Silver",500,"--teal"],["Golden",786,"--yel"],["Premium",1000,"--blue"]];
+const TIERS=[["Minimal",99,"--red"],["Bronze",313,"--amb"],["Silver",500,"--teal"],["Golden",786,"--yel"],["Premium",1000,"--blue"]];
 const DAYS=[[1,7000],[2,5000],[3,4000]];
 let MEDIA=[{type:"image",src:IMG.poster,cat:"Events",title:"Official poster",span:2},{type:"image",src:IMG.logo,cat:"Events",title:"HLF logo",fit:"contain",bg:"#fffbe0"}]; window.MEDIA=MEDIA;
 /* ===== /CONTENT ===== */
@@ -179,8 +179,59 @@ chips($("#chips"),cats,feed);feed("All");
 // stats
 $("#st").innerHTML=STATS.map(([n,l,c])=>`<div><b class="${c}" data-n="${n}">0+</b><small>${l}</small></div>`).join("");
 // schedule
-let cur=0;function sched(){$("#tabs").innerHTML=SCHEDULE.map((d,i)=>`<button role="tab" class="${i==cur?"on":""}" onclick="cur=${i};sched()"><b>DAY 0${i+1}</b><span>${d.date.slice(0,6).toUpperCase()}</span></button>`).join("");const d=SCHEDULE[cur];$("#day").innerHTML=`<div><p class="tag r">Day 0${cur+1}</p><div class="n">${d.date.slice(0,2)}</div><p class="tag r">October 2026</p></div><div>${d.items.length?d.items.map(i=>`<div class="it"><b>${i.time}</b><div><h3 style="font-size:1.4rem">${i.title}</h3><p style="margin:6px 0 0;color:var(--mute)">${i.desc||""}</p></div></div>`).join(""):`<p class="tag t">The details are on their way</p><h3 style="font-size:clamp(1.8rem,4vw,3rem);margin:12px 0 18px">Good conversations take a little planning.</h3><p style="color:var(--mute)">The official programme for ${d.date} will be announced here. Session timings and speakers will appear once confirmed.</p><span class="soon">Programme to be announced</span>`}</div>`}sched();
-window.sched=sched; window.feed=feed; window.chips=chips;
+let cur=0;
+function getScheduleDayMeta(d,i){
+  const dayNum=(d&&d.day)||i+1;
+  let dateNum=String(17+dayNum);
+  let month="October 2026";
+  let fullDate=`${dateNum} October 2026`;
+  let tabText=`${dateNum} OCT`;
+
+  if(d){
+    if(d.dateNum)dateNum=String(d.dateNum);
+    if(d.month)month=d.month;
+    if(typeof d.date==="string"&&d.date.trim()){
+      const s=d.date.trim();
+      const iso=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+      if(iso){
+        dateNum=String(parseInt(iso[3],10));
+        month="October 2026";
+        fullDate=`${dateNum} October 2026`;
+        tabText=`${dateNum} OCT`;
+      }else{
+        const parts=s.match(/^(\d{1,2})\s+([a-zA-Z]+)(?:\s+(\d{4}))?/);
+        if(parts){
+          dateNum=parts[1];
+          month=`${parts[2]} ${parts[3]||"2026"}`;
+          fullDate=s;
+          tabText=`${dateNum} ${parts[2].slice(0,3).toUpperCase()}`;
+        }else{
+          fullDate=s;
+          tabText=`${dateNum} OCT`;
+        }
+      }
+    }
+  }
+  return{dayNum,dateNum,month,fullDate,tabText};
+}
+
+function sched(){
+  const tabContainer=$("#tabs");
+  if(tabContainer){
+    tabContainer.innerHTML=SCHEDULE.map((d,i)=>{
+      const m=getScheduleDayMeta(d,i);
+      return`<button role="tab" class="${i===cur?"on":""}" onclick="cur=${i};sched()"><b>DAY 0${i+1}</b><span>${m.tabText}</span></button>`;
+    }).join("");
+  }
+  const d=SCHEDULE[cur]||{items:[]};
+  const m=getScheduleDayMeta(d,cur);
+  const dayContainer=$("#day");
+  if(dayContainer){
+    dayContainer.innerHTML=`<div><p class="tag r">Day 0${cur+1}</p><div class="n">${m.dateNum}</div><p class="tag r">${m.month}</p></div><div>${d.items&&d.items.length?d.items.map(i=>`<div class="it"><b>${i.time}</b><div><h3 style="font-size:1.4rem">${i.title}</h3><p style="margin:6px 0 0;color:var(--mute)">${i.desc||""}</p></div></div>`).join(""):`<p class="tag t">The details are on their way</p><h3 style="font-size:clamp(1.8rem,4vw,3rem);margin:12px 0 18px">Good conversations take a little planning.</h3><p style="color:var(--mute)">The official programme for ${m.fullDate} will be announced here. Session timings and speakers will appear once confirmed.</p><span class="soon">Programme to be announced</span>`}</div>`;
+  }
+}
+sched();
+window.sched=sched; window.feed=feed; window.chips=chips; window.getScheduleDayMeta=getScheduleDayMeta;
 // pay
 $("#tiers").innerHTML=TIERS.map(([n,a,c],i)=>`<div class="tier glass rv" style="--c:var(${c})"><small>0${i+1}</small><h3>${n}</h3><small>CONTRIBUTION</small><div class="am">${inr(a)}</div><button onclick="pay(${a},'${n} Contribution')">Contribute ${inr(a)}</button></div>`).join("");
 $("#sp").innerHTML=DAYS.map(([d,a])=>`<div class="glass rv"><p class="tag">Day 0${d} · ${17+d} October</p><h3 style="font-size:1.6rem;margin-top:10px">Day ${d} Sponsorship</h3><div class="am ${["r","a","t"][d-1]}">${inr(a)}</div><button class="btn p" onclick="pay(${a},'Day ${d} Sponsorship')">Sponsor This Day ♥</button></div>`).join("");

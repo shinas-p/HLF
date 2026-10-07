@@ -1917,6 +1917,14 @@
     document.getElementById('session-modal').showModal();
   };
 
+  const festivalDayDates = { 1: '2026-10-18', 2: '2026-10-19', 3: '2026-10-20' };
+  document.getElementById('edit-session-day').addEventListener('change', (e) => {
+    const dVal = parseInt(e.target.value, 10);
+    if (festivalDayDates[dVal]) {
+      document.getElementById('edit-session-date').value = festivalDayDates[dVal];
+    }
+  });
+
   function editSession(id) {
     const s = allProgramme.find(x => x.id === id);
     if (!s) return;

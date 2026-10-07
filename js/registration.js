@@ -1345,6 +1345,15 @@
     return `${day} ${month} ${year} · ${hours}:${minutes} ${ampm}`;
   }
 
+  // Helper to validate custom contribution amount: must be positive whole number >= 1
+  function isValidCustomAmount(val) {
+    if (val === null || val === undefined) return false;
+    const s = String(val).trim();
+    if (!/^[1-9]\d*$/.test(s)) return false;
+    const n = Number(s);
+    return Number.isSafeInteger(n) && n >= 1;
+  }
+
   // 10. Inject Contribution Modal into Document
   function injectContributionModal() {
     if (document.getElementById('contrib-dialog')) return;
@@ -1388,9 +1397,9 @@
                 <label class="reg-label" for="contrib-custom-amount-input" style="font-weight: 700; color: var(--teal);">Custom Contribution Amount (₹) <span class="req">*</span></label>
                 <div style="position: relative; margin-top: 6px;">
                   <span style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-weight: 700; font-size: 1.2rem; color: var(--teal);">₹</span>
-                  <input type="number" id="contrib-custom-amount-input" class="reg-input" placeholder="Enter amount (min ₹100)" min="100" step="1" style="padding-left: 36px; font-size: 1.15rem; font-weight: 700;">
+                  <input type="number" id="contrib-custom-amount-input" class="reg-input" placeholder="Enter amount (min ₹1)" min="1" step="1" style="padding-left: 36px; font-size: 1.15rem; font-weight: 700;">
                 </div>
-                <small style="color: var(--mute); font-size: 11px; display: block; margin-top: 6px;">Enter your desired contribution amount. Minimum ₹100. QR code updates automatically.</small>
+                <small style="color: var(--mute); font-size: 11px; display: block; margin-top: 6px;">Enter your desired contribution amount. Minimum ₹1. QR code updates automatically.</small>
               </div>
 
               <div class="reg-grid">
@@ -1614,13 +1623,15 @@
       customAmtInput.addEventListener('input', () => {
         if (!activeContributionData || !activeContributionData.isCustom) return;
         const raw = customAmtInput.value.trim();
-        const num = Number(raw);
-        if (raw && !isNaN(num) && num >= 100 && Number.isInteger(num)) {
+        if (isValidCustomAmount(raw)) {
+          const num = parseInt(raw, 10);
           activeContributionData.amount = num;
           updateContributionUI(num, 'Custom Contribution', true);
           const err = document.getElementById('contrib-error-banner');
           if (err) { err.style.display = 'none'; err.textContent = ''; }
         } else {
+          activeContributionData.amount = null;
+          updateContributionUI(null, 'Custom Contribution', true);
           const amtBadge = document.getElementById('contrib-amount-badge');
           if (amtBadge) amtBadge.textContent = raw ? `₹${raw}` : '₹—';
         }
@@ -1764,18 +1775,19 @@
     const intentBtnText = document.getElementById('contrib-intent-btn-text');
     const submitBtnText = document.getElementById('contrib-submit-btn-text');
 
-    const formatted = Number(amount).toLocaleString('en-IN');
+    const hasValidAmount = amount !== null && amount !== undefined && isValidCustomAmount(amount);
+    const formatted = hasValidAmount ? Number(amount).toLocaleString('en-IN') : '—';
     const cleanTier = isCustom ? 'Custom' : (tierName || 'Festival Contribution');
 
     if (tierBadge) tierBadge.textContent = isCustom ? 'CUSTOM' : cleanTier.toUpperCase();
-    if (amountBadge) amountBadge.textContent = `₹${formatted}`;
+    if (amountBadge) amountBadge.textContent = hasValidAmount ? `₹${formatted}` : '₹—';
     if (descBadge) descBadge.textContent = isCustom ? 'Custom Contribution' : cleanTier;
-    if (payAmount) payAmount.textContent = `₹${formatted}.00`;
-    if (noticeAmount) noticeAmount.textContent = `₹${formatted}`;
-    if (intentBtnText) intentBtnText.textContent = `Pay ₹${formatted} via UPI App`;
-    if (submitBtnText) submitBtnText.textContent = `Submit Contribution (₹${formatted}) ✦`;
+    if (payAmount) payAmount.textContent = hasValidAmount ? `₹${formatted}.00` : '₹—';
+    if (noticeAmount) noticeAmount.textContent = hasValidAmount ? `₹${formatted}` : 'your contribution amount';
+    if (intentBtnText) intentBtnText.textContent = hasValidAmount ? `Pay ₹${formatted} via UPI App` : 'Pay via UPI App';
+    if (submitBtnText) submitBtnText.textContent = hasValidAmount ? `Submit Contribution (₹${formatted}) ✦` : 'Submit Contribution ✦';
 
-    renderContributionUpi(amount, cleanTier);
+    renderContributionUpi(hasValidAmount ? Number(amount) : null, cleanTier);
   }
 
   // 12. Open Contribution Modal
@@ -1796,18 +1808,20 @@
 
     if (isCustom) {
       currentTier = 'Custom Contribution';
-      const existingVal = customInput ? Number(customInput.value) : 0;
-      currentAmount = existingVal >= 100 ? existingVal : 100;
-      if (customWrap) customWrap.style.display = 'block';
-      if (customInput) {
-        if (!customInput.value || Number(customInput.value) < 100) {
-          customInput.value = '100';
-        }
-        customInput.required = true;
+      if (typeof amount === 'number' && isValidCustomAmount(amount)) {
+        currentAmount = amount;
+        if (customInput) customInput.value = String(amount);
+      } else if (customInput && isValidCustomAmount(customInput.value.trim())) {
+        currentAmount = parseInt(customInput.value.trim(), 10);
+      } else {
+        currentAmount = null;
+        if (customInput) customInput.value = '';
       }
+      if (customWrap) customWrap.style.display = 'block';
+      if (customInput) customInput.required = true;
     } else {
       currentTier = tierName || 'Festival Contribution';
-      currentAmount = Number(amount) || 199;
+      currentAmount = Number(amount) || 99;
       if (customWrap) customWrap.style.display = 'none';
       if (customInput) customInput.required = false;
     }
@@ -1860,7 +1874,10 @@
       payeeName: 'Hadith Literature Festival DHIU'
     };
 
-    const upiQuery = `pa=${encodeURIComponent(paymentCfg.upiId)}&pn=${encodeURIComponent(paymentCfg.payeeName)}&am=${amount}&cu=INR&tn=${encodeURIComponent('HLF Contribution - ' + tierName)}`;
+    const hasAmount = amount !== null && amount !== undefined && !isNaN(Number(amount)) && Number(amount) >= 1;
+    const upiQuery = hasAmount
+      ? `pa=${encodeURIComponent(paymentCfg.upiId)}&pn=${encodeURIComponent(paymentCfg.payeeName)}&am=${amount}&cu=INR&tn=${encodeURIComponent('HLF Contribution - ' + tierName)}`
+      : `pa=${encodeURIComponent(paymentCfg.upiId)}&pn=${encodeURIComponent(paymentCfg.payeeName)}&cu=INR&tn=${encodeURIComponent('HLF Contribution - ' + tierName)}`;
     const upiIntentUrl = `upi://pay?${upiQuery}`;
 
     const intentBtn = document.getElementById('contrib-pay-intent-btn');
@@ -1927,14 +1944,13 @@
     if (activeContributionData.isCustom) {
       const customInput = document.getElementById('contrib-custom-amount-input');
       const rawVal = customInput ? customInput.value.trim() : '';
-      const numVal = Number(rawVal);
 
-      if (!rawVal || isNaN(numVal) || numVal < 100 || !Number.isInteger(numVal)) {
-        showContribError('Please enter a valid contribution amount (minimum ₹100).');
+      if (!isValidCustomAmount(rawVal)) {
+        showContribError('Please enter a valid contribution amount (minimum ₹1).');
         if (customInput) customInput.focus();
         return;
       }
-      finalAmount = numVal;
+      finalAmount = parseInt(rawVal, 10);
       activeContributionData.amount = finalAmount;
     }
 
@@ -2361,16 +2377,42 @@
           .order('sort_order', { ascending: true });
 
         if (progData && progData.length > 0 && typeof window.SCHEDULE !== 'undefined') {
-          const dayMap = {};
+          // Pre-populate dayMap with all 3 festival days
+          const dayMap = {
+            1: { day: 1, dateNum: "18", month: "October 2026", date: "18 October 2026", items: [] },
+            2: { day: 2, dateNum: "19", month: "October 2026", date: "19 October 2026", items: [] },
+            3: { day: 3, dateNum: "20", month: "October 2026", date: "20 October 2026", items: [] }
+          };
+
           progData.forEach(item => {
-            const dayNum = item.day_number || 1;
+            const dayNum = parseInt(item.day_number, 10) || 1;
             if (!dayMap[dayNum]) {
-              const defaultDate = dayNum === 1 ? '18 October 2026' : dayNum === 2 ? '19 October 2026' : '20 October 2026';
+              const defaultDateNum = String(17 + dayNum);
               dayMap[dayNum] = {
-                date: item.date || defaultDate,
+                day: dayNum,
+                dateNum: defaultDateNum,
+                month: "October 2026",
+                date: `${defaultDateNum} October 2026`,
                 items: []
               };
             }
+
+            if (item.date) {
+              const s = item.date.trim();
+              const iso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+              if (iso) {
+                dayMap[dayNum].dateNum = String(parseInt(iso[3], 10));
+                dayMap[dayNum].date = `${dayMap[dayNum].dateNum} October 2026`;
+              } else {
+                const parts = s.match(/^(\d{1,2})\s+([a-zA-Z]+)(?:\s+(\d{4}))?/);
+                if (parts) {
+                  dayMap[dayNum].dateNum = parts[1];
+                  dayMap[dayNum].month = `${parts[2]} ${parts[3] || '2026'}`;
+                  dayMap[dayNum].date = s;
+                }
+              }
+            }
+
             const timeStr = (item.start_time || '') + (item.end_time ? ' – ' + item.end_time : '');
             let descStr = '';
             if (item.speaker) descStr += '✦ ' + item.speaker + ' | ';
@@ -2384,7 +2426,7 @@
             });
           });
 
-          const dynSchedule = Object.keys(dayMap).sort((a,b)=>a-b).map(k => dayMap[k]);
+          const dynSchedule = Object.keys(dayMap).sort((a,b)=>Number(a)-Number(b)).map(k => dayMap[k]);
           if (dynSchedule.length > 0) {
             window.SCHEDULE.splice(0, window.SCHEDULE.length, ...dynSchedule);
             if (typeof window.sched === 'function') {
