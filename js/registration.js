@@ -405,6 +405,7 @@
 
     // Close when clicking dialog backdrop
     dialog.addEventListener('click', (e) => {
+      if (e.target !== dialog) return;
       const rect = dialog.getBoundingClientRect();
       const isInDialog = (rect.top <= e.clientY && e.clientY <= rect.top + rect.height &&
                           rect.left <= e.clientX && e.clientX <= rect.left + rect.width);
@@ -1373,8 +1374,8 @@
         <!-- Close Button -->
         <button type="button" class="reg-close-btn" id="contrib-close-x" aria-label="Close">×</button>
 
-        <!-- STAGE 1: CONTRIBUTION FORM VIEW -->
-        <div id="contrib-form-view">
+        <!-- STEP 1: CONTRIBUTOR DETAILS -->
+        <div id="contrib-step1-view">
           <div class="reg-dialog-header">
             <p class="tag"><b>[CONTRIBUTION]</b> ✦ HLF 2026</p>
             <h2 class="reg-title">Support the Festival</h2>
@@ -1382,24 +1383,42 @@
             
             <div class="reg-fee-badge" style="background: linear-gradient(135deg, rgba(18, 144, 122, 0.15), rgba(47, 93, 147, 0.15)); border-color: var(--teal);">
               <span class="fee-label" id="contrib-tier-badge">TIER</span>
-              <span class="fee-val" id="contrib-amount-badge" style="color: var(--teal);">₹786</span>
-              <span class="fee-desc" id="contrib-desc-badge">Contribution</span>
+              <span class="fee-val" id="contrib-amount-badge" style="color: var(--teal);">₹99</span>
+              <span class="fee-desc" id="contrib-desc-badge">Minimal Contribution</span>
             </div>
           </div>
 
-          <form id="hlf-contrib-form" novalidate>
+          <!-- Step Progress Tracker -->
+          <div class="reg-step-tracker">
+            <div class="reg-step-pill active" id="contrib-tracker-step-1">
+              <span class="step-dot">1</span>
+              <span>Contributor Details</span>
+            </div>
+            <span class="reg-step-arrow">→</span>
+            <div class="reg-step-pill" id="contrib-tracker-step-2">
+              <span class="step-dot">2</span>
+              <span id="contrib-step2-pill-text">UPI Payment</span>
+            </div>
+            <span class="reg-step-arrow">→</span>
+            <div class="reg-step-pill" id="contrib-tracker-step-3">
+              <span class="step-dot">3</span>
+              <span>Confirmation</span>
+            </div>
+          </div>
+
+          <form id="hlf-contrib-step1-form" class="hlf-contrib-form" novalidate onsubmit="return false;">
             <!-- SECTION 1: CONTRIBUTOR DETAILS -->
             <div class="reg-form-section">
               <h3 class="reg-section-title"><span class="step">1</span> Contributor Details</h3>
               
               <!-- Custom Contribution Amount Input (shown when Custom tier chosen) -->
-              <div id="contrib-custom-amount-wrap" style="display: none; margin-bottom: 16px; background: rgba(18,144,122,0.06); border: 1.5px solid var(--teal); border-radius: 12px; padding: 14px;">
+              <div id="contrib-custom-amount-wrap" class="contrib-custom-box" style="display: none; margin-bottom: 16px; background: rgba(18,144,122,0.06); border: 1.5px solid var(--teal); border-radius: 12px; padding: 14px;">
                 <label class="reg-label" for="contrib-custom-amount-input" style="font-weight: 700; color: var(--teal);">Custom Contribution Amount (₹) <span class="req">*</span></label>
                 <div style="position: relative; margin-top: 6px;">
                   <span style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-weight: 700; font-size: 1.2rem; color: var(--teal);">₹</span>
                   <input type="number" id="contrib-custom-amount-input" class="reg-input" placeholder="Enter amount (min ₹1)" min="1" step="1" style="padding-left: 36px; font-size: 1.15rem; font-weight: 700;">
                 </div>
-                <small style="color: var(--mute); font-size: 11px; display: block; margin-top: 6px;">Enter your desired contribution amount. Minimum ₹1. QR code updates automatically.</small>
+                <small style="color: var(--mute); font-size: 11px; display: block; margin-top: 6px;">Enter your desired contribution amount. Minimum ₹1. Whole rupees only.</small>
               </div>
 
               <div class="reg-grid">
@@ -1420,91 +1439,143 @@
               </div>
             </div>
 
-            <!-- SECTION 2: UPI PAYMENT -->
-            <div class="reg-form-section">
-              <h3 class="reg-section-title"><span class="step">2</span> UPI Payment & Screenshot</h3>
-              
-              <div class="reg-pay-card">
-                <div class="reg-qr-wrap">
-                  <div class="reg-qr-box" id="contrib-qr-container">
-                    <div id="contrib-qr-canvas"></div>
-                    ${paymentCfg.qrImagePath ? `<img id="contrib-qr-img" src="${paymentCfg.qrImagePath}" alt="HLF UPI QR" style="display:none;" onerror="this.style.display='none'; document.getElementById('contrib-qr-canvas').style.display='block';">` : ''}
-                  </div>
-                  <span style="font-size: 11px; color: var(--mute);">Scan with any UPI App</span>
-                </div>
+            <!-- Error Banners Step 1 -->
+            <div id="contrib-error-banner-1" class="reg-error-msg" role="alert" style="display: none;"></div>
+            <div id="contrib-error-banner" class="reg-error-msg" role="alert" style="display: none;"></div>
 
-                <div class="reg-pay-info">
-                  <div class="upi-details">
-                    <span class="upi-label">Contribution Amount</span>
-                    <span style="font-size: 1.4rem; font-weight: 700; color: var(--teal);" id="contrib-pay-amount">₹786.00</span>
-                  </div>
-                  <div class="upi-details">
-                    <span class="upi-label">UPI ID</span>
-                    <span class="upi-val" id="contrib-upi-id-text">${paymentCfg.upiId}</span>
-                  </div>
-                  <div class="upi-details">
-                    <span class="upi-label">Payee Name</span>
-                    <span style="font-size: 13px; font-weight: 500; color: var(--ink);">${paymentCfg.payeeName}</span>
-                  </div>
+            <!-- Proceed Button Step 1 -->
+            <button type="button" id="contrib-step1-proceed-btn" class="btn p" style="width: 100%; justify-content: center; font-size: 1.05rem; padding: 16px;">
+              <span id="contrib-step1-proceed-btn-text">Proceed to ₹99 UPI Payment →</span>
+            </button>
+          </form>
+        </div>
 
-                  <div class="reg-pay-actions">
-                    <button type="button" class="reg-btn-sm" id="contrib-copy-upi-btn">
-                      <span>📋</span> <span id="contrib-copy-text">Copy UPI ID</span>
-                    </button>
-                    <a href="#" class="reg-btn-sm primary" id="contrib-pay-intent-btn" target="_blank" rel="noopener">
-                      <span>⚡</span> <span id="contrib-intent-btn-text">Pay via UPI App</span>
-                    </a>
-                  </div>
+        <!-- STEP 2: UPI PAYMENT & PROOF SECTION -->
+        <div id="contrib-step2-view" style="display: none;">
+          <div class="reg-dialog-header">
+            <p class="tag"><b>[STEP 2/2]</b> ✦ UPI PAYMENT & PROOF</p>
+            <h2 class="reg-title">Complete <span id="contrib-step2-header-amount">₹99</span> Payment</h2>
+            <p class="reg-subtitle">Scan QR or pay via any UPI app and upload the transaction screenshot</p>
+          </div>
 
-                  <div class="reg-payment-notice">
-                    <strong>How to complete your contribution:</strong><br>
-                    1. Tap <strong>Pay via UPI App</strong> or scan the QR code using Google Pay, PhonePe, Paytm, BHIM, etc.<br>
-                    2. Complete your payment of <strong id="contrib-notice-amount">₹786</strong>.<br>
-                    3. Take a screenshot showing your completed payment receipt.<br>
-                    4. Upload the screenshot below and complete your contribution.
-                  </div>
-                </div>
+          <!-- Step Progress Tracker -->
+          <div class="reg-step-tracker">
+            <div class="reg-step-pill completed">
+              <span class="step-dot">✓</span>
+              <span>Details Saved</span>
+            </div>
+            <span class="reg-step-arrow">→</span>
+            <div class="reg-step-pill active">
+              <span class="step-dot">2</span>
+              <span id="contrib-step2-active-pill-text">₹99 UPI Payment</span>
+            </div>
+            <span class="reg-step-arrow">→</span>
+            <div class="reg-step-pill">
+              <span class="step-dot">3</span>
+              <span>Confirmation</span>
+            </div>
+          </div>
+
+          <!-- Contributor Summary Card -->
+          <div class="reg-allocated-box" id="contrib-summary-card" style="background: linear-gradient(135deg, rgba(18, 144, 122, 0.08), rgba(47, 93, 147, 0.08)); border: 1.5px solid var(--teal); margin-bottom: 20px;">
+            <div class="alloc-left">
+              <span class="alloc-label" style="color: var(--teal); font-weight: 700;">CONTRIBUTOR</span>
+              <span style="font-size: 1.15rem; font-weight: 700; color: var(--ink);" id="contrib-summary-name">—</span>
+              <span style="font-size: 12px; color: var(--mute);" id="contrib-summary-mobile">—</span>
+            </div>
+            <div style="text-align: right; display: flex; flex-direction: column; gap: 2px;">
+              <span class="alloc-label" id="contrib-summary-tier">MINIMAL CONTRIBUTION</span>
+              <span style="font-size: 1.5rem; font-weight: 800; color: var(--teal);" id="contrib-summary-amount">₹99</span>
+            </div>
+          </div>
+
+          <!-- UPI Payment Card -->
+          <div class="reg-pay-card">
+            <div class="reg-qr-wrap">
+              <div class="reg-qr-box" id="contrib-qr-container">
+                <div id="contrib-qr-canvas"></div>
+                ${paymentCfg.qrImagePath ? `<img id="contrib-qr-img" src="${paymentCfg.qrImagePath}" alt="HLF UPI QR" style="display:none;" onerror="this.style.display='none'; document.getElementById('contrib-qr-canvas').style.display='block';">` : ''}
+              </div>
+              <span style="font-size: 11px; color: var(--mute);">Scan with any UPI App</span>
+            </div>
+
+            <div class="reg-pay-info">
+              <div class="upi-details">
+                <span class="upi-label">Contribution Amount</span>
+                <span style="font-size: 1.4rem; font-weight: 700; color: var(--teal);" id="contrib-pay-amount">₹99.00</span>
+              </div>
+              <div class="upi-details">
+                <span class="upi-label">UPI ID</span>
+                <span class="upi-val" id="contrib-upi-id-text">${paymentCfg.upiId}</span>
+              </div>
+              <div class="upi-details">
+                <span class="upi-label">Payee Name</span>
+                <span style="font-size: 13px; font-weight: 500; color: var(--ink);">${paymentCfg.payeeName}</span>
               </div>
 
-              <!-- Payment Transaction Screenshot Upload -->
-              <div class="reg-field" style="margin-top: 16px; margin-bottom: 14px;">
-                <label class="reg-label">Payment Transaction Screenshot <span class="req">*</span></label>
-                <p style="font-size: 11px; color: var(--mute); margin: 0 0 10px;">Upload a screenshot showing your completed UPI payment receipt.</p>
+              <div class="reg-pay-actions">
+                <button type="button" class="reg-btn-sm" id="contrib-copy-upi-btn">
+                  <span>📋</span> <span id="contrib-copy-text">Copy UPI ID</span>
+                </button>
+                <a href="#" class="reg-btn-sm primary" id="contrib-pay-intent-btn" target="_blank" rel="noopener">
+                  <span>⚡</span> <span id="contrib-intent-btn-text">Pay via UPI App</span>
+                </a>
+              </div>
+
+              <div class="reg-payment-notice">
+                <strong>How to complete your contribution:</strong><br>
+                1. Tap <strong>Pay via UPI App</strong> or scan the QR code using Google Pay, PhonePe, Paytm, BHIM, etc.<br>
+                2. Complete your payment of <strong id="contrib-notice-amount">₹99</strong>.<br>
+                3. Take a screenshot showing your completed payment receipt.<br>
+                4. Upload the screenshot below and complete your contribution.
+              </div>
+            </div>
+          </div>
+
+          <form id="hlf-contrib-step2-form" novalidate onsubmit="return false;">
+            <!-- Payment Transaction Screenshot Upload -->
+            <div class="reg-field" style="margin-top: 18px; margin-bottom: 16px;">
+              <label class="reg-label">Payment Transaction Screenshot <span class="req">*</span></label>
+              <p style="font-size: 11px; color: var(--mute); margin: 0 0 10px;">Upload a screenshot showing your completed UPI payment receipt.</p>
+              
+              <div class="reg-screenshot-zone" id="contrib-screenshot-zone">
+                <input type="file" id="contrib-screenshot-file" accept="image/jpeg,image/png,image/webp" style="display: none;">
+                <div id="contrib-screenshot-prompt">
+                  <div style="font-size: 32px; margin-bottom: 6px;">📸</div>
+                  <div style="font-size: 13px; font-weight: 600; color: var(--teal);">Click or drag & drop payment screenshot</div>
+                  <div style="font-size: 11px; color: var(--mute); margin-top: 4px;">Supports JPG, PNG, WEBP (Max 5 MB)</div>
+                </div>
                 
-                <div class="reg-screenshot-zone" id="contrib-screenshot-zone">
-                  <input type="file" id="contrib-screenshot-file" accept="image/jpeg,image/png,image/webp" style="display: none;">
-                  <div id="contrib-screenshot-prompt">
-                    <div style="font-size: 32px; margin-bottom: 6px;">📸</div>
-                    <div style="font-size: 13px; font-weight: 600; color: var(--teal);">Click or drag & drop payment screenshot</div>
-                    <div style="font-size: 11px; color: var(--mute); margin-top: 4px;">Supports JPG, PNG, WEBP (Max 5 MB)</div>
-                  </div>
-                  
-                  <div id="contrib-screenshot-preview" style="display: none;" class="reg-screenshot-preview">
-                    <img id="contrib-screenshot-preview-img" src="" alt="Payment Screenshot" class="reg-screenshot-thumb">
-                    <div class="reg-screenshot-meta">
-                      <div id="contrib-screenshot-filename" class="name">—</div>
-                      <div id="contrib-screenshot-filesize" class="size">—</div>
-                      <div style="display: flex; gap: 8px; margin-top: 6px;">
-                        <button type="button" class="reg-btn-sm" id="contrib-screenshot-change-btn">Change</button>
-                        <button type="button" class="reg-btn-sm danger" id="contrib-screenshot-remove-btn">Remove</button>
-                      </div>
+                <div id="contrib-screenshot-preview" style="display: none;" class="reg-screenshot-preview">
+                  <img id="contrib-screenshot-preview-img" src="" alt="Payment Screenshot" class="reg-screenshot-thumb">
+                  <div class="reg-screenshot-meta">
+                    <div id="contrib-screenshot-filename" class="name">—</div>
+                    <div id="contrib-screenshot-filesize" class="size">—</div>
+                    <div style="display: flex; gap: 8px; margin-top: 6px;">
+                      <button type="button" class="reg-btn-sm" id="contrib-screenshot-change-btn">Change</button>
+                      <button type="button" class="reg-btn-sm danger" id="contrib-screenshot-remove-btn">Remove</button>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- Error Banner -->
-            <div id="contrib-error-banner" class="reg-error-msg" role="alert"></div>
+            <!-- Error Banner Step 2 -->
+            <div id="contrib-error-banner-2" class="reg-error-msg" role="alert" style="display: none;"></div>
 
-            <!-- Submit Button -->
-            <button type="submit" id="contrib-submit-btn" class="btn p" style="width: 100%; justify-content: center; font-size: 1.05rem; padding: 16px;">
-              <span id="contrib-submit-btn-text">Submit Contribution ✦</span>
-            </button>
+            <!-- Navigation Buttons: Back to Details + Submit Contribution -->
+            <div class="reg-nav-actions">
+              <button type="button" class="btn" id="contrib-step2-back-btn" style="flex: 0 0 auto;">
+                ← Back to Details
+              </button>
+              <button type="submit" id="contrib-submit-btn" class="btn p">
+                <span id="contrib-submit-btn-text">Submit Contribution (₹99) ✦</span>
+              </button>
+            </div>
           </form>
         </div>
 
-        <!-- STAGE 2: CONTRIBUTION ACKNOWLEDGEMENT VIEW -->
+        <!-- STAGE 3: CONTRIBUTION ACKNOWLEDGEMENT VIEW -->
         <div id="contrib-success-view" class="contrib-ack-view" style="display: none;">
           <div class="contrib-ack-card">
             <!-- Header with HLF Branding -->
@@ -1582,13 +1653,14 @@
 
     document.body.appendChild(dialog);
 
-    // Bind Dialog Events
+    // Bind Dialog Close Events
     document.getElementById('contrib-close-x').onclick = closeContributionModal;
     document.getElementById('contrib-close-btn').onclick = closeContributionModal;
     document.getElementById('contrib-print-btn').onclick = printContributionConfirmation;
 
     // Close when clicking dialog backdrop
     dialog.addEventListener('click', (e) => {
+      if (e.target !== dialog) return;
       const rect = dialog.getBoundingClientRect();
       const isInDialog = (rect.top <= e.clientY && e.clientY <= rect.top + rect.height &&
                           rect.left <= e.clientX && e.clientX <= rect.left + rect.width);
@@ -1611,11 +1683,63 @@
       } catch (err) {}
     };
 
-    // Form submission
-    document.getElementById('hlf-contrib-form').onsubmit = handleContributionSubmit;
+    // Form submission handlers & button clicks
+    const step1Form = document.getElementById('hlf-contrib-step1-form');
+    if (step1Form) {
+      step1Form.onsubmit = (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        handleContributionStep1Proceed(e);
+        return false;
+      };
+    }
+    const step1ProceedBtn = document.getElementById('contrib-step1-proceed-btn');
+    if (step1ProceedBtn) {
+      step1ProceedBtn.onclick = (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        handleContributionStep1Proceed(e);
+      };
+    }
+
+    const step2Form = document.getElementById('hlf-contrib-step2-form');
+    if (step2Form) {
+      step2Form.onsubmit = (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        handleContributionSubmit(e);
+        return false;
+      };
+    }
+
+    // Back to Step 1 button
+    const backBtn = document.getElementById('contrib-step2-back-btn');
+    if (backBtn) {
+      backBtn.onclick = (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        handleContributionStep2Back();
+      };
+    }
 
     // Screenshot upload setup
     setupContributionScreenshotUpload();
+
+    // Live two-way sync for Contributor Details
+    const nameInput = document.getElementById('contrib-fullname');
+    const mobileInput = document.getElementById('contrib-mobile');
+    const emailInput = document.getElementById('contrib-email');
+    if (nameInput) {
+      nameInput.addEventListener('input', () => {
+        if (activeContributionData) activeContributionData.fullName = nameInput.value;
+      });
+    }
+    if (mobileInput) {
+      mobileInput.addEventListener('input', () => {
+        if (activeContributionData) activeContributionData.mobile = mobileInput.value.replace(/[\s-]/g, '');
+      });
+    }
+    if (emailInput) {
+      emailInput.addEventListener('input', () => {
+        if (activeContributionData) activeContributionData.email = emailInput.value.trim();
+      });
+    }
 
     // Live update on custom amount input
     const customAmtInput = document.getElementById('contrib-custom-amount-input');
@@ -1626,17 +1750,92 @@
         if (isValidCustomAmount(raw)) {
           const num = parseInt(raw, 10);
           activeContributionData.amount = num;
-          updateContributionUI(num, 'Custom Contribution', true);
-          const err = document.getElementById('contrib-error-banner');
-          if (err) { err.style.display = 'none'; err.textContent = ''; }
+          updateContributionStep1UI(num, 'Custom Contribution', true);
+          clearContribErrors();
         } else {
           activeContributionData.amount = null;
-          updateContributionUI(null, 'Custom Contribution', true);
+          updateContributionStep1UI(null, 'Custom Contribution', true);
           const amtBadge = document.getElementById('contrib-amount-badge');
           if (amtBadge) amtBadge.textContent = raw ? `₹${raw}` : '₹—';
         }
       });
     }
+  }
+
+  // Helper to switch view steps in Contribution Modal
+  function showContribStep(stepNum) {
+    const s1 = document.getElementById('contrib-step1-view');
+    const s2 = document.getElementById('contrib-step2-view');
+    const s3 = document.getElementById('contrib-success-view');
+
+    if (s1) s1.style.display = stepNum === 1 ? 'block' : 'none';
+    if (s2) s2.style.display = stepNum === 2 ? 'block' : 'none';
+    if (s3) s3.style.display = stepNum === 3 ? 'block' : 'none';
+
+    clearContribErrors();
+
+    const inner = document.querySelector('#contrib-dialog .reg-dialog-inner');
+    if (inner) inner.scrollTop = 0;
+  }
+
+  // Helper to update Contribution Step 1 UI
+  function updateContributionStep1UI(amount, tierName, isCustom) {
+    const tierBadge = document.getElementById('contrib-tier-badge');
+    const amountBadge = document.getElementById('contrib-amount-badge');
+    const descBadge = document.getElementById('contrib-desc-badge');
+    const step2Pill = document.getElementById('contrib-step2-pill-text');
+    const proceedBtnText = document.getElementById('contrib-step1-proceed-btn-text');
+
+    const hasValidAmount = amount !== null && amount !== undefined && isValidCustomAmount(amount);
+    const formatted = hasValidAmount ? Number(amount).toLocaleString('en-IN') : '—';
+    const cleanTier = isCustom ? 'Custom' : (tierName || 'Minimal Contribution');
+
+    if (tierBadge) tierBadge.textContent = isCustom ? 'CUSTOM' : cleanTier.toUpperCase();
+    if (amountBadge) amountBadge.textContent = hasValidAmount ? `₹${formatted}` : '₹—';
+    if (descBadge) descBadge.textContent = isCustom ? 'Custom Contribution' : cleanTier;
+    if (step2Pill) step2Pill.textContent = hasValidAmount ? `₹${formatted} UPI Payment` : 'UPI Payment';
+    if (proceedBtnText) {
+      proceedBtnText.textContent = hasValidAmount
+        ? `Proceed to ₹${formatted} UPI Payment →`
+        : 'Proceed to UPI Payment →';
+    }
+  }
+
+  // Helper to update Contribution Step 2 UI
+  function updateContributionStep2UI(amount, tierName, isCustom) {
+    const hasValidAmount = amount !== null && amount !== undefined && isValidCustomAmount(amount);
+    const formatted = hasValidAmount ? Number(amount).toLocaleString('en-IN') : '—';
+    const cleanTier = isCustom ? 'Custom Contribution' : (tierName || 'Minimal Contribution');
+
+    const headerAmount = document.getElementById('contrib-step2-header-amount');
+    const activePill = document.getElementById('contrib-step2-active-pill-text');
+    const summaryName = document.getElementById('contrib-summary-name');
+    const summaryMobile = document.getElementById('contrib-summary-mobile');
+    const summaryTier = document.getElementById('contrib-summary-tier');
+    const summaryAmount = document.getElementById('contrib-summary-amount');
+    const payAmount = document.getElementById('contrib-pay-amount');
+    const noticeAmount = document.getElementById('contrib-notice-amount');
+    const intentBtnText = document.getElementById('contrib-intent-btn-text');
+    const submitBtnText = document.getElementById('contrib-submit-btn-text');
+
+    if (headerAmount) headerAmount.textContent = hasValidAmount ? `₹${formatted}` : '₹—';
+    if (activePill) activePill.textContent = hasValidAmount ? `₹${formatted} UPI Payment` : 'UPI Payment';
+    if (summaryName) summaryName.textContent = (activeContributionData && activeContributionData.fullName) || '—';
+    if (summaryMobile) summaryMobile.textContent = (activeContributionData && activeContributionData.mobile) ? `+91 ${activeContributionData.mobile}` : '—';
+    if (summaryTier) summaryTier.textContent = cleanTier.toUpperCase();
+    if (summaryAmount) summaryAmount.textContent = hasValidAmount ? `₹${formatted}` : '₹—';
+    if (payAmount) payAmount.textContent = hasValidAmount ? `₹${formatted}.00` : '₹—';
+    if (noticeAmount) noticeAmount.textContent = hasValidAmount ? `₹${formatted}` : 'your contribution amount';
+    if (intentBtnText) intentBtnText.textContent = hasValidAmount ? `Pay ₹${formatted} via UPI App` : 'Pay via UPI App';
+    if (submitBtnText) submitBtnText.textContent = hasValidAmount ? `Submit Contribution (₹${formatted}) ✦` : 'Submit Contribution ✦';
+
+    renderContributionUpi(hasValidAmount ? Number(amount) : null, cleanTier);
+  }
+
+  // Helper to update Contribution UI across modal (backward compatible)
+  function updateContributionUI(amount, tierName, isCustom) {
+    updateContributionStep1UI(amount, tierName, isCustom);
+    updateContributionStep2UI(amount, tierName, isCustom);
   }
 
   // Setup screenshot upload for contributions
@@ -1698,20 +1897,18 @@
     function processContribFile(file) {
       const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
       if (!allowedTypes.includes(file.type.toLowerCase())) {
-        showContribError('Please upload a valid image file (JPG, PNG, or WEBP).');
+        showContribError(2, 'Please upload a valid image file (JPG, PNG, or WEBP).');
         resetContribScreenshot();
         return;
       }
 
       if (file.size > 5 * 1024 * 1024) {
-        showContribError('Image file size exceeds 5 MB. Please select a smaller screenshot.');
+        showContribError(2, 'Image file size exceeds 5 MB. Please select a smaller screenshot.');
         resetContribScreenshot();
         return;
       }
 
-      const err = document.getElementById('contrib-error-banner');
-      if (err) { err.style.display = 'none'; err.textContent = ''; }
-
+      clearContribErrors();
       selectedContribScreenshotFile = file;
 
       const reader = new FileReader();
@@ -1765,31 +1962,6 @@
     });
   }
 
-  // Helper to update Contribution UI across modal
-  function updateContributionUI(amount, tierName, isCustom) {
-    const tierBadge = document.getElementById('contrib-tier-badge');
-    const amountBadge = document.getElementById('contrib-amount-badge');
-    const descBadge = document.getElementById('contrib-desc-badge');
-    const payAmount = document.getElementById('contrib-pay-amount');
-    const noticeAmount = document.getElementById('contrib-notice-amount');
-    const intentBtnText = document.getElementById('contrib-intent-btn-text');
-    const submitBtnText = document.getElementById('contrib-submit-btn-text');
-
-    const hasValidAmount = amount !== null && amount !== undefined && isValidCustomAmount(amount);
-    const formatted = hasValidAmount ? Number(amount).toLocaleString('en-IN') : '—';
-    const cleanTier = isCustom ? 'Custom' : (tierName || 'Festival Contribution');
-
-    if (tierBadge) tierBadge.textContent = isCustom ? 'CUSTOM' : cleanTier.toUpperCase();
-    if (amountBadge) amountBadge.textContent = hasValidAmount ? `₹${formatted}` : '₹—';
-    if (descBadge) descBadge.textContent = isCustom ? 'Custom Contribution' : cleanTier;
-    if (payAmount) payAmount.textContent = hasValidAmount ? `₹${formatted}.00` : '₹—';
-    if (noticeAmount) noticeAmount.textContent = hasValidAmount ? `₹${formatted}` : 'your contribution amount';
-    if (intentBtnText) intentBtnText.textContent = hasValidAmount ? `Pay ₹${formatted} via UPI App` : 'Pay via UPI App';
-    if (submitBtnText) submitBtnText.textContent = hasValidAmount ? `Submit Contribution (₹${formatted}) ✦` : 'Submit Contribution ✦';
-
-    renderContributionUpi(hasValidAmount ? Number(amount) : null, cleanTier);
-  }
-
   // 12. Open Contribution Modal
   function openContributionModal(amount, tierName) {
     const dialog = document.getElementById('contrib-dialog');
@@ -1799,9 +1971,12 @@
     const d = document.getElementById('contrib-dialog');
     if (!d) return;
 
-    const isCustom = amount === 'custom' || (tierName && tierName.toLowerCase().includes('custom'));
+    const isCustom = amount === 'custom' || (tierName && String(tierName).toLowerCase().includes('custom'));
     const customWrap = document.getElementById('contrib-custom-amount-wrap');
     const customInput = document.getElementById('contrib-custom-amount-input');
+    const nameInput = document.getElementById('contrib-fullname');
+    const mobileInput = document.getElementById('contrib-mobile');
+    const emailInput = document.getElementById('contrib-email');
 
     let currentAmount;
     let currentTier;
@@ -1811,8 +1986,9 @@
       if (typeof amount === 'number' && isValidCustomAmount(amount)) {
         currentAmount = amount;
         if (customInput) customInput.value = String(amount);
-      } else if (customInput && isValidCustomAmount(customInput.value.trim())) {
-        currentAmount = parseInt(customInput.value.trim(), 10);
+      } else if (typeof amount === 'string' && isValidCustomAmount(amount)) {
+        currentAmount = parseInt(amount, 10);
+        if (customInput) customInput.value = String(currentAmount);
       } else {
         currentAmount = null;
         if (customInput) customInput.value = '';
@@ -1820,26 +1996,32 @@
       if (customWrap) customWrap.style.display = 'block';
       if (customInput) customInput.required = true;
     } else {
-      currentTier = tierName || 'Festival Contribution';
+      currentTier = tierName || 'Minimal Contribution';
       currentAmount = Number(amount) || 99;
       if (customWrap) customWrap.style.display = 'none';
-      if (customInput) customInput.required = false;
+      if (customInput) {
+        customInput.value = '';
+        customInput.required = false;
+      }
     }
+
+    // Fresh session: start clean on Step 1
+    if (nameInput) nameInput.value = '';
+    if (mobileInput) mobileInput.value = '';
+    if (emailInput) emailInput.value = '';
+    resetContribScreenshot();
 
     activeContributionData = {
       amount: currentAmount,
       tierName: currentTier,
-      isCustom: isCustom
+      isCustom: isCustom,
+      fullName: '',
+      mobile: '',
+      email: ''
     };
 
-    updateContributionUI(currentAmount, currentTier, isCustom);
-    resetContribScreenshot();
-
-    // Reset views
-    document.getElementById('contrib-form-view').style.display = 'block';
-    document.getElementById('contrib-success-view').style.display = 'none';
-    const err = document.getElementById('contrib-error-banner');
-    if (err) { err.style.display = 'none'; err.textContent = ''; }
+    updateContributionStep1UI(currentAmount, currentTier, isCustom);
+    showContribStep(1);
 
     // Lock page background scrolling
     document.body.style.overflow = 'hidden';
@@ -1865,6 +2047,21 @@
     } else {
       dialog.removeAttribute('open');
     }
+
+    // Clean session on close so reopening starts fresh
+    activeContributionData = null;
+    selectedContribScreenshotFile = null;
+    resetContribScreenshot();
+    clearContribErrors();
+    const nameInput = document.getElementById('contrib-fullname');
+    const mobileInput = document.getElementById('contrib-mobile');
+    const emailInput = document.getElementById('contrib-email');
+    const customInput = document.getElementById('contrib-custom-amount-input');
+    if (nameInput) nameInput.value = '';
+    if (mobileInput) mobileInput.value = '';
+    if (emailInput) emailInput.value = '';
+    if (customInput) customInput.value = '';
+    showContribStep(1);
   }
 
   // 13. Render Contribution UPI Intent & QR
@@ -1908,62 +2105,129 @@
     }
   }
 
-  // 14. Handle Contribution Submit (Payment Screenshot & Custom Amount)
-  async function handleContributionSubmit(e) {
-    e.preventDefault();
+  // 14. Handle Step 1 Proceed (Validates Contributor Details -> Transitions to Step 2)
+  function handleContributionStep1Proceed(e) {
+    if (e && e.preventDefault) e.preventDefault();
 
-    const errBanner = document.getElementById('contrib-error-banner');
-    if (errBanner) { errBanner.style.display = 'none'; errBanner.textContent = ''; }
-
-    const fullName = document.getElementById('contrib-fullname').value.trim();
-    const mobile = document.getElementById('contrib-mobile').value.trim();
-    const email = document.getElementById('contrib-email').value.trim();
+    clearContribErrors();
 
     if (!activeContributionData) {
-      showContribError('Please select a contribution tier.');
+      showContribError(1, 'Please select a contribution tier.');
       return;
     }
 
-    // Validation
+    const nameInput = document.getElementById('contrib-fullname');
+    const mobileInput = document.getElementById('contrib-mobile');
+    const emailInput = document.getElementById('contrib-email');
+    const customInput = document.getElementById('contrib-custom-amount-input');
+
+    const fullName = nameInput ? nameInput.value.trim() : '';
+    const mobile = mobileInput ? mobileInput.value.trim() : '';
+    const email = emailInput ? emailInput.value.trim() : '';
+
+    // Validation 1: Full Name >= 2 characters
     if (!fullName || fullName.length < 2) {
-      showContribError('Please enter your full name (minimum 2 characters).');
-      document.getElementById('contrib-fullname').focus();
+      showContribError(1, 'Please enter your full name (minimum 2 characters).');
+      if (nameInput) nameInput.focus();
       return;
     }
 
+    // Validation 2: Indian 10-digit mobile number
     const mobileClean = mobile.replace(/[\s-]/g, '');
     const mobileRegex = /^[6-9]\d{9}$/;
     if (!mobileRegex.test(mobileClean)) {
-      showContribError('Please enter a valid 10-digit Indian mobile number.');
-      document.getElementById('contrib-mobile').focus();
+      showContribError(1, 'Please enter a valid 10-digit Indian mobile number.');
+      if (mobileInput) mobileInput.focus();
       return;
     }
 
-    // Validate Custom Contribution Amount if custom
+    // Validation 3: Email optional, but if entered must be valid
+    if (email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        showContribError(1, 'Please enter a valid email address.');
+        if (emailInput) emailInput.focus();
+        return;
+      }
+    }
+
+    // Validation 4: Custom Contribution Amount if custom tier
     let finalAmount = activeContributionData.amount;
     if (activeContributionData.isCustom) {
-      const customInput = document.getElementById('contrib-custom-amount-input');
       const rawVal = customInput ? customInput.value.trim() : '';
-
       if (!isValidCustomAmount(rawVal)) {
-        showContribError('Please enter a valid contribution amount (minimum ₹1).');
+        showContribError(1, 'Please enter a valid contribution amount (minimum ₹1).');
         if (customInput) customInput.focus();
         return;
       }
       finalAmount = parseInt(rawVal, 10);
       activeContributionData.amount = finalAmount;
+    } else {
+      finalAmount = Number(activeContributionData.amount) || 99;
     }
 
-    // Validate Payment Screenshot File
+    // Save canonically to activeContributionData WITHOUT clearing DOM inputs
+    activeContributionData.fullName = fullName;
+    activeContributionData.mobile = mobileClean;
+    activeContributionData.email = email;
+    activeContributionData.amount = finalAmount;
+
+    // Populate Step 2 UI elements
+    updateContributionStep2UI(finalAmount, activeContributionData.tierName, activeContributionData.isCustom);
+
+    // Switch view to Step 2
+    showContribStep(2);
+  }
+
+  // Handle Step 2 Back to Details Navigation
+  function handleContributionStep2Back() {
+    clearContribErrors();
+    if (activeContributionData) {
+      const nameInput = document.getElementById('contrib-fullname');
+      const mobileInput = document.getElementById('contrib-mobile');
+      const emailInput = document.getElementById('contrib-email');
+      const customInput = document.getElementById('contrib-custom-amount-input');
+
+      if (nameInput && activeContributionData.fullName) {
+        nameInput.value = activeContributionData.fullName;
+      }
+      if (mobileInput && activeContributionData.mobile) {
+        mobileInput.value = activeContributionData.mobile;
+      }
+      if (emailInput && activeContributionData.email !== undefined) {
+        emailInput.value = activeContributionData.email || '';
+      }
+      if (customInput && activeContributionData.isCustom && activeContributionData.amount) {
+        customInput.value = String(activeContributionData.amount);
+      }
+    }
+    // Return to Step 1. All input values are guaranteed intact!
+    showContribStep(1);
+  }
+
+  // 15. Handle Contribution Submit (Payment Screenshot & Final Submission)
+  async function handleContributionSubmit(e) {
+    if (e && e.preventDefault) e.preventDefault();
+
+    clearContribErrors();
+
+    if (!activeContributionData || !activeContributionData.amount) {
+      showContribError(2, 'Contribution session expired. Please return to Step 1 and try again.');
+      return;
+    }
+
+    // Validate screenshot file
     if (!selectedContribScreenshotFile) {
-      showContribError('Please upload your payment transaction screenshot before submitting your contribution.');
+      showContribError(2, 'Please upload your payment transaction screenshot before submitting your contribution.');
       return;
     }
 
     const submitBtn = document.getElementById('contrib-submit-btn');
-    const origBtnHtml = submitBtn.innerHTML;
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<span class="reg-spinner"></span> Uploading Proof & Submitting...';
+    const origBtnHtml = submitBtn ? submitBtn.innerHTML : 'Submit Contribution ✦';
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="reg-spinner"></span> Uploading Proof & Submitting...';
+    }
 
     try {
       const sb = window.getSupabase ? window.getSupabase() : null;
@@ -2009,14 +2273,14 @@
       // Step 3: Call submit_contribution RPC
       const tierName = activeContributionData.isCustom ? 'Custom' : activeContributionData.tierName;
       const { data, error } = await sb.rpc('submit_contribution', {
-        p_full_name: fullName,
-        p_mobile: mobileClean,
-        p_amount: Number(finalAmount),
+        p_full_name: activeContributionData.fullName,
+        p_mobile: activeContributionData.mobile,
+        p_amount: Number(activeContributionData.amount),
         p_contribution_type: tierName,
         p_payment_screenshot_path: filePath,
         p_payment_screenshot_url: screenshotUrl,
         p_contribution_id: contribId,
-        p_email: email || null,
+        p_email: activeContributionData.email || null,
         p_transaction_id: null
       });
 
@@ -2029,13 +2293,14 @@
         throw new Error('Unexpected response from contribution service.');
       }
 
-      // Record contribution data internally
+      // Record contribution data internally for receipt
       activeContributionData = {
         contribution_id: data.contribution_id || contribId,
-        full_name: data.full_name || fullName,
-        amount: data.amount || finalAmount,
+        full_name: data.full_name || activeContributionData.fullName,
+        amount: data.amount || activeContributionData.amount,
         contribution_type: data.contribution_type || tierName,
-        mobile: mobileClean,
+        mobile: activeContributionData.mobile,
+        email: activeContributionData.email,
         payment_screenshot_path: filePath,
         payment_screenshot_url: screenshotUrl,
         payment_status: 'SUBMITTED',
@@ -2046,31 +2311,55 @@
 
     } catch (err) {
       console.error('Contribution submit error:', err);
-      showContribError(err.message || 'An error occurred while submitting your contribution. Please try again.');
+      showContribError(2, err.message || 'An error occurred while submitting your contribution. Please try again.');
     } finally {
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = origBtnHtml;
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = origBtnHtml;
+      }
     }
   }
 
-  function showContribError(msg) {
-    const errBanner = document.getElementById('contrib-error-banner');
+  function showContribError(stepNum, msg) {
+    if (typeof stepNum === 'string') {
+      msg = stepNum;
+      stepNum = 1;
+    }
+    const errId = stepNum === 2 ? 'contrib-error-banner-2' : 'contrib-error-banner-1';
+    const errBanner = document.getElementById(errId) || document.getElementById('contrib-error-banner');
     if (errBanner) {
       errBanner.textContent = msg;
       errBanner.style.display = 'block';
       errBanner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
+    // Also set legacy contrib-error-banner if on step 1
+    const legacyBanner = document.getElementById('contrib-error-banner');
+    if (legacyBanner && legacyBanner !== errBanner) {
+      legacyBanner.textContent = msg;
+      legacyBanner.style.display = 'block';
+    }
   }
 
-  // 15. Display Redesigned Official HLF Acknowledgement Screen
-  function displayContributionSuccessView(data) {
-    document.getElementById('contrib-form-view').style.display = 'none';
-    document.getElementById('contrib-success-view').style.display = 'block';
+  function clearContribErrors() {
+    ['contrib-error-banner-1', 'contrib-error-banner-2', 'contrib-error-banner'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.style.display = 'none'; el.textContent = ''; }
+    });
+  }
 
-    document.getElementById('contrib-ack-name').textContent = data.full_name;
-    document.getElementById('contrib-ack-type').textContent = data.contribution_type;
-    document.getElementById('contrib-ack-amount').textContent = `₹${Number(data.amount).toLocaleString('en-IN')}`;
-    document.getElementById('contrib-ack-date').textContent = formatAcknowledgementDate(data.created_at);
+  // 16. Display Redesigned Official HLF Acknowledgement Screen
+  function displayContributionSuccessView(data) {
+    showContribStep(3);
+
+    const nameEl = document.getElementById('contrib-ack-name');
+    const typeEl = document.getElementById('contrib-ack-type');
+    const amtEl = document.getElementById('contrib-ack-amount');
+    const dateEl = document.getElementById('contrib-ack-date');
+
+    if (nameEl) nameEl.textContent = data.full_name;
+    if (typeEl) typeEl.textContent = data.contribution_type;
+    if (amtEl) amtEl.textContent = `₹${Number(data.amount).toLocaleString('en-IN')}`;
+    if (dateEl) dateEl.textContent = formatAcknowledgementDate(data.created_at);
 
     const inner = document.querySelector('#contrib-dialog .reg-dialog-inner');
     if (inner) inner.scrollTop = 0;
