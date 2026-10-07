@@ -107,7 +107,7 @@ dialog.lb{width:min(1000px,100% - 20px);background:#000;color:#fff;padding:14px}
 <div id="glow"></div>
 <nav class="glass" id="nav"><a class="lg" href="#home"><img class="lgi" data-img="logo" alt="HLF logo"><span>HLF<i>✦</i>2026</span></a>
 <div class="ls"><a href="#home" class="on">Home</a><a href="#about">About</a><a href="#schedule">Schedule</a><a href="#contributions">Contributions</a><a href="#gallery">Gallery</a><a href="#contact">Contact</a></div>
-<button id="th" aria-label="Toggle theme">◐</button><a class="btn p reg" href="#register">Register ↗</a><button id="mb" aria-label="Menu">☰</button></nav>
+<button id="th" aria-label="Toggle theme">◐</button><a class="btn p reg" href="javascript:void(0)" role="button">Register ↗</a><button id="mb" aria-label="Menu">☰</button></nav>
 
 <section id="home"><div class="hbg"></div><div id="cf" aria-hidden="true"></div><i class="aur" style="width:480px;height:480px;background:var(--red);left:-140px;top:60px"></i><i class="aur" style="width:520px;height:520px;background:var(--teal);right:-160px;bottom:0;animation-delay:-5s"></i>
 <div class="w hero"><div>
@@ -115,7 +115,7 @@ dialog.lb{width:min(1000px,100% - 20px);background:#000;color:#fff;padding:14px}
 <h1><span class="r">Hadith</span><span class="a">Literature</span><span class="t">Festival</span></h1>
 <div class="orb"><b style="background:var(--red);color:#fff">18</b><b style="background:var(--amb);color:#fff">19</b><b style="background:var(--teal);color:#fff">20</b><div style="align-self:center;margin-left:8px"><b style="all:unset;font-weight:700">OCTOBER 2026</b><br><small class="tag">Chemmad · Kerala</small></div></div>
 <p class="tl">Where Hadith meets thought, expression &amp; creativity.</p>
-<a class="btn p reg" href="#register">Register for HLF ↗</a> <a class="btn" href="#contributions">Contribute</a>
+<a class="btn p reg" href="javascript:void(0)" role="button">Register for HLF ↗</a> <a class="btn" href="#contributions">Contribute</a>
 <div class="cd" id="cd"></div></div>
 <div class="pw"><svg class="ring" viewBox="0 0 200 200" aria-hidden="true"><g id="rg"></g></svg><img class="pst" data-img="poster" alt="HLF 2026 official poster" width="720" height="900"></div></div></section>
 <div class="mq" aria-hidden="true"><div id="mqi"></div></div>
@@ -141,7 +141,7 @@ dialog.lb{width:min(1000px,100% - 20px);background:#000;color:#fff;padding:14px}
 <div class="chips" id="gchips"></div><div class="gal" id="gal"></div></div></section>
 
 <section id="contact"><div class="w"><div class="ct"><div class="rv"><p class="tag"><b>[06]</b> Let's connect</p><h2 class="big" style="margin:18px 0 30px">Come curious. <span class="t">Leave inspired.</span></h2><div id="cl"></div></div>
-<div class="qr glass rv"><p class="tag">HLF / 2026 ✦</p><div class="qb"><div id="qr"></div></div><h3 style="font-size:1.4rem;margin-bottom:18px">Scan to Connect with HLF</h3><a class="btn p reg" href="#register">Register for HLF ↗</a></div></div></div></section>
+<div class="qr glass rv"><p class="tag">HLF / 2026 ✦</p><div class="qb"><div id="qr"></div></div><h3 style="font-size:1.4rem;margin-bottom:18px">Scan to Connect with HLF</h3><a class="btn p reg" href="javascript:void(0)" role="button">Register for HLF ↗</a></div></div></div></section>
 
 <footer><div class="w"><div><img class="lgi" data-img="logo" alt="HLF logo" style="height:64px;margin-bottom:14px"><b>HLF<span class="r">✦</span>2026</b><p>Hadith Literature Festival<br>18–20 October 2026 · Chemmad<br><span id="fm"></span></p></div><div class="fl"><a href="#about">About</a><a href="#schedule">Schedule</a><a href="#contributions">Contributions</a><a href="#gallery">Gallery</a><a href="#contact">Contact</a><a id="fi" target="_blank" rel="noopener">Instagram</a><a href="admin.html" style="color:var(--teal)">✦ Admin Portal</a></div></div><div class="w" style="margin-top:30px"><small>© 2026 HLF. All Rights Reserved.</small></div></footer>
 
@@ -172,7 +172,8 @@ const DAYS=[[1,7000],[2,5000],[3,4000]];
 let MEDIA=[{type:"image",src:IMG.poster,cat:"Events",title:"Official poster",span:2},{type:"image",src:IMG.logo,cat:"Events",title:"HLF logo",fit:"contain",bg:"#fffbe0"}]; window.MEDIA=MEDIA;
 /* ===== /CONTENT ===== */
 const $=s=>document.querySelector(s),e=encodeURIComponent,inr=n=>"₹"+n.toLocaleString("en-IN");
-document.querySelectorAll(".reg").forEach(a=>{a.href="#register";a.onclick=(e)=>{e.preventDefault();if(window.openRegistrationModal)window.openRegistrationModal();};});
+document.querySelectorAll(".reg").forEach(a=>{a.href="javascript:void(0)";a.setAttribute("role","button");a.onclick=(e)=>{e.preventDefault();e.stopPropagation();if(typeof window.openRegistrationModal==='function')window.openRegistrationModal();};});
+document.addEventListener('click',function(e){const b=e.target.closest('.reg');if(!b)return;e.preventDefault();e.stopPropagation();if(typeof window.openRegistrationModal==='function'){window.openRegistrationModal();}else if(window.__HLF_BOOT_TRIED){console.error('HLF registration handler unavailable');}});
 document.querySelectorAll("[data-img]").forEach(i=>i.src=IMG[i.dataset.img]);document.querySelector(".hbg").style.backgroundImage="url("+IMG.poster+")";
 if (window.loadDynamicSiteImages) {
   window.loadDynamicSiteImages().then(imgs => {

@@ -27,7 +27,7 @@ const HLF_CONFIG = {
     upiId: 'hlf2026@dhiu', // Can be updated via Admin Dashboard
     payeeName: 'Hadith Literature Festival DHIU',
     note: 'HLF 2026 Registration',
-    qrImagePath: 'assets/hlf-upi-qr.png' // Configurable path for official QR code image
+    qrImagePath: '' // Rendered dynamically via QRCode canvas
   }
 };
 

@@ -4,12 +4,7 @@
  */
 
 (function () {
-  // Wait for DOM to be ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initRegistration);
-  } else {
-    initRegistration();
-  }
+  'use strict';
 
   let activeRegistrationData = null;
   let activeContributionData = null;
@@ -52,23 +47,52 @@
     "Other"
   ];
 
-  function initRegistration() {
-    injectRegistrationModal();
-    injectContributionModal();
-    setupRegisterButtons();
-    setupContributionButtons();
-    setupContactQR();
-    loadSupabaseData();
+  function bootHLFInteractions() {
+    if (window.__HLF_INTERACTIONS_READY) return;
+    window.__HLF_INTERACTIONS_READY = true;
+
+    try {
+      injectRegistrationModal();
+    } catch (error) {
+      console.error('Registration modal initialization failed:', error);
+    }
+
+    try {
+      injectContributionModal();
+    } catch (error) {
+      console.error('Contribution modal initialization failed:', error);
+    }
+
+    try {
+      setupRegisterButtons();
+    } catch (error) {
+      console.error('Register button initialization failed:', error);
+    }
+
+    try {
+      setupContributionButtons();
+    } catch (error) {
+      console.error('Contribution button initialization failed:', error);
+    }
+
+    try {
+      setupContactQR();
+    } catch (error) {
+      console.error('Contact QR initialization failed:', error);
+    }
+
+    try {
+      loadSupabaseData();
+    } catch (error) {
+      console.error('Supabase dynamic data sync failed:', error);
+    }
 
     // Check for #register in URL
     if (window.location.hash === '#register') {
-      setTimeout(openRegistrationModal, 200);
+      setTimeout(() => {
+        try { openRegistrationModal(); } catch (e) {}
+      }, 150);
     }
-    window.addEventListener('hashchange', () => {
-      if (window.location.hash === '#register') {
-        openRegistrationModal();
-      }
-    });
   }
 
   // 1. Inject Registration Modal into Document
@@ -79,7 +103,7 @@
       fee: 50,
       upiId: 'hlf2026@dhiu',
       payeeName: 'Hadith Literature Festival DHIU',
-      qrImagePath: 'assets/hlf-upi-qr.png'
+      qrImagePath: ''
     };
 
     const dialog = document.createElement('dialog');
@@ -249,7 +273,7 @@
             <div class="reg-qr-wrap">
               <div class="reg-qr-box" id="reg-qr-container">
                 <div id="reg-qr-canvas"></div>
-                <img id="reg-qr-img" src="${paymentCfg.qrImagePath}" alt="HLF UPI QR" style="display:none;" onerror="this.style.display='none'; document.getElementById('reg-qr-canvas').style.display='block';">
+                ${paymentCfg.qrImagePath ? `<img id="reg-qr-img" src="${paymentCfg.qrImagePath}" alt="HLF UPI QR" style="display:none;" onerror="this.style.display='none'; document.getElementById('reg-qr-canvas').style.display='block';">` : ''}
               </div>
               <span style="font-size: 11px; color: var(--mute);">Scan with any UPI App</span>
             </div>
@@ -800,11 +824,15 @@
   // 3. Connect all Register Buttons in Document
   function setupRegisterButtons() {
     document.querySelectorAll('.reg').forEach(el => {
-      el.removeAttribute('href');
       el.removeAttribute('target');
+      el.setAttribute('role', 'button');
       el.style.cursor = 'pointer';
+      if (el.tagName && el.tagName.toLowerCase() === 'a') {
+        el.setAttribute('href', 'javascript:void(0)');
+      }
       el.onclick = (e) => {
         e.preventDefault();
+        e.stopPropagation();
         openRegistrationModal();
       };
     });
@@ -1299,7 +1327,7 @@
       fee: 50,
       upiId: 'hlf2026@dhiu',
       payeeName: 'Hadith Literature Festival DHIU',
-      qrImagePath: 'assets/hlf-upi-qr.png'
+      qrImagePath: ''
     };
 
     const dialog = document.createElement('dialog');
@@ -1354,7 +1382,7 @@
                 <div class="reg-qr-wrap">
                   <div class="reg-qr-box" id="contrib-qr-container">
                     <div id="contrib-qr-canvas"></div>
-                    <img id="contrib-qr-img" src="${paymentCfg.qrImagePath}" alt="HLF UPI QR" style="display:none;" onerror="this.style.display='none'; document.getElementById('contrib-qr-canvas').style.display='block';">
+                    ${paymentCfg.qrImagePath ? `<img id="contrib-qr-img" src="${paymentCfg.qrImagePath}" alt="HLF UPI QR" style="display:none;" onerror="this.style.display='none'; document.getElementById('contrib-qr-canvas').style.display='block';">` : ''}
                   </div>
                   <span style="font-size: 11px; color: var(--mute);">Scan with any UPI App</span>
                 </div>
@@ -2056,5 +2084,37 @@
   // Expose helpers globally
   window.openRegistrationModal = openRegistrationModal;
   window.closeRegistrationModal = closeRegistrationModal;
+  window.openContributionModal = openContributionModal;
+  window.closeContributionModal = closeContributionModal;
   window.loadSupabaseData = loadSupabaseData;
+  window.bootHLFInteractions = bootHLFInteractions;
+
+  // Delegated click handler: Guaranteed to intercept all .reg clicks anywhere in document
+  document.addEventListener('click', function (e) {
+    const registerButton = e.target.closest('.reg');
+    if (!registerButton) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (typeof window.openRegistrationModal === 'function') {
+      window.openRegistrationModal();
+    } else {
+      console.error('HLF registration handler unavailable');
+    }
+  });
+
+  // URL Hash change listener
+  window.addEventListener('hashchange', () => {
+    if (window.location.hash === '#register') {
+      openRegistrationModal();
+    }
+  });
+
+  // Safe DOM ready bootstrap
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootHLFInteractions, { once: true });
+  } else {
+    bootHLFInteractions();
+  }
 })();

@@ -8,7 +8,7 @@ const DEFAULT_SITE_IMAGES = {
   favicon: 'assets/images/logo/favicon.png',
   officialPoster: 'assets/images/posters/hlf-2026-official-poster.png',
   featuredImage: 'assets/images/posters/hlf-2026-official-poster.png',
-  qrCode: 'assets/hlf-upi-qr.png'
+  qrCode: ''
 };
 
 // Global active site images (initialized with local defaults)
