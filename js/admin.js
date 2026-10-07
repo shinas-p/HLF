@@ -827,15 +827,19 @@
         day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
       });
 
+      const proofDisplay = (c.payment_screenshot_path || c.payment_screenshot_url)
+        ? '<span style="color: var(--teal); font-weight: 600; font-size: 12px;">📷 Screenshot ✓</span>'
+        : `<code>${escapeHtml(c.transaction_id || '—')}</code>`;
+
       return `
         <tr>
           <td><strong>${c.contribution_id}</strong></td>
           <td>${escapeHtml(c.full_name)}</td>
           <td><a href="tel:${escapeHtml(c.mobile)}" style="text-decoration: underline;">${escapeHtml(c.mobile)}</a></td>
           <td style="color: var(--mute);">${escapeHtml(c.email || '—')}</td>
-          <td><span class="badge" style="background: rgba(255,255,255,0.08);">${escapeHtml(c.contribution_type || 'Contribution')}</span></td>
+          <td><span class="badge" style="background: rgba(255,255,255,0.08);">${escapeHtml(c.contribution_type || 'Contribution')}${c.is_custom ? ' (Custom)' : ''}</span></td>
           <td><strong style="color: var(--teal);">₹${Number(c.amount).toLocaleString('en-IN')}</strong></td>
-          <td><code>${escapeHtml(c.transaction_id || '—')}</code></td>
+          <td>${proofDisplay}</td>
           <td><span class="badge ${badgeClass}">${pStatus}</span></td>
           <td style="font-size: 11px; color: var(--mute);">${dateStr}</td>
           <td>
@@ -878,7 +882,7 @@
       'Email',
       'Contribution Type',
       'Amount',
-      'Transaction ID',
+      'Transaction ID / Screenshot',
       'Payment Status',
       'Created Date'
     ];
@@ -890,7 +894,7 @@
       c.email || '',
       c.contribution_type || '',
       c.amount || '',
-      c.transaction_id || '',
+      c.payment_screenshot_path ? 'Screenshot Proof' : (c.transaction_id || ''),
       (c.payment_status || 'PENDING').toUpperCase(),
       c.created_at || ''
     ]);
@@ -913,7 +917,7 @@
   }
 
   // View Contribution Details Modal
-  function openContributionDetails(contribId) {
+  async function openContributionDetails(contribId) {
     const contrib = allContributions.find(c => c.id === contribId);
     if (!contrib) return;
 
@@ -930,6 +934,24 @@
     const dateStr = new Date(contrib.created_at).toLocaleString('en-IN', {
       day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
     });
+
+    const sb = window.getSupabase();
+    let screenshotUrl = null;
+    if (sb && contrib.payment_screenshot_path) {
+      try {
+        const { data: signData, error: signErr } = await sb.storage
+          .from('hlf-contribution-payment-proofs')
+          .createSignedUrl(contrib.payment_screenshot_path, 3600);
+        if (!signErr && signData && signData.signedUrl) {
+          screenshotUrl = signData.signedUrl;
+        }
+      } catch (e) {
+        console.warn('Signed URL generation failed:', e);
+      }
+    }
+    if (!screenshotUrl && contrib.payment_screenshot_url) {
+      screenshotUrl = contrib.payment_screenshot_url;
+    }
 
     document.getElementById('modal-contrib-body').innerHTML = `
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
@@ -950,30 +972,53 @@
         </div>
         <div>
           <span style="color: var(--mute); font-size: 11px; text-transform: uppercase;">Contribution Tier</span>
-          <div style="font-weight: 500;">${escapeHtml(contrib.contribution_type)}</div>
+          <div style="font-weight: 500;">${escapeHtml(contrib.contribution_type)}${contrib.is_custom ? ' (Custom Amount)' : ''}</div>
         </div>
       </div>
 
       <div style="border-top: 1px dashed var(--line); padding-top: 14px; margin-top: 14px;">
-        <span style="color: var(--mute); font-size: 11px; text-transform: uppercase;">Payment Verification Details</span>
+        <span style="color: var(--mute); font-size: 11px; text-transform: uppercase;">Payment Details</span>
         
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
           <span>Contribution Amount:</span>
           <strong style="color: var(--teal); font-size: 18px;">₹${Number(contrib.amount).toLocaleString('en-IN')}</strong>
         </div>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; background: rgba(0,0,0,0.2); padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line);">
-          <div>
-            <div style="font-size: 11px; color: var(--mute); text-transform: uppercase;">UPI Transaction ID / UTR</div>
-            <code style="font-size: 15px; font-weight: bold; color: var(--yel);">${escapeHtml(contrib.transaction_id || '—')}</code>
+        ${contrib.transaction_id ? `
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; background: rgba(0,0,0,0.2); padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line);">
+            <div>
+              <div style="font-size: 11px; color: var(--mute); text-transform: uppercase;">Legacy UPI Ref / UTR</div>
+              <code style="font-size: 15px; font-weight: bold; color: var(--yel);">${escapeHtml(contrib.transaction_id)}</code>
+            </div>
+            <button type="button" class="btn btn-sm" onclick="navigator.clipboard.writeText('${escapeHtml(contrib.transaction_id)}').then(()=>showToast('Copied UTR!'))">📋 Copy</button>
           </div>
-          <button type="button" class="btn btn-sm" onclick="navigator.clipboard.writeText('${escapeHtml(contrib.transaction_id || '')}').then(()=>showToast('Copied UTR!'))">📋 Copy</button>
-        </div>
+        ` : ''}
 
         <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 12px;">
           <span>Submitted On:</span>
           <span style="color: var(--mute);">${dateStr}</span>
         </div>
+      </div>
+
+      <div style="margin-top: 16px; border-top: 1px dashed var(--line); padding-top: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="color: var(--mute); font-size: 11px; text-transform: uppercase; font-weight: 700;">Payment Screenshot Proof</span>
+          ${screenshotUrl ? `<a href="${screenshotUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-sm" style="text-decoration: none; font-size: 11px; padding: 3px 10px;">🔍 Open Full Size ↗</a>` : ''}
+        </div>
+        ${screenshotUrl ? `
+          <div style="text-align: center; background: rgba(0,0,0,0.4); border: 1px solid var(--line); border-radius: 12px; padding: 10px;">
+            <a href="${screenshotUrl}" target="_blank" rel="noopener noreferrer" title="Click to view full image in new tab">
+              <img src="${screenshotUrl}" alt="Proof for ${contrib.contribution_id}" style="max-height: 280px; max-width: 100%; border-radius: 8px; object-fit: contain; cursor: zoom-in; display: block; margin: 0 auto; box-shadow: 0 4px 16px rgba(0,0,0,0.3);" />
+            </a>
+            <div style="font-size: 11px; color: var(--mute); margin-top: 8px;">
+              Path: <code>${escapeHtml(contrib.payment_screenshot_path || 'uploaded')}</code> · Click image to expand
+            </div>
+          </div>
+        ` : `
+          <div style="padding: 18px; text-align: center; background: rgba(0,0,0,0.03); border: 1px dashed var(--line); border-radius: 10px; color: var(--mute); font-size: 13px;">
+            📷 No payment screenshot available.
+          </div>
+        `}
       </div>
     `;
 

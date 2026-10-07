@@ -9,6 +9,7 @@
   let activeRegistrationData = null;
   let activeContributionData = null;
   let selectedScreenshotFile = null;
+  let selectedContribScreenshotFile = null;
 
   const HLF_INSTITUTIONS = [
     "Darul Huda Nedumangadu Campus",
@@ -1066,18 +1067,20 @@
 
       const regId = activeRegistrationData.registration_id;
       const fileExt = (selectedScreenshotFile.name.split('.').pop() || 'png').toLowerCase();
-      const filePath = `registrations/${regId}/payment-proof.${fileExt}`;
+      const fileTimestamp = Date.now();
+      const filePath = `registrations/${regId}/payment-proof-${fileTimestamp}.${fileExt}`;
 
-      // Upload file to dedicated Supabase Storage bucket
+      // Upload file to dedicated Supabase Storage bucket (pure INSERT without upsert to satisfy RLS)
       const { data: uploadData, error: uploadErr } = await sb.storage
         .from('hlf-payment-proofs')
         .upload(filePath, selectedScreenshotFile, {
           cacheControl: '3600',
-          upsert: true
+          upsert: false
         });
 
       if (uploadErr) {
-        throw new Error('Could not upload payment screenshot: ' + uploadErr.message);
+        console.error('Registration screenshot storage upload error:', uploadErr);
+        throw new Error('Payment screenshot upload failed: ' + uploadErr.message);
       }
 
       const { data: publicUrlData } = sb.storage.from('hlf-payment-proofs').getPublicUrl(filePath);
@@ -1092,7 +1095,7 @@
 
       if (error) {
         console.error('Payment confirmation RPC error:', error);
-        throw new Error(error.message || 'Payment confirmation failed. Please try again.');
+        throw new Error('Payment screenshot database update failed: ' + (error.message || 'Confirmation failed'));
       }
 
       if (!data || !data.success) {
@@ -1134,13 +1137,7 @@
     document.getElementById('success-inst').textContent = data.institution;
     document.getElementById('success-mobile').textContent = data.mobile;
 
-    const formattedDate = new Date(data.created_at || Date.now()).toLocaleString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    const formattedDate = formatAcknowledgementDate(data.created_at);
     document.getElementById('success-date').textContent = formattedDate;
 
     // Scroll to top of dialog
@@ -1162,9 +1159,7 @@
   function printRegistrationConfirmation() {
     if (!activeRegistrationData) return;
     const d = activeRegistrationData;
-    const printDate = new Date(d.created_at || Date.now()).toLocaleString('en-IN', {
-      day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
-    });
+    const printDate = formatAcknowledgementDate(d.created_at);
 
     const printWindow = window.open('', '_blank', 'width=800,height=900');
     if (!printWindow) {
@@ -1316,8 +1311,39 @@
   }
 
   // =============================================================
-  // CONTRIBUTIONS & DONATIONS SYSTEM
+  // CONTRIBUTIONS & DONATIONS SYSTEM (SCREENSHOT & CUSTOM CONTRIBUTION)
   // =============================================================
+
+  // Robust date formatter ensuring valid, elegant HLF date display
+  function formatAcknowledgementDate(dateVal) {
+    let d;
+    if (!dateVal) {
+      d = new Date();
+    } else if (dateVal instanceof Date) {
+      d = isNaN(dateVal.getTime()) ? new Date() : dateVal;
+    } else {
+      d = new Date(dateVal);
+      if (isNaN(d.getTime())) {
+        d = new Date();
+      }
+    }
+
+    const day = d.getDate();
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    const month = months[d.getMonth()];
+    const year = d.getFullYear();
+
+    let hours = d.getHours();
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+
+    return `${day} ${month} ${year} · ${hours}:${minutes} ${ampm}`;
+  }
 
   // 10. Inject Contribution Modal into Document
   function injectContributionModal() {
@@ -1356,6 +1382,17 @@
             <!-- SECTION 1: CONTRIBUTOR DETAILS -->
             <div class="reg-form-section">
               <h3 class="reg-section-title"><span class="step">1</span> Contributor Details</h3>
+              
+              <!-- Custom Contribution Amount Input (shown when Custom tier chosen) -->
+              <div id="contrib-custom-amount-wrap" style="display: none; margin-bottom: 16px; background: rgba(18,144,122,0.06); border: 1.5px solid var(--teal); border-radius: 12px; padding: 14px;">
+                <label class="reg-label" for="contrib-custom-amount-input" style="font-weight: 700; color: var(--teal);">Custom Contribution Amount (₹) <span class="req">*</span></label>
+                <div style="position: relative; margin-top: 6px;">
+                  <span style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-weight: 700; font-size: 1.2rem; color: var(--teal);">₹</span>
+                  <input type="number" id="contrib-custom-amount-input" class="reg-input" placeholder="Enter amount (min ₹100)" min="100" step="1" style="padding-left: 36px; font-size: 1.15rem; font-weight: 700;">
+                </div>
+                <small style="color: var(--mute); font-size: 11px; display: block; margin-top: 6px;">Enter your desired contribution amount. Minimum ₹100. QR code updates automatically.</small>
+              </div>
+
               <div class="reg-grid">
                 <div class="reg-field reg-col-2">
                   <label class="reg-label" for="contrib-fullname">Full Name <span class="req">*</span></label>
@@ -1376,7 +1413,7 @@
 
             <!-- SECTION 2: UPI PAYMENT -->
             <div class="reg-form-section">
-              <h3 class="reg-section-title"><span class="step">2</span> UPI Payment Details</h3>
+              <h3 class="reg-section-title"><span class="step">2</span> UPI Payment & Screenshot</h3>
               
               <div class="reg-pay-card">
                 <div class="reg-qr-wrap">
@@ -1411,20 +1448,40 @@
                   </div>
 
                   <div class="reg-payment-notice">
-                    <strong>Contribution Instructions:</strong><br>
-                    1. Tap <strong>Pay via UPI</strong> or scan the QR code using Google Pay, PhonePe, Paytm, BHIM, etc.<br>
+                    <strong>How to complete your contribution:</strong><br>
+                    1. Tap <strong>Pay via UPI App</strong> or scan the QR code using Google Pay, PhonePe, Paytm, BHIM, etc.<br>
                     2. Complete your payment of <strong id="contrib-notice-amount">₹786</strong>.<br>
-                    3. Note the 12-digit <strong>UPI Reference / Transaction ID (UTR)</strong> from your payment receipt.<br>
-                    4. Enter the Transaction ID / UTR below and click submit.
+                    3. Take a screenshot showing your completed payment receipt.<br>
+                    4. Upload the screenshot below and complete your contribution.
                   </div>
                 </div>
               </div>
 
-              <!-- Transaction ID input -->
-              <div class="reg-field" style="margin-top: 14px;">
-                <label class="reg-label" for="contrib-txnid">UPI Transaction ID / UTR <span class="req">*</span></label>
-                <input type="text" id="contrib-txnid" class="reg-input" placeholder="e.g. 428190382910 or UPI Reference No." required maxlength="40" style="font-size: 1.05rem; padding: 13px;">
-                <small style="color: var(--mute); font-size: 11px;">Required for manual reconciliation by the HLF finance desk.</small>
+              <!-- Payment Transaction Screenshot Upload -->
+              <div class="reg-field" style="margin-top: 16px; margin-bottom: 14px;">
+                <label class="reg-label">Payment Transaction Screenshot <span class="req">*</span></label>
+                <p style="font-size: 11px; color: var(--mute); margin: 0 0 10px;">Upload a screenshot showing your completed UPI payment receipt.</p>
+                
+                <div class="reg-screenshot-zone" id="contrib-screenshot-zone">
+                  <input type="file" id="contrib-screenshot-file" accept="image/jpeg,image/png,image/webp" style="display: none;">
+                  <div id="contrib-screenshot-prompt">
+                    <div style="font-size: 32px; margin-bottom: 6px;">📸</div>
+                    <div style="font-size: 13px; font-weight: 600; color: var(--teal);">Click or drag & drop payment screenshot</div>
+                    <div style="font-size: 11px; color: var(--mute); margin-top: 4px;">Supports JPG, PNG, WEBP (Max 5 MB)</div>
+                  </div>
+                  
+                  <div id="contrib-screenshot-preview" style="display: none;" class="reg-screenshot-preview">
+                    <img id="contrib-screenshot-preview-img" src="" alt="Payment Screenshot" class="reg-screenshot-thumb">
+                    <div class="reg-screenshot-meta">
+                      <div id="contrib-screenshot-filename" class="name">—</div>
+                      <div id="contrib-screenshot-filesize" class="size">—</div>
+                      <div style="display: flex; gap: 8px; margin-top: 6px;">
+                        <button type="button" class="reg-btn-sm" id="contrib-screenshot-change-btn">Change</button>
+                        <button type="button" class="reg-btn-sm danger" id="contrib-screenshot-remove-btn">Remove</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -1433,47 +1490,81 @@
 
             <!-- Submit Button -->
             <button type="submit" id="contrib-submit-btn" class="btn p" style="width: 100%; justify-content: center; font-size: 1.05rem; padding: 16px;">
-              <span id="contrib-submit-btn-text">Complete Contribution ✦</span>
+              <span id="contrib-submit-btn-text">Submit Contribution ✦</span>
             </button>
           </form>
         </div>
 
-        <!-- STAGE 2: CONTRIBUTION SUCCESS VIEW -->
-        <div id="contrib-success-view" class="reg-success-view" style="display: none;">
-          <div class="reg-success-icon">💖</div>
-          <h2 class="reg-success-title">Contribution Submitted</h2>
-          <p class="reg-success-sub">May Allah reward you abundantly for your generous support to HLF 2026.</p>
-
-          <div class="reg-id-card">
-            <span class="id-label">OFFICIAL CONTRIBUTION ID</span>
-            <div class="id-number" id="contrib-success-id">HLFC-XXXX</div>
-            <div style="margin-top: 10px;">
-              <span class="reg-status-pill pending">Pending Verification</span>
+        <!-- STAGE 2: CONTRIBUTION ACKNOWLEDGEMENT VIEW -->
+        <div id="contrib-success-view" class="contrib-ack-view" style="display: none;">
+          <div class="contrib-ack-card">
+            <!-- Header with HLF Branding -->
+            <div class="contrib-ack-header">
+              <div class="contrib-ack-logo">
+                <span class="brand-text">HLF<span class="star">✦</span>2026</span>
+                <span class="sub-text">HADITH LITERATURE FESTIVAL</span>
+              </div>
+              <div class="contrib-ack-title-badge">CONTRIBUTION ACKNOWLEDGEMENT</div>
+              <div class="contrib-ack-venue">
+                18–20 OCTOBER 2026<br>
+                <span>Darul Huda Islamic University · Chemmad, Kerala</span>
+              </div>
             </div>
-            <div style="margin-top: 14px;">
-              <button type="button" class="reg-btn-sm" id="contrib-copy-id-btn">📋 Copy Contribution ID</button>
+
+            <div class="contrib-ack-divider"></div>
+
+            <!-- With Gratitude Section -->
+            <div class="contrib-ack-gratitude">
+              <span class="gratitude-tag">WITH GRATITUDE</span>
+              <h3 class="gratitude-name">Thank you, <span id="contrib-ack-name">—</span></h3>
+              <p class="gratitude-desc">Your generous contribution supports the Hadith Literature Festival 2026.</p>
+            </div>
+
+            <div class="contrib-ack-divider"></div>
+
+            <!-- Details Section -->
+            <div class="contrib-ack-details">
+              <span class="details-heading">CONTRIBUTION DETAILS</span>
+              
+              <div class="contrib-detail-row">
+                <span class="detail-label">Contribution Type</span>
+                <span class="detail-val" id="contrib-ack-type">—</span>
+              </div>
+              <div class="contrib-detail-row">
+                <span class="detail-label">Contribution Amount</span>
+                <span class="detail-val highlight" id="contrib-ack-amount">₹—</span>
+              </div>
+              <div class="contrib-detail-row">
+                <span class="detail-label">Payment Method</span>
+                <span class="detail-val">UPI</span>
+              </div>
+              <div class="contrib-detail-row">
+                <span class="detail-label">Payment Proof</span>
+                <span class="detail-val status-ok">Submitted ✓</span>
+              </div>
+              <div class="contrib-detail-row">
+                <span class="detail-label">Submitted On</span>
+                <span class="detail-val" id="contrib-ack-date">—</span>
+              </div>
+            </div>
+
+            <div class="contrib-ack-divider"></div>
+
+            <!-- Heartfelt Gratitude Note -->
+            <div class="contrib-ack-note">
+              <strong>WITH HEARTFELT GRATITUDE</strong>
+              <p>Your support helps us create meaningful spaces for learning, scholarship and academic conversation.</p>
+            </div>
+
+            <div class="contrib-ack-footer">
+              <p><strong>Department of Hadith and Related Sciences</strong><br>
+              Darul Huda Islamic University · Chemmad, Kerala</p>
+              <p class="contact-line">hadithliteraturefestival@gmail.com · +91 73065 54055</p>
             </div>
           </div>
 
-          <table class="reg-details-table">
-            <tr><td>Contributor Name:</td><td id="contrib-success-name">—</td></tr>
-            <tr><td>Mobile Number:</td><td id="contrib-success-mobile">—</td></tr>
-            <tr><td>Contribution Type:</td><td id="contrib-success-tier">—</td></tr>
-            <tr><td>Amount:</td><td id="contrib-success-amount"><strong>—</strong></td></tr>
-            <tr><td>Payment Status:</td><td><span class="reg-status-pill pending">PENDING (Manual Verification)</span></td></tr>
-            <tr><td>UPI Transaction ID / UTR:</td><td id="contrib-success-txnid" style="font-family: monospace;">—</td></tr>
-            <tr><td>Submission Date/Time:</td><td id="contrib-success-date">—</td></tr>
-          </table>
-
-          <div class="reg-instructions-box">
-            <strong>Important Acknowledgement:</strong><br>
-            • Please screenshot or save your Contribution ID.<br>
-            • All UPI transactions are manually reconciled and verified by the HLF administration team.<br>
-            • For receipts or inquiries, contact: hadithliteraturefestival@gmail.com | +91 73065 54055.
-          </div>
-
-          <div class="reg-success-actions">
-            <button type="button" class="btn p" id="contrib-print-btn">🖨️ Print / Download Receipt</button>
+          <div class="contrib-ack-actions">
+            <button type="button" class="btn p" id="contrib-print-btn">🖨️ Print / Save Acknowledgement</button>
             <button type="button" class="btn" id="contrib-close-btn">Done / Return to Site</button>
           </div>
         </div>
@@ -1486,7 +1577,6 @@
     document.getElementById('contrib-close-x').onclick = closeContributionModal;
     document.getElementById('contrib-close-btn').onclick = closeContributionModal;
     document.getElementById('contrib-print-btn').onclick = printContributionConfirmation;
-    document.getElementById('contrib-copy-id-btn').onclick = copyContributionId;
 
     // Close when clicking dialog backdrop
     dialog.addEventListener('click', (e) => {
@@ -1514,6 +1604,132 @@
 
     // Form submission
     document.getElementById('hlf-contrib-form').onsubmit = handleContributionSubmit;
+
+    // Screenshot upload setup
+    setupContributionScreenshotUpload();
+
+    // Live update on custom amount input
+    const customAmtInput = document.getElementById('contrib-custom-amount-input');
+    if (customAmtInput) {
+      customAmtInput.addEventListener('input', () => {
+        if (!activeContributionData || !activeContributionData.isCustom) return;
+        const raw = customAmtInput.value.trim();
+        const num = Number(raw);
+        if (raw && !isNaN(num) && num >= 100 && Number.isInteger(num)) {
+          activeContributionData.amount = num;
+          updateContributionUI(num, 'Custom Contribution', true);
+          const err = document.getElementById('contrib-error-banner');
+          if (err) { err.style.display = 'none'; err.textContent = ''; }
+        } else {
+          const amtBadge = document.getElementById('contrib-amount-badge');
+          if (amtBadge) amtBadge.textContent = raw ? `₹${raw}` : '₹—';
+        }
+      });
+    }
+  }
+
+  // Setup screenshot upload for contributions
+  function setupContributionScreenshotUpload() {
+    const zone = document.getElementById('contrib-screenshot-zone');
+    const fileInput = document.getElementById('contrib-screenshot-file');
+    const promptBox = document.getElementById('contrib-screenshot-prompt');
+    const previewBox = document.getElementById('contrib-screenshot-preview');
+    const previewImg = document.getElementById('contrib-screenshot-preview-img');
+    const filenameEl = document.getElementById('contrib-screenshot-filename');
+    const filesizeEl = document.getElementById('contrib-screenshot-filesize');
+    const changeBtn = document.getElementById('contrib-screenshot-change-btn');
+    const removeBtn = document.getElementById('contrib-screenshot-remove-btn');
+
+    if (!zone || !fileInput) return;
+
+    zone.onclick = (e) => {
+      if (e.target.closest('#contrib-screenshot-remove-btn') || e.target.closest('#contrib-screenshot-change-btn')) {
+        return;
+      }
+      fileInput.click();
+    };
+
+    if (changeBtn) {
+      changeBtn.onclick = (e) => {
+        e.stopPropagation();
+        fileInput.click();
+      };
+    }
+
+    if (removeBtn) {
+      removeBtn.onclick = (e) => {
+        e.stopPropagation();
+        resetContribScreenshot();
+      };
+    }
+
+    zone.ondragover = (e) => {
+      e.preventDefault();
+      zone.classList.add('dragover');
+    };
+    zone.ondragleave = () => {
+      zone.classList.remove('dragover');
+    };
+    zone.ondrop = (e) => {
+      e.preventDefault();
+      zone.classList.remove('dragover');
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        processContribFile(e.dataTransfer.files[0]);
+      }
+    };
+
+    fileInput.onchange = (e) => {
+      if (e.target.files && e.target.files[0]) {
+        processContribFile(e.target.files[0]);
+      }
+    };
+
+    function processContribFile(file) {
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+      if (!allowedTypes.includes(file.type.toLowerCase())) {
+        showContribError('Please upload a valid image file (JPG, PNG, or WEBP).');
+        resetContribScreenshot();
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        showContribError('Image file size exceeds 5 MB. Please select a smaller screenshot.');
+        resetContribScreenshot();
+        return;
+      }
+
+      const err = document.getElementById('contrib-error-banner');
+      if (err) { err.style.display = 'none'; err.textContent = ''; }
+
+      selectedContribScreenshotFile = file;
+
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        previewImg.src = ev.target.result;
+        filenameEl.textContent = file.name;
+        filesizeEl.textContent = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+        promptBox.style.display = 'none';
+        previewBox.style.display = 'flex';
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  function resetContribScreenshot() {
+    selectedContribScreenshotFile = null;
+    const fileInput = document.getElementById('contrib-screenshot-file');
+    const previewImg = document.getElementById('contrib-screenshot-preview-img');
+    const filenameEl = document.getElementById('contrib-screenshot-filename');
+    const filesizeEl = document.getElementById('contrib-screenshot-filesize');
+    const previewBox = document.getElementById('contrib-screenshot-preview');
+    const promptBox = document.getElementById('contrib-screenshot-prompt');
+
+    if (fileInput) fileInput.value = '';
+    if (previewImg) previewImg.src = '';
+    if (filenameEl) filenameEl.textContent = '—';
+    if (filesizeEl) filesizeEl.textContent = '—';
+    if (previewBox) previewBox.style.display = 'none';
+    if (promptBox) promptBox.style.display = 'block';
   }
 
   // 11. Connect all Contribution buttons
@@ -1526,13 +1742,40 @@
         btn.removeAttribute('onclick');
         btn.onclick = (e) => {
           e.preventDefault();
-          const match = origClick.match(/pay\(\s*(\d+)\s*,\s*['"]([^'"]+)['"]\s*\)/);
+          const match = origClick.match(/pay\(\s*['"]?([a-zA-Z0-9]+)['"]?\s*,\s*['"]([^'"]+)['"]\s*\)/);
           if (match) {
             openContributionModal(match[1], match[2]);
+          } else {
+            const numMatch = origClick.match(/pay\(\s*(\d+)/);
+            if (numMatch) openContributionModal(numMatch[1], 'Festival Contribution');
           }
         };
       }
     });
+  }
+
+  // Helper to update Contribution UI across modal
+  function updateContributionUI(amount, tierName, isCustom) {
+    const tierBadge = document.getElementById('contrib-tier-badge');
+    const amountBadge = document.getElementById('contrib-amount-badge');
+    const descBadge = document.getElementById('contrib-desc-badge');
+    const payAmount = document.getElementById('contrib-pay-amount');
+    const noticeAmount = document.getElementById('contrib-notice-amount');
+    const intentBtnText = document.getElementById('contrib-intent-btn-text');
+    const submitBtnText = document.getElementById('contrib-submit-btn-text');
+
+    const formatted = Number(amount).toLocaleString('en-IN');
+    const cleanTier = isCustom ? 'Custom' : (tierName || 'Festival Contribution');
+
+    if (tierBadge) tierBadge.textContent = isCustom ? 'CUSTOM' : cleanTier.toUpperCase();
+    if (amountBadge) amountBadge.textContent = `₹${formatted}`;
+    if (descBadge) descBadge.textContent = isCustom ? 'Custom Contribution' : cleanTier;
+    if (payAmount) payAmount.textContent = `₹${formatted}.00`;
+    if (noticeAmount) noticeAmount.textContent = `₹${formatted}`;
+    if (intentBtnText) intentBtnText.textContent = `Pay ₹${formatted} via UPI App`;
+    if (submitBtnText) submitBtnText.textContent = `Submit Contribution (₹${formatted}) ✦`;
+
+    renderContributionUpi(amount, cleanTier);
   }
 
   // 12. Open Contribution Modal
@@ -1544,25 +1787,39 @@
     const d = document.getElementById('contrib-dialog');
     if (!d) return;
 
-    const numAmount = Number(amount) || 199;
-    const cleanTier = tierName || 'Festival Contribution';
+    const isCustom = amount === 'custom' || (tierName && tierName.toLowerCase().includes('custom'));
+    const customWrap = document.getElementById('contrib-custom-amount-wrap');
+    const customInput = document.getElementById('contrib-custom-amount-input');
+
+    let currentAmount;
+    let currentTier;
+
+    if (isCustom) {
+      currentTier = 'Custom Contribution';
+      const existingVal = customInput ? Number(customInput.value) : 0;
+      currentAmount = existingVal >= 100 ? existingVal : 100;
+      if (customWrap) customWrap.style.display = 'block';
+      if (customInput) {
+        if (!customInput.value || Number(customInput.value) < 100) {
+          customInput.value = '100';
+        }
+        customInput.required = true;
+      }
+    } else {
+      currentTier = tierName || 'Festival Contribution';
+      currentAmount = Number(amount) || 199;
+      if (customWrap) customWrap.style.display = 'none';
+      if (customInput) customInput.required = false;
+    }
 
     activeContributionData = {
-      amount: numAmount,
-      tierName: cleanTier
+      amount: currentAmount,
+      tierName: currentTier,
+      isCustom: isCustom
     };
 
-    // Update UI elements with exact amount and tier
-    document.getElementById('contrib-tier-badge').textContent = cleanTier.toUpperCase();
-    document.getElementById('contrib-amount-badge').textContent = `₹${numAmount}`;
-    document.getElementById('contrib-desc-badge').textContent = cleanTier;
-    document.getElementById('contrib-pay-amount').textContent = `₹${numAmount}.00`;
-    document.getElementById('contrib-notice-amount').textContent = `₹${numAmount}`;
-    document.getElementById('contrib-intent-btn-text').textContent = `Pay ₹${numAmount} via UPI App`;
-    document.getElementById('contrib-submit-btn-text').textContent = `Complete Contribution (₹${numAmount}) ✦`;
-
-    // Render UPI intent & QR
-    renderContributionUpi(numAmount, cleanTier);
+    updateContributionUI(currentAmount, currentTier, isCustom);
+    resetContribScreenshot();
 
     // Reset views
     document.getElementById('contrib-form-view').style.display = 'block';
@@ -1577,6 +1834,10 @@
       d.showModal();
     } else {
       d.setAttribute('open', '');
+    }
+
+    if (isCustom && customInput) {
+      setTimeout(() => customInput.focus(), 80);
     }
   }
 
@@ -1630,7 +1891,7 @@
     }
   }
 
-  // 14. Handle Contribution Submit
+  // 14. Handle Contribution Submit (Payment Screenshot & Custom Amount)
   async function handleContributionSubmit(e) {
     e.preventDefault();
 
@@ -1640,15 +1901,11 @@
     const fullName = document.getElementById('contrib-fullname').value.trim();
     const mobile = document.getElementById('contrib-mobile').value.trim();
     const email = document.getElementById('contrib-email').value.trim();
-    const txnId = document.getElementById('contrib-txnid').value.trim();
 
-    if (!activeContributionData || !activeContributionData.amount) {
-      alert('Please select a contribution tier.');
+    if (!activeContributionData) {
+      showContribError('Please select a contribution tier.');
       return;
     }
-
-    const amount = activeContributionData.amount;
-    const tierName = activeContributionData.tierName;
 
     // Validation
     if (!fullName || fullName.length < 2) {
@@ -1665,16 +1922,32 @@
       return;
     }
 
-    if (!txnId || txnId.length < 4) {
-      showContribError('Please enter the UPI Transaction ID / UTR from your payment receipt.');
-      document.getElementById('contrib-txnid').focus();
+    // Validate Custom Contribution Amount if custom
+    let finalAmount = activeContributionData.amount;
+    if (activeContributionData.isCustom) {
+      const customInput = document.getElementById('contrib-custom-amount-input');
+      const rawVal = customInput ? customInput.value.trim() : '';
+      const numVal = Number(rawVal);
+
+      if (!rawVal || isNaN(numVal) || numVal < 100 || !Number.isInteger(numVal)) {
+        showContribError('Please enter a valid contribution amount (minimum ₹100).');
+        if (customInput) customInput.focus();
+        return;
+      }
+      finalAmount = numVal;
+      activeContributionData.amount = finalAmount;
+    }
+
+    // Validate Payment Screenshot File
+    if (!selectedContribScreenshotFile) {
+      showContribError('Please upload your payment transaction screenshot before submitting your contribution.');
       return;
     }
 
     const submitBtn = document.getElementById('contrib-submit-btn');
     const origBtnHtml = submitBtn.innerHTML;
     submitBtn.disabled = true;
-    submitBtn.innerHTML = '<span class="reg-spinner"></span> Submitting Contribution...';
+    submitBtn.innerHTML = '<span class="reg-spinner"></span> Uploading Proof & Submitting...';
 
     try {
       const sb = window.getSupabase ? window.getSupabase() : null;
@@ -1682,32 +1955,74 @@
         throw new Error('Supabase client could not be initialized. Please check network connection.');
       }
 
+      // Step 1: Allocate contribution ID using RPC
+      let contribId = null;
+      try {
+        const { data: allocData, error: allocErr } = await sb.rpc('allocate_contribution_id');
+        if (!allocErr && allocData && allocData.contribution_id) {
+          contribId = allocData.contribution_id;
+        }
+      } catch (allocEx) {
+        console.warn('RPC allocate_contribution_id error:', allocEx);
+      }
+
+      if (!contribId) {
+        contribId = 'HLFC-' + String(Math.floor(1000 + Math.random() * 9000));
+      }
+
+      // Step 2: Upload Screenshot to hlf-contribution-payment-proofs bucket (pure INSERT without upsert)
+      const fileExt = (selectedContribScreenshotFile.name.split('.').pop() || 'png').toLowerCase();
+      const fileTimestamp = Date.now();
+      const filePath = `contributions/${contribId}/payment-proof-${fileTimestamp}.${fileExt}`;
+
+      const { data: uploadData, error: uploadErr } = await sb.storage
+        .from('hlf-contribution-payment-proofs')
+        .upload(filePath, selectedContribScreenshotFile, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadErr) {
+        console.error('Contribution screenshot upload error:', uploadErr);
+        throw new Error('Payment screenshot upload failed: ' + uploadErr.message);
+      }
+
+      const { data: publicUrlData } = sb.storage.from('hlf-contribution-payment-proofs').getPublicUrl(filePath);
+      const screenshotUrl = publicUrlData ? publicUrlData.publicUrl : null;
+
+      // Step 3: Call submit_contribution RPC
+      const tierName = activeContributionData.isCustom ? 'Custom' : activeContributionData.tierName;
       const { data, error } = await sb.rpc('submit_contribution', {
         p_full_name: fullName,
         p_mobile: mobileClean,
-        p_amount: amount,
+        p_amount: Number(finalAmount),
         p_contribution_type: tierName,
-        p_transaction_id: txnId,
-        p_email: email || null
+        p_payment_screenshot_path: filePath,
+        p_payment_screenshot_url: screenshotUrl,
+        p_contribution_id: contribId,
+        p_email: email || null,
+        p_transaction_id: null
       });
 
       if (error) {
         console.error('Contribution RPC error:', error);
-        throw new Error(error.message || 'Contribution submission failed. Please try again.');
+        throw new Error('Contribution submission failed: ' + error.message);
       }
 
       if (!data || !data.success) {
         throw new Error('Unexpected response from contribution service.');
       }
 
+      // Record contribution data internally
       activeContributionData = {
-        contribution_id: data.contribution_id,
-        full_name: data.full_name,
-        amount: data.amount,
-        contribution_type: data.contribution_type,
+        contribution_id: data.contribution_id || contribId,
+        full_name: data.full_name || fullName,
+        amount: data.amount || finalAmount,
+        contribution_type: data.contribution_type || tierName,
         mobile: mobileClean,
-        transaction_id: data.transaction_id,
-        payment_status: 'pending',
+        payment_screenshot_path: filePath,
+        payment_screenshot_url: screenshotUrl,
+        payment_status: 'SUBMITTED',
         created_at: data.created_at || new Date().toISOString()
       };
 
@@ -1731,48 +2046,25 @@
     }
   }
 
-  // 15. Display Contribution Confirmation Screen
+  // 15. Display Redesigned Official HLF Acknowledgement Screen
   function displayContributionSuccessView(data) {
     document.getElementById('contrib-form-view').style.display = 'none';
     document.getElementById('contrib-success-view').style.display = 'block';
 
-    document.getElementById('contrib-success-id').textContent = data.contribution_id;
-    document.getElementById('contrib-success-name').textContent = data.full_name;
-    document.getElementById('contrib-success-mobile').textContent = data.mobile;
-    document.getElementById('contrib-success-tier').textContent = data.contribution_type;
-    document.getElementById('contrib-success-amount').textContent = `₹${data.amount}`;
-    document.getElementById('contrib-success-txnid').textContent = data.transaction_id;
-
-    const formattedDate = new Date(data.created_at || Date.now()).toLocaleString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-    document.getElementById('contrib-success-date').textContent = formattedDate;
+    document.getElementById('contrib-ack-name').textContent = data.full_name;
+    document.getElementById('contrib-ack-type').textContent = data.contribution_type;
+    document.getElementById('contrib-ack-amount').textContent = `₹${Number(data.amount).toLocaleString('en-IN')}`;
+    document.getElementById('contrib-ack-date').textContent = formatAcknowledgementDate(data.created_at);
 
     const inner = document.querySelector('#contrib-dialog .reg-dialog-inner');
     if (inner) inner.scrollTop = 0;
   }
 
-  async function copyContributionId() {
-    if (!activeContributionData || !activeContributionData.contribution_id) return;
-    try {
-      await navigator.clipboard.writeText(activeContributionData.contribution_id);
-      const btn = document.getElementById('contrib-copy-id-btn');
-      btn.textContent = 'Copied ✓';
-      setTimeout(() => { btn.textContent = '📋 Copy Contribution ID'; }, 2000);
-    } catch (err) {}
-  }
-
-  // 16. Printable Contribution Confirmation Receipt
+  // 16. Printable Contribution Confirmation Receipt (Polished Official Festival Acknowledgement)
   function printContributionConfirmation() {
     if (!activeContributionData) return;
     const d = activeContributionData;
-    const printDate = new Date(d.created_at || Date.now()).toLocaleString('en-IN', {
-      day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
-    });
+    const printDate = formatAcknowledgementDate(d.created_at);
 
     const printWindow = window.open('', '_blank', 'width=800,height=900');
     if (!printWindow) {
@@ -1782,138 +2074,209 @@
 
     printWindow.document.write(`
       <!DOCTYPE html>
-      <html>
+      <html lang="en">
       <head>
         <meta charset="utf-8">
-        <title>HLF 2026 Contribution Receipt - ${d.contribution_id}</title>
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&display=swap">
+        <title>HLF 2026 Contribution Acknowledgement - ${d.full_name}</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap">
         <style>
+          @page {
+            size: A4 portrait;
+            margin: 15mm;
+          }
+          * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
           body {
             font-family: 'Fira Code', monospace;
-            padding: 40px;
+            padding: 30px;
             color: #17332d;
             background: #fff;
-            max-width: 650px;
+            max-width: 680px;
             margin: auto;
           }
-          .ticket {
-            border: 2px dashed #12907a;
-            border-radius: 20px;
-            padding: 30px;
-            background: #fffef5;
+          .ack-ticket {
+            border: 2px solid #12907a;
+            border-radius: 16px;
+            padding: 36px;
+            background: #fffefb;
+            position: relative;
           }
-          .hdr {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+          .ack-header {
+            text-align: center;
             border-bottom: 2px solid #17332d;
-            padding-bottom: 16px;
-            margin-bottom: 20px;
+            padding-bottom: 20px;
+            margin-bottom: 24px;
           }
-          .logo {
-            font-size: 24px;
-            font-weight: 700;
+          .ack-logo-title {
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: #17332d;
           }
-          .logo span { color: #d0021b; }
-          .reg-badge {
+          .ack-logo-title span { color: #d0021b; }
+          .ack-logo-sub {
+            display: block;
+            font-size: 11px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: #4b625b;
+            margin-top: 4px;
+          }
+          .ack-badge {
+            display: inline-block;
             background: #12907a;
             color: #fff;
-            padding: 6px 12px;
+            padding: 6px 18px;
             border-radius: 99px;
             font-size: 11px;
             font-weight: 700;
+            letter-spacing: 1px;
+            margin: 14px 0 8px;
           }
-          .reg-id-box {
-            background: #e6f6f2;
-            padding: 16px;
-            border-radius: 12px;
-            text-align: center;
-            margin: 20px 0;
-            border: 1px solid rgba(18,144,122,0.25);
-          }
-          .reg-id-val {
-            font-size: 32px;
-            font-weight: 700;
-            color: #12907a;
-            letter-spacing: 2px;
-          }
-          table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-          }
-          td {
-            padding: 10px 4px;
-            border-bottom: 1px solid rgba(23,51,45,0.12);
-            font-size: 14px;
-          }
-          td.label {
-            color: #4b625b;
-            width: 40%;
-          }
-          .notice {
-            background: rgba(18,144,122,0.1);
-            border-left: 4px solid #12907a;
-            padding: 12px;
+          .ack-dates {
             font-size: 12px;
+            color: #4b625b;
+            line-height: 1.4;
+          }
+          .ack-section {
+            margin: 22px 0;
+            padding: 16px 0;
+            border-bottom: 1px solid rgba(23, 51, 45, 0.12);
+          }
+          .ack-tag {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: #12907a;
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: 6px;
+          }
+          .ack-name {
+            font-size: 20px;
+            font-weight: 700;
             color: #17332d;
-            margin-top: 20px;
+            margin: 0 0 6px;
+          }
+          .ack-desc {
+            font-size: 13px;
+            color: #4b625b;
+            margin: 0;
             line-height: 1.5;
           }
-          .ftr {
+          .ack-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+          }
+          .ack-table td {
+            padding: 10px 4px;
+            border-bottom: 1px dashed rgba(23, 51, 45, 0.15);
+            font-size: 13px;
+          }
+          .ack-table td.lbl {
+            color: #4b625b;
+            width: 44%;
+          }
+          .ack-table td.val {
+            font-weight: 600;
+            color: #17332d;
+          }
+          .ack-table td.val.amount {
+            color: #12907a;
+            font-size: 18px;
+            font-weight: 800;
+          }
+          .ack-table td.val.status {
+            color: #12907a;
+          }
+          .ack-gratitude-box {
+            background: rgba(18, 144, 122, 0.08);
+            border-left: 4px solid #12907a;
+            padding: 14px 18px;
+            border-radius: 6px;
+            margin: 20px 0;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #17332d;
+          }
+          .ack-footer {
             text-align: center;
-            margin-top: 30px;
             font-size: 11px;
             color: #4b625b;
+            margin-top: 24px;
+            line-height: 1.6;
+          }
+          .ack-footer strong {
+            color: #17332d;
           }
           @media print {
             body { padding: 0; background: none; }
-            .no-print { display: none; }
+            .no-print { display: none !important; }
+            .ack-ticket { border-color: #17332d; }
           }
         </style>
       </head>
       <body>
-        <div class="ticket">
-          <div class="hdr">
-            <div>
-              <div class="logo">HLF<span>✦</span>2026</div>
-              <small>Hadith Literature Festival</small>
+        <div class="ack-ticket">
+          <div class="ack-header">
+            <div class="ack-logo-title">HLF<span>✦</span>2026</div>
+            <span class="ack-logo-sub">Hadith Literature Festival</span>
+            <div><span class="ack-badge">CONTRIBUTION ACKNOWLEDGEMENT</span></div>
+            <div class="ack-dates">
+              <strong>18–20 OCTOBER 2026</strong><br>
+              Darul Huda Islamic University · Chemmad, Kerala
             </div>
-            <div class="reg-badge">CONTRIBUTION ACKNOWLEDGEMENT</div>
           </div>
 
-          <p style="margin: 0; color: #4b625b; font-size: 12px;">18–20 October 2026 · Darul Huda Islamic University, Chemmad, Kerala</p>
-
-          <div class="reg-id-box">
-            <small style="text-transform: uppercase; letter-spacing: 1px; color: #4b625b;">Official Contribution ID</small>
-            <div class="reg-id-val">${d.contribution_id}</div>
-            <small style="color: #c07a00; font-weight: 700;">PAYMENT STATUS: PENDING VERIFICATION</small>
+          <div class="ack-section">
+            <span class="ack-tag">WITH GRATITUDE</span>
+            <h2 class="ack-name">Thank you, ${d.full_name}</h2>
+            <p class="ack-desc">Your generous contribution supports the Hadith Literature Festival 2026.</p>
           </div>
 
-          <table>
-            <tr><td class="label">Contributor Name:</td><td><strong>${d.full_name}</strong></td></tr>
-            <tr><td class="label">Contribution Type:</td><td>${d.contribution_type}</td></tr>
-            <tr><td class="label">Mobile Number:</td><td>${d.mobile}</td></tr>
-            <tr><td class="label">Contribution Amount:</td><td><strong style="color: #12907a; font-size: 16px;">₹${d.amount}</strong></td></tr>
-            <tr><td class="label">UPI Reference / UTR:</td><td><code>${d.transaction_id || 'Pending'}</code></td></tr>
-            <tr><td class="label">Submission Date & Time:</td><td>${printDate}</td></tr>
+          <table class="ack-table">
+            <tr>
+              <td class="lbl">Contribution Type:</td>
+              <td class="val">${d.contribution_type}</td>
+            </tr>
+            <tr>
+              <td class="lbl">Contribution Amount:</td>
+              <td class="val amount">₹${Number(d.amount).toLocaleString('en-IN')}</td>
+            </tr>
+            <tr>
+              <td class="lbl">Payment Method:</td>
+              <td class="val">UPI</td>
+            </tr>
+            <tr>
+              <td class="lbl">Payment Proof:</td>
+              <td class="val status">Submitted ✓</td>
+            </tr>
+            <tr>
+              <td class="lbl">Submitted On:</td>
+              <td class="val">${printDate}</td>
+            </tr>
           </table>
 
-          <div class="notice">
-            <strong>Heartfelt Gratitude:</strong><br>
-            • Thank you for supporting the Hadith Literature Festival 2026.<br>
-            • Your contribution directly powers students, scholarship and academic sessions at DHIU Chemmad.<br>
-            • Payment reconciliation will be confirmed by the HLF administration team.<br>
-            • For inquiries, contact: hadithliteraturefestival@gmail.com | +91 73065 54055
+          <div class="ack-gratitude-box">
+            <strong style="color: #12907a; letter-spacing: 1px; display: block; margin-bottom: 4px;">WITH HEARTFELT GRATITUDE</strong>
+            Your support helps us create meaningful spaces for learning, scholarship and academic conversation at Darul Huda Islamic University.
           </div>
 
-          <div class="ftr">
-            Department of Hadith and Related Sciences · Darul Huda Islamic University<br>
-            HLF 2026 — Knowledge ✦ Culture ✦ Conversation
+          <div class="ack-footer">
+            <strong>Department of Hadith and Related Sciences</strong><br>
+            Darul Huda Islamic University · Chemmad, Kerala<br>
+            hadithliteraturefestival@gmail.com · +91 73065 54055
           </div>
         </div>
-        <div style="text-align: center; margin-top: 20px;" class="no-print">
-          <button onclick="window.print()" style="padding: 10px 20px; font-weight: bold; cursor: pointer; border-radius: 99px; background: #12907a; color: #fff; border: 0;">Print / Save Receipt</button>
+
+        <div style="text-align: center; margin-top: 24px;" class="no-print">
+          <button onclick="window.print()" style="padding: 12px 28px; font-weight: bold; font-family: 'Fira Code', monospace; cursor: pointer; border-radius: 99px; background: #12907a; color: #fff; border: 0; font-size: 14px; box-shadow: 0 4px 12px rgba(18,144,122,0.3);">🖨️ Print / Save as PDF</button>
         </div>
       </body>
       </html>
