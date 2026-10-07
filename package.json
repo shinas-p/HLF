@@ -1,0 +1,19 @@
+{
+  "name": "hlf-website-2026",
+  "version": "1.0.0",
+  "description": "Hadith Literature Festival 2026 — Official Website & Delegate Registration System",
+  "main": "serve.js",
+  "scripts": {
+    "start": "node serve.js",
+    "serve": "node serve.js"
+  },
+  "keywords": [
+    "hlf",
+    "hadith",
+    "literature-festival",
+    "dhiu",
+    "chemmad"
+  ],
+  "author": "Department of Hadith and Related Sciences, DHIU",
+  "license": "ISC"
+}

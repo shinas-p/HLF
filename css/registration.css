@@ -1,0 +1,850 @@
+/* HLF 2026 — Registration System Styles */
+
+.reg-dialog {
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: var(--bg);
+  color: var(--ink);
+  padding: 0;
+  width: min(720px, 100% - 24px);
+  max-height: 90vh;
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  overflow: hidden !important;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.reg-dialog::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.reg-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.reg-dialog-inner {
+  padding: clamp(20px, 4vw, 36px);
+  max-height: 90vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  background: transparent;
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(18, 144, 122, 0.45) transparent;
+}
+
+/* WebKit / Chromium custom scrollbar */
+.reg-dialog-inner::-webkit-scrollbar {
+  width: 6px;
+  background: transparent;
+}
+
+.reg-dialog-inner::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 99px;
+  margin: 16px 0;
+}
+
+.reg-dialog-inner::-webkit-scrollbar-thumb {
+  background: rgba(18, 144, 122, 0.35);
+  border-radius: 99px;
+}
+
+.reg-dialog-inner::-webkit-scrollbar-thumb:hover {
+  background: var(--teal);
+}
+
+.reg-dialog-header {
+  position: relative;
+  margin-bottom: 24px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.reg-close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 20px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  transition: 0.2s;
+  cursor: pointer;
+  z-index: 25;
+}
+
+.reg-close-btn:hover {
+  transform: scale(1.1);
+  background: var(--red);
+  color: #fff;
+  border-color: var(--red);
+}
+
+.reg-title {
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+  font-weight: 700;
+  line-height: 1.1;
+  margin: 8px 0 6px;
+  letter-spacing: -0.04em;
+}
+
+.reg-subtitle {
+  color: var(--mute);
+  font-size: 13px;
+  margin: 0;
+}
+
+/* Fee Banner */
+.reg-fee-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, rgba(208, 2, 27, 0.12), rgba(192, 122, 0, 0.15));
+  border: 1px solid var(--amb);
+  border-radius: 14px;
+  padding: 8px 16px;
+  margin-top: 14px;
+}
+
+.reg-fee-badge .fee-label {
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--mute);
+}
+
+.reg-fee-badge .fee-val {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--red);
+}
+
+.reg-fee-badge .fee-desc {
+  font-size: 12px;
+  color: var(--ink);
+}
+
+/* Step Progress Tracker */
+.reg-step-tracker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 18px 0 24px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  gap: 8px;
+}
+
+.reg-step-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mute);
+  transition: 0.25s;
+}
+
+.reg-step-pill .step-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--mute);
+}
+
+.reg-step-pill.active {
+  color: var(--ink);
+}
+
+.reg-step-pill.active .step-dot {
+  background: var(--teal);
+  color: #fff;
+  border-color: var(--teal);
+  box-shadow: 0 0 10px rgba(18, 144, 122, 0.4);
+}
+
+.reg-step-pill.completed {
+  color: var(--teal);
+}
+
+.reg-step-pill.completed .step-dot {
+  background: rgba(18, 144, 122, 0.15);
+  color: var(--teal);
+  border-color: var(--teal);
+}
+
+.reg-step-arrow {
+  color: var(--mute);
+  font-size: 12px;
+  opacity: 0.5;
+}
+
+/* Allocated Reg ID Box in Step 2 */
+.reg-allocated-box {
+  background: linear-gradient(135deg, rgba(18, 144, 122, 0.1), rgba(192, 122, 0, 0.12));
+  border: 2px dashed var(--teal);
+  border-radius: 16px;
+  padding: 16px 20px;
+  margin-bottom: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.reg-allocated-box .alloc-left {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.reg-allocated-box .alloc-label {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--mute);
+}
+
+.reg-allocated-box .alloc-id {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--red);
+  font-family: 'Fira Code', monospace;
+  letter-spacing: 0.05em;
+}
+
+.reg-nav-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  align-items: center;
+}
+
+.reg-nav-actions .btn {
+  flex: 1;
+  justify-content: center;
+}
+
+/* Form Layout */
+.reg-form-section {
+  margin-bottom: 28px;
+}
+
+.reg-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mute);
+  margin: 0 0 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed var(--line);
+}
+
+.reg-section-title span.step {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--teal);
+  color: #fff;
+  font-size: 11px;
+}
+
+.reg-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.reg-col-2 {
+  grid-column: span 2;
+}
+
+.reg-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.reg-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink);
+  letter-spacing: 0.05em;
+}
+
+.reg-label .req {
+  color: var(--red);
+  margin-left: 3px;
+}
+
+.reg-label .opt {
+  color: var(--mute);
+  font-size: 10px;
+  font-weight: 400;
+  margin-left: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.reg-input,
+.reg-textarea,
+.reg-select {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  font: 400 14px 'Fira Code', monospace;
+  outline: none;
+  transition: 0.25s;
+}
+
+.reg-input:focus,
+.reg-textarea:focus,
+.reg-select:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(18, 144, 122, 0.2);
+  background: var(--bg);
+}
+
+.reg-input::placeholder,
+.reg-textarea::placeholder {
+  color: var(--mute);
+  opacity: 0.65;
+}
+
+/* Radio Pill Group */
+.reg-pill-group {
+  display: flex;
+  gap: 8px;
+}
+
+.reg-pill-group label {
+  flex: 1;
+  text-align: center;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  cursor: pointer;
+  font-size: 13px;
+  transition: 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.reg-pill-group input[type="radio"] {
+  accent-color: var(--teal);
+  margin: 0;
+}
+
+.reg-pill-group label:has(input:checked) {
+  border-color: var(--teal);
+  background: rgba(18, 144, 122, 0.12);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+/* Payment Section Card */
+.reg-pay-card {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--card);
+  padding: 20px;
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.reg-qr-wrap {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.reg-qr-box {
+  background: #ffffff;
+  padding: 10px;
+  border-radius: 14px;
+  display: inline-block;
+  line-height: 0;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--line);
+}
+
+.reg-qr-box img {
+  width: 140px;
+  height: 140px;
+  object-fit: contain;
+  display: block;
+}
+
+.reg-pay-info {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reg-pay-info .upi-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.reg-pay-info .upi-label {
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  color: var(--mute);
+  text-transform: uppercase;
+}
+
+.reg-pay-info .upi-val {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  word-break: break-all;
+}
+
+.reg-pay-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.reg-btn-sm {
+  padding: 8px 14px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  cursor: pointer;
+  transition: 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+}
+
+.reg-btn-sm:hover {
+  transform: translateY(-2px);
+  border-color: var(--teal);
+}
+
+.reg-btn-sm.primary {
+  background: linear-gradient(120deg, var(--red), var(--amb));
+  color: #fff;
+  border: 0;
+}
+
+.reg-payment-notice {
+  font-size: 12px;
+  color: var(--mute);
+  line-height: 1.5;
+  background: rgba(192, 122, 0, 0.08);
+  border-left: 3px solid var(--amb);
+  padding: 10px 14px;
+  border-radius: 0 10px 10px 0;
+  margin-top: 10px;
+}
+
+.reg-payment-notice strong {
+  color: var(--amb);
+}
+
+/* Consent Box */
+.reg-consent-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px dashed var(--line);
+  background: var(--card);
+  margin-bottom: 20px;
+  cursor: pointer;
+}
+
+.reg-consent-box input[type="checkbox"] {
+  margin-top: 3px;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--teal);
+  cursor: pointer;
+}
+
+.reg-consent-box span {
+  font-size: 13px;
+  color: var(--ink);
+  line-height: 1.4;
+}
+
+/* Error message */
+.reg-error-msg {
+  display: none;
+  background: rgba(208, 2, 27, 0.12);
+  border: 1px solid var(--red);
+  color: var(--red);
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+/* Success View */
+.reg-success-view {
+  display: none;
+  text-align: center;
+  padding: 10px 0;
+}
+
+.reg-success-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  animation: bounceIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes bounceIn {
+  0% { transform: scale(0.3); opacity: 0; }
+  60% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+.reg-success-title {
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
+  font-weight: 700;
+  margin: 0 0 8px;
+  color: var(--teal);
+}
+
+.reg-success-sub {
+  color: var(--mute);
+  font-size: 14px;
+  margin: 0 0 24px;
+}
+
+.reg-id-card {
+  background: linear-gradient(135deg, rgba(18, 144, 122, 0.12), rgba(47, 93, 147, 0.12));
+  border: 2px dashed var(--teal);
+  border-radius: 20px;
+  padding: 22px;
+  margin: 0 auto 24px;
+  max-width: 480px;
+  text-align: center;
+}
+
+.reg-id-card .id-label {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--mute);
+}
+
+.reg-id-card .id-number {
+  font-size: clamp(2rem, 5vw, 2.8rem);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--red);
+  margin: 8px 0;
+  font-family: 'Fira Code', monospace;
+}
+
+.reg-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.reg-status-pill.pending {
+  background: rgba(192, 122, 0, 0.15);
+  color: var(--amb);
+  border: 1px solid var(--amb);
+}
+
+.reg-details-table {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto 24px;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13px;
+}
+
+.reg-details-table tr {
+  border-bottom: 1px solid var(--line);
+}
+
+.reg-details-table td {
+  padding: 10px 8px;
+}
+
+.reg-details-table td:first-child {
+  color: var(--mute);
+  width: 40%;
+}
+
+.reg-details-table td:last-child {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.reg-instructions-box {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px 20px;
+  text-align: left;
+  font-size: 13px;
+  color: var(--mute);
+  max-width: 480px;
+  margin: 0 auto 24px;
+  line-height: 1.6;
+}
+
+.reg-instructions-box strong {
+  color: var(--ink);
+}
+
+.reg-success-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Spinner */
+.reg-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 600px) {
+  .reg-grid {
+    grid-template-columns: 1fr;
+  }
+  .reg-col-2 {
+    grid-column: span 1;
+  }
+  .reg-pay-card {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+  .reg-pay-info {
+    align-items: center;
+  }
+  .reg-pay-actions {
+    justify-content: center;
+  }
+}
+
+/* Searchable Dropdown Combobox */
+.reg-combobox {
+  position: relative;
+  width: 100%;
+}
+
+.reg-combobox-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.reg-combobox-input-wrap input {
+  padding-right: 38px;
+  cursor: text;
+}
+
+.reg-combobox-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--mute);
+  cursor: pointer;
+  padding: 4px;
+  font-size: 14px;
+  line-height: 1;
+  transition: transform 0.2s, color 0.2s;
+}
+
+.reg-combobox.open .reg-combobox-toggle {
+  transform: translateY(-50%) rotate(180deg);
+  color: var(--teal);
+}
+
+.reg-combobox-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 250px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  overflow-y: auto;
+  z-index: 100;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(18, 144, 122, 0.45) transparent;
+}
+
+.reg-combobox-dropdown::-webkit-scrollbar {
+  width: 5px;
+}
+.reg-combobox-dropdown::-webkit-scrollbar-thumb {
+  background: rgba(18, 144, 122, 0.35);
+  border-radius: 99px;
+}
+
+.reg-combobox-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+}
+
+.reg-combobox-item {
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--ink);
+  transition: background 0.15s, color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  line-height: 1.4;
+}
+
+.reg-combobox-item:hover,
+.reg-combobox-item.active {
+  background: rgba(18, 144, 122, 0.15);
+  color: var(--teal);
+}
+
+.reg-combobox-item.selected {
+  background: rgba(18, 144, 122, 0.25);
+  color: var(--teal);
+  font-weight: 600;
+}
+
+.reg-combobox-empty {
+  padding: 14px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--mute);
+}
+
+/* Payment Screenshot Upload */
+.reg-screenshot-zone {
+  border: 2px dashed var(--line);
+  border-radius: 16px;
+  padding: 22px 18px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.02);
+  transition: border-color 0.25s, background 0.25s;
+  cursor: pointer;
+  position: relative;
+}
+
+.reg-screenshot-zone:hover,
+.reg-screenshot-zone.dragover {
+  border-color: var(--teal);
+  background: rgba(18, 144, 122, 0.06);
+}
+
+.reg-screenshot-preview {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  margin-top: 12px;
+  text-align: left;
+}
+
+.reg-screenshot-thumb {
+  width: 68px;
+  height: 68px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #000;
+  flex-shrink: 0;
+}
+
+.reg-screenshot-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.reg-screenshot-meta .name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  word-break: break-all;
+}
+
+.reg-screenshot-meta .size {
+  font-size: 11px;
+  color: var(--mute);
+  margin-top: 2px;
+}
+

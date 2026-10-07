@@ -1,0 +1,1570 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <link rel="icon" type="image/png" href="../assets/images/logo/favicon.png">
+  <link rel="apple-touch-icon" href="../assets/images/logo/favicon.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>HLF 2026 — Admin Portal</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&display=swap">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase-config.js"></script>
+  <script src="../js/site-images.js"></script>
+  <style>
+    :root {
+      --bg: #fbf7d6;
+      --bg2: #f0eeb6;
+      --ink: #17332d;
+      --mute: #4b625b;
+      --card: rgba(255, 255, 255, 0.7);
+      --card-solid: #ffffff;
+      --line: rgba(23, 51, 45, 0.18);
+      --red: #d0021b;
+      --amb: #c07a00;
+      --teal: #12907a;
+      --yel: #d9c42a;
+      --blue: #2f5d93;
+      --grn: #5fa83a;
+      --on: #fff;
+      box-sizing: border-box;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #06130f;
+        --bg2: #0b211b;
+        --ink: #f6f3d4;
+        --mute: #a9bdb4;
+        --card: rgba(255, 255, 255, 0.06);
+        --card-solid: #0d2620;
+        --line: rgba(246, 243, 212, 0.15);
+        --red: #ff4258;
+        --amb: #f2a62c;
+        --teal: #2fd1b3;
+        --yel: #f0dd3c;
+        --blue: #5b94d6;
+        --grn: #8bd45a;
+        --on: #06130f;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #06130f;
+      --bg2: #0b211b;
+      --ink: #f6f3d4;
+      --mute: #a9bdb4;
+      --card: rgba(255, 255, 255, 0.06);
+      --card-solid: #0d2620;
+      --line: rgba(246, 243, 212, 0.15);
+      --red: #ff4258;
+      --amb: #f2a62c;
+      --teal: #2fd1b3;
+      --yel: #f0dd3c;
+      --blue: #5b94d6;
+      --grn: #8bd45a;
+      --on: #06130f;
+    }
+    *, *:before, *:after { box-sizing: inherit; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 400 14px/1.6 'Fira Code', monospace;
+      min-height: 100vh;
+      display: flex;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; cursor: pointer; color: inherit; }
+    
+    /* Layout */
+    .admin-layout {
+      display: flex;
+      width: 100%;
+      min-height: 100vh;
+    }
+    .sidebar {
+      width: 260px;
+      background: var(--card);
+      border-right: 1px solid var(--line);
+      backdrop-filter: blur(14px);
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      z-index: 20;
+      transition: 0.3s;
+    }
+    .main-content {
+      flex: 1;
+      padding: clamp(20px, 3vw, 36px);
+      overflow-y: auto;
+      min-height: 100vh;
+    }
+
+    /* Brand Header */
+    .sidebar-header {
+      padding: 24px 20px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .sidebar-brand {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+    .sidebar-brand span { color: var(--red); }
+    .sidebar-tag {
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--mute);
+    }
+
+    /* Nav Links */
+    .nav-list {
+      list-style: none;
+      padding: 16px 12px;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .nav-item button {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      background: none;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--mute);
+      text-align: left;
+      transition: 0.2s;
+    }
+    .nav-item button:hover {
+      background: var(--card);
+      color: var(--ink);
+      border-color: var(--line);
+    }
+    .nav-item.active button {
+      background: linear-gradient(120deg, var(--red), var(--amb));
+      color: #fff;
+      font-weight: 700;
+      border-color: transparent;
+      box-shadow: 0 4px 15px -4px var(--red);
+    }
+    .nav-footer {
+      margin-top: auto;
+      padding: 16px;
+      border-top: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* Top Bar */
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 28px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+    .topbar-title {
+      font-size: clamp(1.6rem, 3vw, 2.2rem);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      margin: 0;
+    }
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: 99px;
+      font-size: 13px;
+      font-weight: 700;
+      border: 1px solid var(--line);
+      background: var(--card);
+      transition: 0.25s;
+    }
+    .btn:hover { transform: translateY(-2px); border-color: var(--teal); }
+    .btn.primary {
+      background: linear-gradient(120deg, var(--red), var(--amb));
+      color: #fff;
+      border: 0;
+      box-shadow: 0 8px 25px -8px var(--red);
+    }
+    .btn.secondary {
+      background: var(--teal);
+      color: #fff;
+      border: 0;
+    }
+    .btn.danger {
+      background: rgba(208, 2, 27, 0.15);
+      color: var(--red);
+      border-color: var(--red);
+    }
+    .btn.danger:hover {
+      background: var(--red);
+      color: #fff;
+    }
+    .btn:disabled { opacity: 0.5; pointer-events: none; }
+
+    /* Dashboard Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .stat-card {
+      padding: 22px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: var(--card);
+      backdrop-filter: blur(10px);
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card .label {
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--mute);
+    }
+    .stat-card .value {
+      font-size: clamp(2rem, 3.5vw, 2.6rem);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      margin: 8px 0 4px;
+      line-height: 1;
+    }
+    .stat-card .sub { font-size: 12px; color: var(--mute); }
+
+    /* Glass Panels */
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: var(--card);
+      backdrop-filter: blur(14px);
+      padding: 24px;
+      margin-bottom: 28px;
+    }
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--line);
+    }
+    .panel-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    /* Filters Bar */
+    .filters-bar {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .search-input {
+      flex: 1;
+      min-width: 240px;
+      padding: 10px 16px;
+      border-radius: 99px;
+      border: 1px solid var(--line);
+      background: var(--card);
+      color: var(--ink);
+      font: inherit;
+      outline: none;
+    }
+    .search-input:focus { border-color: var(--teal); }
+    .filter-select {
+      padding: 10px 16px;
+      border-radius: 99px;
+      border: 1px solid var(--line);
+      background: var(--card);
+      color: var(--ink);
+      font: inherit;
+      outline: none;
+    }
+
+    /* Responsive Data Table */
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: var(--card);
+    }
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13px;
+      min-width: 800px;
+    }
+    table.data-table th {
+      padding: 14px 16px;
+      background: rgba(0, 0, 0, 0.04);
+      color: var(--mute);
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--line);
+    }
+    table.data-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: middle;
+    }
+    table.data-table tr:hover td {
+      background: rgba(18, 144, 122, 0.05);
+    }
+    
+    /* Status Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .badge.pending { background: rgba(192, 122, 0, 0.15); color: var(--amb); border: 1px solid var(--amb); }
+    .badge.verified { background: rgba(95, 168, 58, 0.15); color: var(--grn); border: 1px solid var(--grn); }
+    .badge.rejected { background: rgba(208, 2, 27, 0.15); color: var(--red); border: 1px solid var(--red); }
+    .badge.submitted { background: rgba(47, 93, 147, 0.15); color: var(--blue); border: 1px solid var(--blue); }
+    .badge.confirmed { background: rgba(18, 144, 122, 0.15); color: var(--teal); border: 1px solid var(--teal); }
+    .badge.cancelled { background: rgba(100, 100, 100, 0.15); color: var(--mute); border: 1px solid var(--line); }
+
+    /* Modals */
+    dialog.admin-modal {
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: var(--bg);
+      color: var(--ink);
+      padding: 28px;
+      width: min(640px, 100% - 24px);
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.7);
+    }
+    dialog.admin-modal::backdrop {
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(6px);
+    }
+    .modal-hdr {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+    .modal-hdr h3 { margin: 0; font-size: 1.4rem; }
+    .modal-close {
+      background: none;
+      border: 0;
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    /* Form Fields in Admin */
+    .form-group {
+      margin-bottom: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .form-group label {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      color: var(--mute);
+    }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--card);
+      color: var(--ink);
+      font: inherit;
+      outline: none;
+    }
+    .form-group input:focus,
+    .form-group textarea:focus {
+      border-color: var(--teal);
+    }
+
+    /* Auth Overlay */
+    #auth-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: var(--bg);
+      display: grid;
+      place-items: center;
+      padding: 20px;
+    }
+    .auth-card {
+      width: min(440px, 100%);
+      padding: 36px 30px;
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      background: var(--card);
+      box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.5);
+      text-align: center;
+    }
+    .auth-card h2 { margin: 12px 0 6px; font-size: 2rem; }
+    .auth-card p { color: var(--mute); font-size: 13px; margin: 0 0 24px; }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--ink);
+      color: var(--bg);
+      padding: 12px 20px;
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      z-index: 200;
+      font-size: 13px;
+      font-weight: 500;
+      display: none;
+      animation: slideUp 0.3s ease;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    @media (max-width: 900px) {
+      .admin-layout { flex-direction: column; }
+      .sidebar { width: 100%; height: auto; position: relative; }
+      .nav-list { flex-direction: row; flex-wrap: wrap; }
+      .nav-item button { padding: 8px 12px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- AUTH SCREEN (Shown if not logged in or unauthorized) -->
+  <div id="auth-screen">
+    <div class="auth-card">
+      <div style="font-size: 36px;">✦</div>
+      <h2>HLF 2026 Admin</h2>
+      <p>Hadith Literature Festival Management System</p>
+
+      <!-- Standard Login Form -->
+      <form id="admin-login-form">
+        <div class="form-group" style="text-align: left;">
+          <label for="admin-email">Email Address</label>
+          <input type="email" id="admin-email" placeholder="admin@dhiu.in" required autocomplete="email">
+        </div>
+        <div class="form-group" style="text-align: left;">
+          <label for="admin-pass">Password</label>
+          <input type="password" id="admin-pass" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+        <div id="auth-error" style="color: var(--red); font-size: 12px; margin-bottom: 14px; display: none;"></div>
+        <button type="submit" id="login-btn" class="btn primary" style="width: 100%; justify-content: center; padding: 14px;">
+          Sign In to Admin Portal
+        </button>
+      </form>
+
+      <!-- First-Time Admin Setup Helper (Claims super_admin if admin_users is empty) -->
+      <div id="first-admin-setup-box" style="display: none; margin-top: 24px; padding-top: 20px; border-top: 1px dashed var(--line); text-align: left;">
+        <span class="badge pending" style="margin-bottom: 8px;">Initial Setup</span>
+        <h4 style="margin: 4px 0 8px;">Claim First Admin Account</h4>
+        <p style="font-size: 12px; margin-bottom: 14px; color: var(--mute);">
+          No administrators are currently registered. Create your first super administrator account below:
+        </p>
+        <form id="claim-admin-form">
+          <div class="form-group">
+            <label for="setup-email">Admin Email</label>
+            <input type="email" id="setup-email" placeholder="organizer@dhiu.in" required>
+          </div>
+          <div class="form-group">
+            <label for="setup-pass">Password (min 6 characters)</label>
+            <input type="password" id="setup-pass" placeholder="Create secure password" required minlength="6">
+          </div>
+          <button type="submit" class="btn secondary" style="width: 100%; justify-content: center;">
+            Register & Claim Admin Access
+          </button>
+        </form>
+      </div>
+
+      <div style="margin-top: 24px; font-size: 12px; color: var(--mute);">
+        <a href="../index.html" style="text-decoration: underline;">← Return to Main Website</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN ADMIN APPLICATION -->
+  <div class="admin-layout" id="admin-app" style="display: none;">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div>
+          <div class="sidebar-brand">HLF<span>✦</span>2026</div>
+          <div class="sidebar-tag">Admin Console</div>
+        </div>
+      </div>
+
+      <ul class="nav-list">
+        <li class="nav-item active"><button data-tab="dashboard"><span>📊</span> Dashboard</button></li>
+        <li class="nav-item"><button data-tab="registrations"><span>📝</span> Registrations</button></li>
+        <li class="nav-item"><button data-tab="contributions"><span>💰</span> Contributions</button></li>
+        <li class="nav-item"><button data-tab="gallery"><span>🎨</span> Gallery</button></li>
+        <li class="nav-item"><button data-tab="posters"><span>🖼️</span> Posters</button></li>
+        <li class="nav-item"><button data-tab="branding"><span>✨</span> Site Images / Branding</button></li>
+        <li class="nav-item"><button data-tab="updates"><span>📰</span> Event Updates</button></li>
+        <li class="nav-item"><button data-tab="announcements"><span>📢</span> Announcements</button></li>
+        <li class="nav-item"><button data-tab="programme"><span>📅</span> Programme</button></li>
+        <li class="nav-item"><button data-tab="settings"><span>⚙️</span> Settings</button></li>
+      </ul>
+
+      <div class="nav-footer">
+        <div style="font-size: 11px; color: var(--mute); word-break: break-all;" id="current-user-display">—</div>
+        <button type="button" class="btn danger" id="logout-btn" style="width: 100%; justify-content: center;">
+          <span>🚪</span> Logout
+        </button>
+        <a href="../index.html" class="btn" style="width: 100%; justify-content: center;">
+          <span>🌐</span> View Website
+        </a>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="main-content">
+      <!-- TOP BAR -->
+      <div class="topbar">
+        <div>
+          <p class="sidebar-tag" style="margin: 0;">HLF 2026 · CHEMMAD</p>
+          <h1 class="topbar-title" id="page-heading">Dashboard Overview</h1>
+        </div>
+        <div class="topbar-actions">
+          <button type="button" class="btn" id="theme-toggle-btn" aria-label="Toggle Theme">◐ Theme</button>
+          <button type="button" class="btn primary" id="global-refresh-btn">🔄 Refresh Data</button>
+        </div>
+      </div>
+
+      <!-- TAB 1: DASHBOARD OVERVIEW -->
+      <div class="tab-pane" id="pane-dashboard">
+        <div class="stats-grid">
+          <div class="stat-card" style="border-top: 4px solid var(--blue);">
+            <div class="label">Total Registrations</div>
+            <div class="value" id="stat-total">0</div>
+            <div class="sub">All submitted participants</div>
+          </div>
+          <div class="stat-card" style="border-top: 4px solid var(--amb);">
+            <div class="label">Pending Payments</div>
+            <div class="value" id="stat-pending" style="color: var(--amb);">0</div>
+            <div class="sub">Awaiting UPI verification</div>
+          </div>
+          <div class="stat-card" style="border-top: 4px solid var(--grn);">
+            <div class="label">Verified Payments</div>
+            <div class="value" id="stat-verified" style="color: var(--grn);">0</div>
+            <div class="sub">Confirmed delegates</div>
+          </div>
+          <div class="stat-card" style="border-top: 4px solid var(--red);">
+            <div class="label">Rejected Payments</div>
+            <div class="value" id="stat-rejected" style="color: var(--red);">0</div>
+            <div class="sub">Invalid/failed transactions</div>
+          </div>
+          <div class="stat-card" style="border-top: 4px solid var(--teal);">
+            <div class="label">Today's Registrations</div>
+            <div class="value" id="stat-today" style="color: var(--teal);">0</div>
+            <div class="sub">New entries today</div>
+          </div>
+          <div class="stat-card" style="border-top: 4px solid var(--yel);">
+            <div class="label">Verified Revenue</div>
+            <div class="value" id="stat-revenue" style="color: var(--yel);">₹0</div>
+            <div class="sub">₹50 per verified delegate</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <h2 class="panel-title">Recent Registrations</h2>
+            <button type="button" class="btn" onclick="switchTab('registrations')">View All →</button>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Reg ID</th>
+                  <th>Name</th>
+                  <th>Institution</th>
+                  <th>Payment Proof</th>
+                  <th>Payment</th>
+                  <th>Date</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="recent-registrations-tbody">
+                <tr><td colspan="7" style="text-align: center; color: var(--mute);">Loading recent entries...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <h2 class="panel-title">Recent Contributions</h2>
+            <button type="button" class="btn" onclick="switchTab('contributions')">View All →</button>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Contrib ID</th>
+                  <th>Name</th>
+                  <th>Tier</th>
+                  <th>Amount</th>
+                  <th>UPI Ref</th>
+                  <th>Payment</th>
+                  <th>Date</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="recent-contributions-tbody">
+                <tr><td colspan="8" style="text-align: center; color: var(--mute);">Loading recent contributions...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: REGISTRATIONS MANAGEMENT -->
+      <div class="tab-pane" id="pane-registrations" style="display: none;">
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Delegate Registrations</h2>
+              <p style="margin: 4px 0 0; color: var(--mute); font-size: 13px;">Review participant entries, verify UPI transactions, and export data.</p>
+            </div>
+            <button type="button" class="btn primary" id="export-csv-btn">📥 Export to CSV</button>
+          </div>
+
+          <!-- Filters -->
+          <div class="filters-bar">
+            <input type="text" id="reg-search-input" class="search-input" placeholder="🔍 Search by ID, Name, Mobile, UTR, College...">
+            <select id="reg-payment-filter" class="filter-select">
+              <option value="all">Payment: All</option>
+              <option value="pending">Pending</option>
+              <option value="verified">Verified</option>
+              <option value="rejected">Rejected</option>
+            </select>
+            <select id="reg-status-filter" class="filter-select">
+              <option value="all">Status: All</option>
+              <option value="submitted">Submitted</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+            <select id="reg-date-filter" class="filter-select">
+              <option value="all">Date: All</option>
+              <option value="today">Today</option>
+              <option value="week">Last 7 Days</option>
+            </select>
+          </div>
+
+          <!-- Registrations Table -->
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Reg ID</th>
+                  <th>Name</th>
+                  <th>Mobile</th>
+                  <th>Institution</th>
+                  <th>Payment Proof</th>
+                  <th>Payment</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="registrations-tbody">
+                <tr><td colspan="9" style="text-align: center; color: var(--mute);">Loading registrations...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="margin-top: 14px; font-size: 12px; color: var(--mute);" id="reg-count-info">Showing 0 registrations</div>
+        </div>
+      </div>
+
+      <!-- TAB 3: CONTRIBUTIONS MANAGEMENT -->
+      <div class="tab-pane" id="pane-contributions" style="display: none;">
+        <!-- Contribution Stats Grid -->
+        <div class="stats-grid">
+          <div class="stat-card" style="border-top: 4px solid var(--blue);">
+            <div class="label">Total Contributions</div>
+            <div class="value" id="stat-contrib-total">0</div>
+            <div class="sub">All patron submissions</div>
+          </div>
+          <div class="stat-card" style="border-top: 4px solid var(--amb);">
+            <div class="label">Pending Verification</div>
+            <div class="value" id="stat-contrib-pending" style="color: var(--amb);">0</div>
+            <div class="sub">Awaiting admin review</div>
+          </div>
+          <div class="stat-card" style="border-top: 4px solid var(--grn);">
+            <div class="label">Verified Payments</div>
+            <div class="value" id="stat-contrib-verified" style="color: var(--grn);">0</div>
+            <div class="sub">Approved contributions</div>
+          </div>
+          <div class="stat-card" style="border-top: 4px solid var(--red);">
+            <div class="label">Rejected Payments</div>
+            <div class="value" id="stat-contrib-rejected" style="color: var(--red);">0</div>
+            <div class="sub">Declined / invalid UTRs</div>
+          </div>
+          <div class="stat-card" style="border-top: 4px solid var(--yel);">
+            <div class="label">Total Amount Received</div>
+            <div class="value" id="stat-contrib-amount" style="color: var(--yel);">₹0</div>
+            <div class="sub">Sum of verified funds</div>
+          </div>
+          <div class="stat-card" style="border-top: 4px solid var(--teal);">
+            <div class="label">Today's Contributions</div>
+            <div class="value" id="stat-contrib-today" style="color: var(--teal);">0</div>
+            <div class="sub">Submitted today</div>
+          </div>
+          <div class="stat-card" style="border-top: 4px solid var(--ink);">
+            <div class="label">Number of Contributors</div>
+            <div class="value" id="stat-contrib-donors">0</div>
+            <div class="sub">Distinct donors</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Contributions & Donations</h2>
+              <p style="margin: 4px 0 0; color: var(--mute); font-size: 13px;">Manage patron donations, verify UPI transaction IDs/UTRs, and track festival funds.</p>
+            </div>
+            <button type="button" class="btn primary" id="export-contrib-csv-btn">📥 Export to CSV</button>
+          </div>
+
+          <!-- Filters -->
+          <div class="filters-bar">
+            <input type="text" id="contrib-search-input" class="search-input" placeholder="🔍 Search by ID, Name, Mobile, Transaction ID...">
+            <select id="contrib-payment-filter" class="filter-select">
+              <option value="all">Payment: All</option>
+              <option value="PENDING">Pending</option>
+              <option value="VERIFIED">Verified</option>
+              <option value="REJECTED">Rejected</option>
+            </select>
+            <select id="contrib-type-filter" class="filter-select">
+              <option value="all">Type: All</option>
+              <option value="Minimal">Minimal (₹199)</option>
+              <option value="Bronze">Bronze (₹313)</option>
+              <option value="Silver">Silver (₹500)</option>
+              <option value="Golden">Golden (₹786)</option>
+              <option value="Premium">Premium (₹1000)</option>
+              <option value="Sponsorship">Day Sponsorship</option>
+            </select>
+            <select id="contrib-date-filter" class="filter-select">
+              <option value="all">Date: All</option>
+              <option value="today">Today</option>
+              <option value="week">Last 7 Days</option>
+            </select>
+          </div>
+
+          <!-- Contributions Table -->
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Contrib ID</th>
+                  <th>Contributor Name</th>
+                  <th>Mobile</th>
+                  <th>Email</th>
+                  <th>Type</th>
+                  <th>Amount</th>
+                  <th>Transaction / UTR</th>
+                  <th>Payment Status</th>
+                  <th>Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="contributions-tbody">
+                <tr><td colspan="10" style="text-align: center; color: var(--mute);">Loading contributions...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="margin-top: 14px; font-size: 12px; color: var(--mute);" id="contrib-count-info">Showing 0 contributions</div>
+        </div>
+      </div>
+
+      <!-- TAB: GALLERY MANAGEMENT -->
+      <div class="tab-pane" id="pane-gallery" style="display: none;">
+        <!-- Stats Grid for Gallery -->
+        <div class="stats-grid">
+          <div class="stat-card" style="border-top: 4px solid var(--teal);">
+            <div class="label">Total Images</div>
+            <div class="value" id="stat-gallery-total">0</div>
+            <div class="sub">In gallery collection</div>
+          </div>
+          <div class="stat-card" style="border-top: 4px solid var(--grn);">
+            <div class="label">Published Images</div>
+            <div class="value" id="stat-gallery-published" style="color: var(--grn);">0</div>
+            <div class="sub">Visible on public website</div>
+          </div>
+          <div class="stat-card" style="border-top: 4px solid var(--mute);">
+            <div class="label">Hidden Images</div>
+            <div class="value" id="stat-gallery-hidden" style="color: var(--mute);">0</div>
+            <div class="sub">Drafts / hidden from public</div>
+          </div>
+          <div class="stat-card" style="border-top: 4px solid var(--red);">
+            <div class="label">Featured / Landing Page</div>
+            <div class="value" id="stat-gallery-featured" style="font-size: 1.2rem; line-height: 1.3; color: var(--red); word-break: break-word;">None</div>
+            <div class="sub">Active on homepage hero</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Gallery Management</h2>
+              <p style="margin: 4px 0 0; color: var(--mute); font-size: 13px;">
+                Upload, categorize and curate festival moments. Mark an image as <strong>Featured</strong> to showcase it automatically on the homepage hero.
+              </p>
+            </div>
+            <button type="button" class="btn primary" onclick="document.getElementById('gallery-upload-section').scrollIntoView({behavior: 'smooth'})">
+              + Upload Image
+            </button>
+          </div>
+
+          <!-- Upload Box -->
+          <div id="gallery-upload-section" style="border: 2px dashed var(--line); border-radius: 18px; padding: 24px; background: var(--card); margin-bottom: 28px;">
+            <h3 style="margin-top: 0; display: flex; align-items: center; gap: 8px;">
+              <span>📸</span> Upload New Gallery Image
+            </h3>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px;">
+              <!-- File drop & preview -->
+              <div style="text-align: center; border: 1px dashed var(--line); border-radius: 14px; padding: 18px; background: var(--bg);">
+                <input type="file" id="gallery-file-input" accept="image/*" style="display: none;">
+                <button type="button" class="btn" onclick="document.getElementById('gallery-file-input').click()" style="margin: 8px 0;">
+                  📁 Browse Image File
+                </button>
+                <p style="font-size: 11px; color: var(--mute); margin: 6px 0 12px;">Supports JPEG, PNG, WebP up to 10MB</p>
+
+                <!-- Live Preview -->
+                <div id="gallery-preview-box" style="display: none; margin-top: 10px;">
+                  <img id="gallery-preview-img" src="" alt="Preview" style="max-height: 200px; max-width: 100%; border-radius: 12px; object-fit: contain; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
+                  <div style="font-size: 11px; color: var(--mute); margin-top: 6px;" id="gallery-preview-filename"></div>
+                </div>
+              </div>
+
+              <!-- Metadata form -->
+              <div>
+                <div class="form-group">
+                  <label for="gallery-title-input">Image Title <span style="color:var(--red);">*</span></label>
+                  <input type="text" id="gallery-title-input" placeholder="e.g. Inaugural Session Keynote">
+                </div>
+
+                <div class="form-group">
+                  <label for="gallery-desc-input">Short Description / Caption <span style="color:var(--mute); font-weight: normal;">(Optional)</span></label>
+                  <input type="text" id="gallery-desc-input" placeholder="e.g. Delegates gathered at Al-Bukhari Auditorium">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                  <div class="form-group">
+                    <label for="gallery-category-select">Category <span style="color:var(--red);">*</span></label>
+                    <select id="gallery-category-select" class="filter-select">
+                      <option value="Events">Events</option>
+                      <option value="Sessions">Sessions</option>
+                      <option value="Guests">Guests</option>
+                      <option value="Moments">Moments</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="gallery-order-input">Display Order</label>
+                    <input type="number" id="gallery-order-input" value="0" min="0">
+                  </div>
+                </div>
+
+                <div style="display: flex; gap: 20px; margin: 16px 0; flex-wrap: wrap;">
+                  <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer;">
+                    <input type="checkbox" id="gallery-published-cb" checked>
+                    <span>Published (visible publicly)</span>
+                  </label>
+
+                  <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; color: var(--red); font-weight: 600;">
+                    <input type="checkbox" id="gallery-featured-cb">
+                    <span>★ Set as Featured / Landing Page Visual</span>
+                  </label>
+                </div>
+
+                <button type="button" class="btn primary" id="upload-gallery-btn" style="width: 100%; justify-content: center; padding: 12px;">
+                  <span>🚀 Upload & Save to Gallery</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Library Filter Bar -->
+          <div class="filters-bar" style="margin-bottom: 18px;">
+            <input type="text" id="gallery-search-input" class="search-input" placeholder="🔍 Search by title or description...">
+            
+            <select id="gallery-filter-cat" class="filter-select">
+              <option value="all">All Categories</option>
+              <option value="Events">Events</option>
+              <option value="Sessions">Sessions</option>
+              <option value="Guests">Guests</option>
+              <option value="Moments">Moments</option>
+            </select>
+
+            <select id="gallery-filter-status" class="filter-select">
+              <option value="all">All Statuses</option>
+              <option value="published">Published Only</option>
+              <option value="hidden">Hidden Only</option>
+              <option value="featured">Featured Only</option>
+            </select>
+          </div>
+
+          <!-- Gallery Table / Grid -->
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 90px;">Preview</th>
+                  <th>Title & Description</th>
+                  <th>Category</th>
+                  <th>Status</th>
+                  <th>Featured</th>
+                  <th>Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="gallery-library-tbody">
+                <tr><td colspan="7" style="text-align: center; color: var(--mute);">Loading gallery items...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="margin-top: 14px; font-size: 12px; color: var(--mute);" id="gallery-count-info">Showing 0 images</div>
+        </div>
+      </div>
+
+      <!-- TAB 3: POSTER MANAGEMENT -->
+      <div class="tab-pane" id="pane-posters" style="display: none;">
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">HLF Poster Management</h2>
+              <p style="margin: 4px 0 0; color: var(--mute); font-size: 13px;">Upload and activate posters displayed in the Hero section and festival diary.</p>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px;">
+            <!-- Upload Box -->
+            <div style="border: 2px dashed var(--line); border-radius: 18px; padding: 24px; text-align: center; background: var(--card);">
+              <h3 style="margin-top: 0;">Upload New Poster</h3>
+              <p style="font-size: 12px; color: var(--mute);">Drag & drop or select image (JPEG, PNG, WebP up to 10MB)</p>
+              
+              <input type="file" id="poster-file-input" accept="image/*" style="display: none;">
+              <button type="button" class="btn" onclick="document.getElementById('poster-file-input').click()" style="margin: 10px 0;">
+                📁 Browse Image
+              </button>
+              
+              <!-- Image Preview -->
+              <div id="poster-preview-box" style="display: none; margin: 14px 0;">
+                <img id="poster-preview-img" src="" alt="Preview" style="max-height: 220px; border-radius: 12px; object-fit: contain; width: 100%;">
+              </div>
+
+              <div class="form-group" style="text-align: left; margin-top: 14px;">
+                <label for="poster-title-input">Poster Title</label>
+                <input type="text" id="poster-title-input" placeholder="e.g. Official HLF 2026 Keynote Poster">
+              </div>
+
+              <div class="form-group" style="text-align: left;">
+                <label for="poster-desc-input">Description (Optional)</label>
+                <input type="text" id="poster-desc-input" placeholder="e.g. Main festival release poster">
+              </div>
+
+              <label style="display: flex; align-items: center; gap: 8px; margin: 14px 0; font-size: 13px; cursor: pointer;">
+                <input type="checkbox" id="poster-set-active-cb" checked>
+                <span>Set as Active Poster immediately</span>
+              </label>
+
+              <button type="button" class="btn primary" id="upload-poster-btn" style="width: 100%; justify-content: center;">
+                🚀 Upload Poster
+              </button>
+            </div>
+
+            <!-- Existing Posters List -->
+            <div>
+              <h3 style="margin-top: 0;">Posters Library</h3>
+              <div id="posters-library-grid" style="display: grid; gap: 14px;">
+                <!-- Populated via JS -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      
+      <!-- TAB: SITE IMAGES / BRANDING -->
+      <div class="tab-pane" id="pane-branding" style="display: none;">
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Site Images & Branding Management</h2>
+              <p style="margin: 4px 0 0; color: var(--mute); font-size: 13px;">
+                Manage official festival logo, browser favicon, main promotional poster, and landing page visual.
+              </p>
+            </div>
+            <button type="button" class="btn" onclick="loadSiteBranding()">🔄 Refresh Visuals</button>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+            <!-- 1. HLF Logo -->
+            <div style="border: 1px solid var(--line); border-radius: 16px; padding: 20px; background: var(--card); display: flex; flex-direction: column;">
+              <h3 style="margin: 0 0 8px; font-size: 16px; display: flex; align-items: center; gap: 8px;">
+                <span>✨</span> HLF Logo
+              </h3>
+              <p style="font-size: 12px; color: var(--mute); margin: 0 0 14px;">Main header, footer and badge identity.</p>
+              
+              <div style="background: rgba(0,0,0,0.15); border: 1px dashed var(--line); border-radius: 12px; padding: 16px; text-align: center; margin-bottom: 14px; min-height: 120px; display: flex; align-items: center; justify-content: center;">
+                <img id="brand-logo-preview" src="" alt="HLF Logo" style="max-height: 80px; max-width: 100%; object-fit: contain;">
+              </div>
+
+              <input type="file" id="brand-logo-file" accept="image/*" style="display: none;">
+              <div style="display: flex; gap: 10px; margin-top: auto;">
+                <button type="button" class="btn btn-sm" onclick="document.getElementById('brand-logo-file').click()" style="flex: 1; justify-content: center;">📁 Browse</button>
+                <button type="button" class="btn btn-sm secondary" id="save-logo-btn" style="flex: 1; justify-content: center;">Upload</button>
+              </div>
+            </div>
+
+            <!-- 2. Favicon -->
+            <div style="border: 1px solid var(--line); border-radius: 16px; padding: 20px; background: var(--card); display: flex; flex-direction: column;">
+              <h3 style="margin: 0 0 8px; font-size: 16px; display: flex; align-items: center; gap: 8px;">
+                <span>🌐</span> Browser Favicon
+              </h3>
+              <p style="font-size: 12px; color: var(--mute); margin: 0 0 14px;">Browser tab icon & bookmark emblem.</p>
+              
+              <div style="background: rgba(0,0,0,0.15); border: 1px dashed var(--line); border-radius: 12px; padding: 16px; text-align: center; margin-bottom: 14px; min-height: 120px; display: flex; align-items: center; justify-content: center;">
+                <img id="brand-favicon-preview" src="" alt="Favicon" style="max-height: 48px; max-width: 48px; object-fit: contain; border-radius: 8px;">
+              </div>
+
+              <input type="file" id="brand-favicon-file" accept="image/*" style="display: none;">
+              <div style="display: flex; gap: 10px; margin-top: auto;">
+                <button type="button" class="btn btn-sm" onclick="document.getElementById('brand-favicon-file').click()" style="flex: 1; justify-content: center;">📁 Browse</button>
+                <button type="button" class="btn btn-sm secondary" id="save-favicon-btn" style="flex: 1; justify-content: center;">Upload</button>
+              </div>
+            </div>
+
+            <!-- 3. Official Poster -->
+            <div style="border: 1px solid var(--line); border-radius: 16px; padding: 20px; background: var(--card); display: flex; flex-direction: column;">
+              <h3 style="margin: 0 0 8px; font-size: 16px; display: flex; align-items: center; gap: 8px;">
+                <span>🖼️</span> Official Festival Poster
+              </h3>
+              <p style="font-size: 12px; color: var(--mute); margin: 0 0 14px;">Main event poster & promotional background.</p>
+              
+              <div style="background: rgba(0,0,0,0.15); border: 1px dashed var(--line); border-radius: 12px; padding: 10px; text-align: center; margin-bottom: 14px; min-height: 120px; display: flex; align-items: center; justify-content: center;">
+                <img id="brand-poster-preview" src="" alt="Festival Poster" style="max-height: 140px; max-width: 100%; object-fit: contain; border-radius: 6px;">
+              </div>
+
+              <input type="file" id="brand-poster-file" accept="image/*" style="display: none;">
+              <div style="display: flex; gap: 10px; margin-top: auto;">
+                <button type="button" class="btn btn-sm" onclick="document.getElementById('brand-poster-file').click()" style="flex: 1; justify-content: center;">📁 Browse</button>
+                <button type="button" class="btn btn-sm secondary" id="save-poster-btn" style="flex: 1; justify-content: center;">Upload</button>
+              </div>
+            </div>
+
+            <!-- 4. Featured Hero Visual -->
+            <div style="border: 1px solid var(--line); border-radius: 16px; padding: 20px; background: var(--card); display: flex; flex-direction: column;">
+              <h3 style="margin: 0 0 8px; font-size: 16px; display: flex; align-items: center; gap: 8px;">
+                <span>⭐</span> Landing Page Featured Image
+              </h3>
+              <p style="font-size: 12px; color: var(--mute); margin: 0 0 14px;">Showcased automatically on festival landing page.</p>
+              
+              <div style="background: rgba(0,0,0,0.15); border: 1px dashed var(--line); border-radius: 12px; padding: 10px; text-align: center; margin-bottom: 14px; min-height: 120px; display: flex; align-items: center; justify-content: center;">
+                <img id="brand-hero-preview" src="" alt="Featured Visual" style="max-height: 140px; max-width: 100%; object-fit: contain; border-radius: 6px;">
+              </div>
+
+              <input type="file" id="brand-hero-file" accept="image/*" style="display: none;">
+              <div style="display: flex; gap: 10px; margin-top: auto;">
+                <button type="button" class="btn btn-sm" onclick="document.getElementById('brand-hero-file').click()" style="flex: 1; justify-content: center;">📁 Browse</button>
+                <button type="button" class="btn btn-sm secondary" id="save-hero-btn" style="flex: 1; justify-content: center;">Upload</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: EVENT UPDATES -->
+      <div class="tab-pane" id="pane-updates" style="display: none;">
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Event Updates / Journal</h2>
+              <p style="margin: 4px 0 0; color: var(--mute); font-size: 13px;">Manage festival announcements and news displayed in the Journal section.</p>
+            </div>
+            <button type="button" class="btn primary" id="open-new-update-btn">+ New Update</button>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Category</th>
+                  <th>Date</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="updates-tbody">
+                <!-- Populated via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 5: ANNOUNCEMENTS -->
+      <div class="tab-pane" id="pane-announcements" style="display: none;">
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Announcements</h2>
+              <p style="margin: 4px 0 0; color: var(--mute); font-size: 13px;">Festival alert notifications, badges and ticker items.</p>
+            </div>
+            <button type="button" class="btn primary" id="open-new-announcement-btn">+ New Announcement</button>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Badge</th>
+                  <th>Title</th>
+                  <th>Priority</th>
+                  <th>Active</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="announcements-tbody">
+                <!-- Populated via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 6: PROGRAMME / SCHEDULE -->
+      <div class="tab-pane" id="pane-programme" style="display: none;">
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Programme / Schedule Sessions</h2>
+              <p style="margin: 4px 0 0; color: var(--mute); font-size: 13px;">Organize 3-day festival sessions, lectures, symposiums, and venues.</p>
+            </div>
+            <button type="button" class="btn primary" id="open-new-session-btn">+ Add Session</button>
+          </div>
+
+          <div class="filters-bar">
+            <select id="prog-day-filter" class="filter-select">
+              <option value="all">All Days</option>
+              <option value="1">Day 01 (18 October)</option>
+              <option value="2">Day 02 (19 October)</option>
+              <option value="3">Day 03 (20 October)</option>
+            </select>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Day</th>
+                  <th>Time</th>
+                  <th>Title</th>
+                  <th>Speaker</th>
+                  <th>Venue</th>
+                  <th>Category</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="programme-tbody">
+                <!-- Populated via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 7: SETTINGS -->
+      <div class="tab-pane" id="pane-settings" style="display: none;">
+        <div class="panel">
+          <div class="panel-header">
+            <h2 class="panel-title">Festival & Payment Configuration</h2>
+          </div>
+
+          <form id="festival-settings-form">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+              <div class="form-group">
+                <label for="set-upi-id">Official UPI ID</label>
+                <input type="text" id="set-upi-id" placeholder="hlf2026@dhiu" required>
+              </div>
+              <div class="form-group">
+                <label for="set-payee-name">UPI Payee Name</label>
+                <input type="text" id="set-payee-name" placeholder="Hadith Literature Festival DHIU" required>
+              </div>
+              <div class="form-group">
+                <label for="set-qr-url">UPI QR Code Image Asset URL / Path</label>
+                <input type="text" id="set-qr-url" placeholder="assets/hlf-upi-qr.png">
+              </div>
+              <div class="form-group">
+                <label for="set-contact-email">Contact Email</label>
+                <input type="email" id="set-contact-email" placeholder="hadithliteraturefestival@gmail.com">
+              </div>
+              <div class="form-group">
+                <label for="set-contact-phone">Contact Phone</label>
+                <input type="text" id="set-contact-phone" placeholder="+91 73065 54055">
+              </div>
+              <div class="form-group">
+                <label for="set-venue">Official Venue</label>
+                <input type="text" id="set-venue" placeholder="Darul Huda Islamic University, Chemmad, Kerala">
+              </div>
+            </div>
+
+            <button type="submit" class="btn primary" style="margin-top: 14px;">💾 Save Festival Settings</button>
+          </form>
+        </div>
+
+        <!-- Add Team Administrator -->
+        <div class="panel">
+          <div class="panel-header">
+            <h2 class="panel-title">Admin Team Management</h2>
+          </div>
+          <p style="color: var(--mute); font-size: 13px; margin: 0 0 16px;">
+            Authorize new team members to access this management dashboard.
+          </p>
+          <form id="add-admin-form" style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <input type="email" id="new-admin-email" class="search-input" placeholder="colleague@dhiu.in" required style="min-width: 280px;">
+            <button type="submit" class="btn secondary">Authorize Admin</button>
+          </form>
+          <div id="admin-users-list" style="margin-top: 18px; font-size: 13px;"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- REGISTRATION DETAILS MODAL -->
+  <dialog class="admin-modal" id="reg-detail-modal">
+    <div class="modal-hdr">
+      <div>
+        <span class="badge" id="modal-reg-status-badge">Status</span>
+        <h3 id="modal-reg-id" style="margin-top: 4px;">HLF26-XXXX</h3>
+      </div>
+      <button type="button" class="modal-close" onclick="document.getElementById('reg-detail-modal').close()">×</button>
+    </div>
+
+    <div id="modal-reg-body" style="font-size: 13px;">
+      <!-- Content populated by JS -->
+    </div>
+
+    <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--line); display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end;">
+      <button type="button" class="btn secondary" id="modal-btn-verify">✓ Verify Payment</button>
+      <button type="button" class="btn danger" id="modal-btn-reject">✕ Reject Payment</button>
+      <button type="button" class="btn danger" id="modal-btn-delete" style="margin-right: auto;">🗑️ Delete</button>
+    </div>
+  </dialog>
+
+  <!-- CONTRIBUTION DETAILS MODAL -->
+  <dialog class="admin-modal" id="contrib-detail-modal">
+    <div class="modal-hdr">
+      <div>
+        <span class="badge" id="modal-contrib-status-badge">Status</span>
+        <h3 id="modal-contrib-id" style="margin-top: 4px;">HLFC-XXXX</h3>
+      </div>
+      <button type="button" class="modal-close" onclick="document.getElementById('contrib-detail-modal').close()">×</button>
+    </div>
+
+    <div id="modal-contrib-body" style="font-size: 13px;">
+      <!-- Content populated by JS -->
+    </div>
+
+    <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--line); display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end;">
+      <button type="button" class="btn secondary" id="modal-contrib-btn-verify">✓ Verify Payment</button>
+      <button type="button" class="btn danger" id="modal-contrib-btn-reject">✕ Reject Payment</button>
+      <button type="button" class="btn danger" id="modal-contrib-btn-delete" style="margin-right: auto;">🗑️ Delete</button>
+    </div>
+  </dialog>
+
+  <!-- CONTRIBUTION DELETE CONFIRM MODAL -->
+  <dialog class="admin-modal" id="contrib-delete-modal">
+    <div class="modal-hdr">
+      <h3 style="color: var(--red);">Delete Contribution Record</h3>
+      <button type="button" class="modal-close" onclick="document.getElementById('contrib-delete-modal').close()">×</button>
+    </div>
+    <div style="padding: 10px 0 20px;">
+      <p style="margin: 0 0 12px; font-size: 14px;">Are you sure you want to permanently delete this contribution record?</p>
+      <div style="padding: 14px; background: var(--bg); border-radius: 12px; border: 1px solid var(--line);">
+        <div><strong id="delete-contrib-id" style="font-size: 15px; color: var(--teal);">HLFC-XXXX</strong></div>
+        <div id="delete-contrib-name" style="margin-top: 4px;">—</div>
+        <div id="delete-contrib-amount" style="font-size: 13px; color: var(--mute);">—</div>
+      </div>
+      <p style="font-size: 12px; color: var(--red); margin: 12px 0 0;">
+        ⚠️ This action cannot be undone. The record will be permanently purged from the database.
+      </p>
+    </div>
+    <div style="display: flex; gap: 10px;">
+      <button type="button" class="btn" onclick="document.getElementById('contrib-delete-modal').close()" style="flex: 1; justify-content: center;">
+        Cancel
+      </button>
+      <button type="button" class="btn danger" id="confirm-contrib-delete-btn" style="flex: 1; justify-content: center;">
+        Yes, Delete Contribution
+      </button>
+    </div>
+  </dialog>
+
+  <!-- EVENT UPDATE MODAL -->
+  <dialog class="admin-modal" id="update-modal">
+    <div class="modal-hdr">
+      <h3 id="update-modal-title">New Event Update</h3>
+      <button type="button" class="modal-close" onclick="document.getElementById('update-modal').close()">×</button>
+    </div>
+    <form id="update-form">
+      <input type="hidden" id="edit-update-id">
+      <div class="form-group">
+        <label>Title</label>
+        <input type="text" id="edit-update-title" required placeholder="Update headline">
+      </div>
+      <div class="form-group">
+        <label>Category</label>
+        <input type="text" id="edit-update-category" placeholder="Academic / Festival / Announcement" value="Festival">
+      </div>
+      <div class="form-group">
+        <label>Date Label</label>
+        <input type="text" id="edit-update-date" placeholder="18–20 Oct 2026" value="18–20 Oct 2026">
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea id="edit-update-desc" rows="3" required placeholder="Details of the update"></textarea>
+      </div>
+      <div class="form-group">
+        <label><input type="checkbox" id="edit-update-published" checked> Published</label>
+      </div>
+      <button type="submit" class="btn primary" style="width: 100%;">Save Event Update</button>
+    </form>
+  </dialog>
+
+  <!-- ANNOUNCEMENT MODAL -->
+  <dialog class="admin-modal" id="announcement-modal">
+    <div class="modal-hdr">
+      <h3 id="announcement-modal-title">New Announcement</h3>
+      <button type="button" class="modal-close" onclick="document.getElementById('announcement-modal').close()">×</button>
+    </div>
+    <form id="announcement-form">
+      <input type="hidden" id="edit-announcement-id">
+      <div class="form-group">
+        <label>Badge Text</label>
+        <input type="text" id="edit-ann-badge" placeholder="OFFICIAL / DATES / IMPORTANT" value="OFFICIAL">
+      </div>
+      <div class="form-group">
+        <label>Title</label>
+        <input type="text" id="edit-ann-title" required placeholder="Announcement title">
+      </div>
+      <div class="form-group">
+        <label>Content</label>
+        <textarea id="edit-ann-content" rows="3" required placeholder="Announcement details"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Link URL (Optional)</label>
+        <input type="text" id="edit-ann-link" placeholder="#schedule or URL">
+      </div>
+      <div class="form-group" style="flex-direction: row; gap: 14px;">
+        <label><input type="checkbox" id="edit-ann-active" checked> Active</label>
+        <label><input type="checkbox" id="edit-ann-priority"> Priority Banner</label>
+      </div>
+      <button type="submit" class="btn primary" style="width: 100%;">Save Announcement</button>
+    </form>
+  </dialog>
+
+  <!-- PROGRAMME SESSION MODAL -->
+  <dialog class="admin-modal" id="session-modal">
+    <div class="modal-hdr">
+      <h3 id="session-modal-title">Add Programme Session</h3>
+      <button type="button" class="modal-close" onclick="document.getElementById('session-modal').close()">×</button>
+    </div>
+    <form id="session-form">
+      <input type="hidden" id="edit-session-id">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group">
+          <label>Day Number</label>
+          <select id="edit-session-day" class="filter-select">
+            <option value="1">Day 1 (18 Oct 2026)</option>
+            <option value="2">Day 2 (19 Oct 2026)</option>
+            <option value="3">Day 3 (20 Oct 2026)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Date String</label>
+          <input type="text" id="edit-session-date" value="2026-10-18">
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group">
+          <label>Start Time</label>
+          <input type="text" id="edit-session-start" placeholder="09:00 AM" required>
+        </div>
+        <div class="form-group">
+          <label>End Time</label>
+          <input type="text" id="edit-session-end" placeholder="10:30 AM">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Session Title</label>
+        <input type="text" id="edit-session-title" placeholder="Grand Inaugural Ceremony" required>
+      </div>
+      <div class="form-group">
+        <label>Speaker / Presenter</label>
+        <input type="text" id="edit-session-speaker" placeholder="Eminent Hadith Scholars">
+      </div>
+      <div class="form-group">
+        <label>Venue</label>
+        <input type="text" id="edit-session-venue" placeholder="Imam Al-Bukhari Auditorium">
+      </div>
+      <div class="form-group">
+        <label>Category</label>
+        <input type="text" id="edit-session-cat" placeholder="Keynote / Panel / Workshop">
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea id="edit-session-desc" rows="2" placeholder="Brief session overview"></textarea>
+      </div>
+      <button type="submit" class="btn primary" style="width: 100%;">Save Session</button>
+    </form>
+  </dialog>
+
+  <!-- GALLERY EDIT MODAL -->
+  <dialog class="admin-modal" id="gallery-edit-modal">
+    <div class="modal-hdr">
+      <h3>Edit Gallery Item</h3>
+      <button type="button" class="modal-close" onclick="document.getElementById('gallery-edit-modal').close()">×</button>
+    </div>
+    <form id="gallery-edit-form">
+      <input type="hidden" id="edit-gallery-id">
+      
+      <div style="text-align: center; margin-bottom: 16px;">
+        <img id="edit-gallery-preview" src="" alt="Thumbnail" style="max-height: 140px; border-radius: 12px; object-fit: contain;">
+      </div>
+
+      <div class="form-group">
+        <label for="edit-gallery-title">Image Title <span style="color:var(--red);">*</span></label>
+        <input type="text" id="edit-gallery-title" required placeholder="Image title">
+      </div>
+
+      <div class="form-group">
+        <label for="edit-gallery-desc">Description / Caption</label>
+        <textarea id="edit-gallery-desc" rows="2" placeholder="Caption or context"></textarea>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group">
+          <label for="edit-gallery-cat">Category</label>
+          <select id="edit-gallery-cat" class="filter-select">
+            <option value="Events">Events</option>
+            <option value="Sessions">Sessions</option>
+            <option value="Guests">Guests</option>
+            <option value="Moments">Moments</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-gallery-order">Display Order</label>
+          <input type="number" id="edit-gallery-order" value="0" min="0">
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 20px; margin: 16px 0; flex-wrap: wrap;">
+        <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer;">
+          <input type="checkbox" id="edit-gallery-published">
+          <span>Published (visible publicly)</span>
+        </label>
+
+        <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; color: var(--red); font-weight: 600;">
+          <input type="checkbox" id="edit-gallery-featured">
+          <span>★ Featured on Landing Page</span>
+        </label>
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-top: 14px;">
+        <button type="button" class="btn" onclick="document.getElementById('gallery-edit-modal').close()" style="flex: 1; justify-content: center;">
+          Cancel
+        </button>
+        <button type="submit" class="btn primary" style="flex: 2; justify-content: center;">
+          Save Changes
+        </button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- GALLERY DELETE CONFIRM MODAL -->
+  <dialog class="admin-modal" id="gallery-delete-modal">
+    <div class="modal-hdr">
+      <h3 style="color: var(--red);">Delete Gallery Image</h3>
+      <button type="button" class="modal-close" onclick="document.getElementById('gallery-delete-modal').close()">×</button>
+    </div>
+    <div style="padding: 10px 0 20px;">
+      <p style="margin: 0 0 12px; font-size: 14px;">Are you sure you want to permanently delete this gallery image?</p>
+      <div style="display: flex; align-items: center; gap: 14px; padding: 12px; background: var(--bg); border-radius: 12px; border: 1px solid var(--line);">
+        <img id="delete-gallery-preview" src="" alt="Delete thumbnail" style="width: 60px; height: 60px; border-radius: 8px; object-fit: cover;">
+        <div>
+          <strong id="delete-gallery-title" style="display: block; font-size: 14px;">—</strong>
+          <span id="delete-gallery-cat" style="font-size: 11px; color: var(--mute);">—</span>
+        </div>
+      </div>
+      <p style="font-size: 12px; color: var(--red); margin: 12px 0 0;">
+        ⚠️ This action cannot be undone. The image will be removed from the public website immediately.
+      </p>
+    </div>
+    <div style="display: flex; gap: 10px;">
+      <button type="button" class="btn" onclick="document.getElementById('gallery-delete-modal').close()" style="flex: 1; justify-content: center;">
+        Cancel
+      </button>
+      <button type="button" class="btn danger" id="confirm-gallery-delete-btn" style="flex: 1; justify-content: center;">
+        Yes, Delete Image
+      </button>
+    </div>
+  </dialog>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast" class="toast"></div>
+
+  <script src="../js/admin.js"></script>
+</body>
+</html>
