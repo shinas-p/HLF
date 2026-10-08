@@ -1202,8 +1202,9 @@
               <h3 class="contrib-card-title"><span class="y">✦</span> TOP CONTRIBUTORS</h3>
               <p class="contrib-card-sub">Celebrating those who support HLF 2026</p>
             </div>
+            <span class="tag" style="font-size: 10px; padding: 3px 8px; border-radius: 99px; border: 1px solid var(--line);">LEADERBOARD</span>
           </div>
-          <div class="contrib-leaderboard-list" id="contrib-leaderboard-list">
+          <div id="contrib-leaderboard-list">
             <div class="contrib-empty-state">
               <span class="empty-icon">✦</span>
               <p class="empty-title">Be the first supporter</p>
@@ -1489,21 +1490,86 @@
         return;
       }
 
-      listEl.innerHTML = contributors.slice(0, 5).map((c, i) => {
-        const rank = String(c.rank || (i + 1)).padStart(2, '0');
-        const rankClass = (i === 0) ? 'rank-1' : (i === 1 ? 'rank-2' : (i === 2 ? 'rank-3' : 'rank-normal'));
-        const amountStr = '₹' + Number(c.amount).toLocaleString('en-IN');
-        const name = c.name ? String(c.name).replace(/[&<>"']/g, s => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[s])) : 'Anonymous';
-        return `
-          <div class="contrib-leaderboard-row ${rankClass}" style="--row-i: ${i};">
-            <div class="contrib-rank-name">
-              <span class="contrib-rank">${rank}</span>
-              <span class="contrib-name" title="${name}">${name}</span>
-            </div>
-            <div class="contrib-amount">${amountStr}</div>
+      const escapeHtml = str => String(str).replace(/[&<>"']/g, s => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[s]));
+      const top5 = contributors.slice(0, 5);
+      const c1 = top5[0];
+      const c2 = top5[1];
+      const c3 = top5[2];
+      const runners = top5.slice(3);
+
+      const c1Name = escapeHtml(c1.name || 'Anonymous');
+      const c1Amt = '₹' + Number(c1.amount).toLocaleString('en-IN');
+
+      let html = '<div class="contrib-podium-wrap">';
+
+      // #1 Champion Podium (Center Focus)
+      html += `
+        <div class="contrib-podium-champion">
+          <div class="podium-crown">🥇</div>
+          <div class="podium-name-hero" title="${c1Name}">${c1Name}</div>
+          <div class="podium-divider-hero"></div>
+          <div class="podium-amount-hero">${c1Amt}</div>
+        </div>
+      `;
+
+      // Secondary Podium (#2 and #3 side-by-side)
+      if (c2) {
+        const c2Name = escapeHtml(c2.name || 'Anonymous');
+        const c2Amt = '₹' + Number(c2.amount).toLocaleString('en-IN');
+        const hasC3 = Boolean(c3);
+
+        html += `<div class="contrib-podium-secondary ${hasC3 ? '' : 'single-sub'}">`;
+        html += `
+          <div class="contrib-podium-sub rank-2">
+            <div class="podium-sub-badge">🥈 02</div>
+            <div class="podium-sub-name" title="${c2Name}">${c2Name}</div>
+            <div class="podium-sub-amount">${c2Amt}</div>
           </div>
         `;
-      }).join('');
+
+        if (hasC3) {
+          const c3Name = escapeHtml(c3.name || 'Anonymous');
+          const c3Amt = '₹' + Number(c3.amount).toLocaleString('en-IN');
+          html += `
+            <div class="contrib-podium-sub rank-3">
+              <div class="podium-sub-badge">🥉 03</div>
+              <div class="podium-sub-name" title="${c3Name}">${c3Name}</div>
+              <div class="podium-sub-amount">${c3Amt}</div>
+            </div>
+          `;
+        }
+        html += `</div>`;
+      } else {
+        // Only 1 verified contributor: show encouragement notice
+        html += `
+          <div class="contrib-podium-invite">
+            <span class="invite-star">✦</span> More supporters can join the leaderboard
+          </div>
+        `;
+      }
+
+      // Runners up: #4 and #5 (if present)
+      if (runners.length > 0) {
+        html += `<div class="contrib-podium-runners">`;
+        runners.forEach((r, idx) => {
+          const rankNum = String(idx + 4).padStart(2, '0');
+          const rName = escapeHtml(r.name || 'Anonymous');
+          const rAmt = '₹' + Number(r.amount).toLocaleString('en-IN');
+          html += `
+            <div class="contrib-leaderboard-row" style="--row-i: ${idx + 3};">
+              <div class="contrib-rank-name">
+                <span class="contrib-rank">${rankNum}</span>
+                <span class="contrib-name" title="${rName}">${rName}</span>
+              </div>
+              <div class="contrib-amount">${rAmt}</div>
+            </div>
+          `;
+        });
+        html += `</div>`;
+      }
+
+      html += '</div>';
+      listEl.innerHTML = html;
     }
 
     loadPublicContributionData();

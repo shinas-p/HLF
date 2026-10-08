@@ -87,14 +87,14 @@ test('css/registration.css: Contribution button animation system (.contrib-btn)'
   assert(regCss.includes('.contrib-btn::after'), 'Button shine pseudo-element missing');
 });
 
-test('css/registration.css: Vertical ranked leaderboard styles and accents', () => {
-  assert(regCss.includes('.contrib-leaderboard-row {'), '.contrib-leaderboard-row missing');
-  assert(regCss.includes('.contrib-leaderboard-row.rank-1'), '.rank-1 (Gold) accent missing');
-  assert(regCss.includes('.contrib-leaderboard-row.rank-2'), '.rank-2 (Silver) accent missing');
-  assert(regCss.includes('.contrib-leaderboard-row.rank-3'), '.rank-3 (Bronze) accent missing');
-  assert(regCss.includes('.contrib-leaderboard-row.rank-normal'), '.rank-normal muted styling missing');
-  assert(regCss.includes('border-bottom: 1px solid var(--line)'), 'Subtle row separator missing');
-  assert(regCss.includes('@keyframes leaderboardFadeIn'), 'leaderboardFadeIn animation missing');
+test('css/registration.css: Podium leaderboard styles and accents', () => {
+  assert(regCss.includes('.contrib-podium-wrap {'), '.contrib-podium-wrap missing');
+  assert(regCss.includes('.contrib-podium-champion {'), '.contrib-podium-champion missing');
+  assert(regCss.includes('.contrib-podium-secondary {'), '.contrib-podium-secondary missing');
+  assert(regCss.includes('.contrib-podium-sub.rank-2'), '.rank-2 accent missing');
+  assert(regCss.includes('.contrib-podium-sub.rank-3'), '.rank-3 accent missing');
+  assert(regCss.includes('.contrib-podium-invite'), '.contrib-podium-invite missing');
+  assert(regCss.includes('@keyframes podiumFadeIn'), 'podiumFadeIn animation missing');
 });
 
 test('css/registration.css: Grid layouts (.tiers-4 and .contrib-community-grid)', () => {
