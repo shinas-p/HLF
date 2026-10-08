@@ -15,6 +15,7 @@
   let allContributions = [];
   let selectedContribution = null;
   let contribToDelete = null;
+  let currentContributionTarget = 50000;
 
   document.addEventListener('DOMContentLoaded', initAdmin);
 
@@ -22,6 +23,7 @@
     setupTheme();
     setupNavigation();
     setupAuthListeners();
+    setupContributionTargetForm();
     checkInitialAdminStatus();
   }
 
@@ -684,6 +686,7 @@
       if (error) throw error;
       allContributions = data || [];
 
+      await loadContributionSettings();
       updateContributionStats();
       renderContributionsTable();
       renderRecentContributions();
@@ -692,6 +695,130 @@
       if (currentUser) {
         showToast('Error loading contributions: ' + err.message);
       }
+    }
+  }
+
+  async function loadContributionSettings() {
+    const sb = window.getSupabase();
+    if (!sb) return;
+    try {
+      const { data } = await sb.from('festival_settings').select('donation_goal').eq('id', 'general').maybeSingle();
+      if (data && data.donation_goal && Number(data.donation_goal) > 0) {
+        currentContributionTarget = Number(data.donation_goal);
+      }
+    } catch (e) {
+      console.warn('Error loading contribution target setting:', e);
+    }
+    const targetInput = document.getElementById('admin-target-amount');
+    if (targetInput) {
+      targetInput.value = currentContributionTarget;
+    }
+    const previewEl = document.getElementById('target-formatted-preview');
+    if (previewEl) {
+      previewEl.textContent = 'Formatted: ₹' + currentContributionTarget.toLocaleString('en-IN');
+    }
+  }
+
+  function updateAdminTargetProgress() {
+    const verifiedRaised = allContributions
+      .filter(c => (c.payment_status || '').toUpperCase() === 'VERIFIED')
+      .reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
+
+    const target = currentContributionTarget > 0 ? currentContributionTarget : 50000;
+    const rawPct = target > 0 ? (verifiedRaised / target) * 100 : 0;
+    const displayPct = rawPct > 0 ? (rawPct >= 100 ? 100 : Math.round(rawPct * 10) / 10) : 0;
+    const barPct = Math.min(100, Math.max(0, rawPct));
+
+    const raisedEl = document.getElementById('admin-target-raised');
+    if (raisedEl) raisedEl.textContent = '₹' + verifiedRaised.toLocaleString('en-IN');
+
+    const pctEl = document.getElementById('admin-target-pct');
+    if (pctEl) pctEl.textContent = displayPct + '%';
+
+    const barEl = document.getElementById('admin-target-bar');
+    if (barEl) barEl.style.width = barPct + '%';
+  }
+
+  function setupContributionTargetForm() {
+    const targetInput = document.getElementById('admin-target-amount');
+    const previewEl = document.getElementById('target-formatted-preview');
+    const valMsg = document.getElementById('target-validation-msg');
+    const form = document.getElementById('contrib-target-form');
+
+    if (targetInput) {
+      targetInput.addEventListener('input', () => {
+        const valStr = targetInput.value.trim();
+        const num = Number(valStr);
+        if (valStr !== '' && !isNaN(num) && num > 0 && Number.isInteger(num)) {
+          if (previewEl) previewEl.textContent = 'Formatted: ₹' + num.toLocaleString('en-IN');
+          if (valMsg) valMsg.style.display = 'none';
+        } else if (valStr === '') {
+          if (previewEl) previewEl.textContent = '';
+        } else {
+          if (previewEl) previewEl.textContent = 'Invalid amount';
+        }
+      });
+    }
+
+    if (form) {
+      form.onsubmit = async (e) => {
+        e.preventDefault();
+        const valStr = targetInput ? targetInput.value.trim() : '';
+        const num = Number(valStr);
+
+        // PART 13 Validation Rules:
+        // - Required
+        // - Positive number
+        // - Whole rupee amounts
+        // - Reject 0
+        // - Reject negative numbers
+        // - Reject invalid text
+        // - Reject empty values
+        if (!valStr || isNaN(num) || num <= 0 || !Number.isInteger(num)) {
+          if (valMsg) {
+            valMsg.textContent = 'Target Amount must be a positive whole rupee amount greater than 0.';
+            valMsg.style.display = 'block';
+          }
+          return;
+        }
+
+        if (valMsg) valMsg.style.display = 'none';
+
+        const sb = window.getSupabase();
+        if (!sb) {
+          alert('Supabase client unavailable.');
+          return;
+        }
+
+        const saveBtn = document.getElementById('save-target-btn');
+        if (saveBtn) {
+          saveBtn.disabled = true;
+          saveBtn.textContent = 'Saving...';
+        }
+
+        try {
+          const { error } = await sb.from('festival_settings').upsert({
+            id: 'general',
+            donation_goal: num,
+            updated_at: new Date().toISOString()
+          });
+
+          if (error) throw error;
+
+          currentContributionTarget = num;
+          if (previewEl) previewEl.textContent = 'Formatted: ₹' + num.toLocaleString('en-IN');
+          updateAdminTargetProgress();
+          showToast('Contribution target updated successfully.');
+        } catch (err) {
+          console.error('Failed to save contribution target:', err);
+          alert('Error saving target: ' + err.message);
+        } finally {
+          if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.textContent = '💾 Save Target';
+          }
+        }
+      };
     }
   }
 
@@ -734,6 +861,9 @@
 
     const elDonors = document.getElementById('stat-contrib-donors');
     if (elDonors) elDonors.textContent = uniqueDonors;
+
+    // Also update Admin Support Target & Progress
+    updateAdminTargetProgress();
   }
 
   function renderRecentContributions() {
@@ -2034,6 +2164,7 @@
     try {
       const { error } = await sb.from('festival_settings').upsert({
         id: 'general',
+        donation_goal: currentContributionTarget,
         upi_id,
         upi_payee_name,
         upi_qr_image_url,

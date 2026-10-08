@@ -910,6 +910,54 @@
           </div>
         </div>
 
+        <!-- CONTRIBUTION SETTINGS -->
+        <div class="panel" id="panel-contribution-settings" style="margin-top: 24px; margin-bottom: 24px;">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Contribution Settings &amp; Support Target</h2>
+              <p style="margin: 4px 0 0; color: var(--mute); font-size: 13px;">Configure the festival contribution target and track verified community support in real-time.</p>
+            </div>
+            <span class="badge confirmed" id="admin-target-status-badge">Target Active</span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; align-items: start; margin-top: 14px;">
+            <!-- Editable Target Form -->
+            <form id="contrib-target-form" style="background: var(--bg); border: 1px solid var(--line); border-radius: 16px; padding: 20px;">
+              <div class="form-group" style="margin-bottom: 12px;">
+                <label for="admin-target-amount" style="font-weight: 600; color: var(--ink);">Target Amount (₹)</label>
+                <div style="position: relative; margin-top: 6px;">
+                  <span style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-weight: bold; color: var(--teal); font-size: 16px;">₹</span>
+                  <input type="number" id="admin-target-amount" min="1" step="1" required placeholder="50000" style="padding-left: 32px; font-size: 16px; font-weight: bold; width: 100%;">
+                </div>
+                <div id="target-formatted-preview" style="font-size: 12px; color: var(--teal); margin-top: 6px; font-weight: 600;">Formatted: ₹50,000</div>
+                <div id="target-validation-msg" style="color: var(--red); font-size: 12px; margin-top: 6px; display: none;"></div>
+              </div>
+              <button type="submit" class="btn primary" id="save-target-btn" style="margin-top: 8px;">
+                💾 Save Target
+              </button>
+            </form>
+
+            <!-- Calculated Read-Only Stats & Progress -->
+            <div style="background: var(--bg); border: 1px solid var(--line); border-radius: 16px; padding: 20px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                <span style="font-size: 12px; color: var(--mute); text-transform: uppercase; font-weight: 600;">Current Raised</span>
+                <strong id="admin-target-raised" style="font-size: 20px; color: var(--teal);">₹0</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 12px; color: var(--mute); text-transform: uppercase; font-weight: 600;">Progress</span>
+                <strong id="admin-target-pct" style="font-size: 16px; color: var(--yel);">0%</strong>
+              </div>
+              <!-- Progress Bar Track -->
+              <div style="width: 100%; height: 12px; background: rgba(0,0,0,0.15); border-radius: 99px; overflow: hidden; border: 1px solid var(--line); margin-top: 6px;">
+                <div id="admin-target-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--teal), var(--yel)); border-radius: 99px; transition: width 0.4s ease;"></div>
+              </div>
+              <div style="margin-top: 14px; font-size: 11px; color: var(--mute); line-height: 1.4;">
+                * Automatically calculated from verified contribution records. Target is stored persistently in Supabase (festival_settings).
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="panel">
           <div class="panel-header">
             <div>

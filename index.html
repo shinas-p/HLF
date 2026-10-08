@@ -1,293 +1,1675 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>HLF 2026 — Hadith Literature Festival</title>
-<meta name="description" content="Hadith Literature Festival, 18–20 October 2026, Darul Huda Islamic University, Chemmad.">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&display=swap">
-<link rel="icon" type="image/png" href="assets/images/logo/favicon.png">
-<link rel="apple-touch-icon" href="assets/images/logo/favicon.png">
-<link rel="stylesheet" href="css/registration.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase-config.js"></script>
-<script src="js/site-images.js"></script>
-<script src="js/registration.js" defer></script>
-<script>try{var t=localStorage.getItem('hlf-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.dataset.theme=t}catch(e){}document.documentElement.classList.add('js')</script>
-<style>
-:root{--bg:#fbf7d6;--bg2:#f0eeb6;--ink:#17332d;--mute:#4b625b;--card:rgba(255,255,255,.55);--line:rgba(23,51,45,.18);--red:#d0021b;--amb:#c07a00;--teal:#12907a;--yel:#d9c42a;--blue:#2f5d93;--grn:#5fa83a;--on:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#06130f;--bg2:#0b211b;--ink:#f6f3d4;--mute:#a9bdb4;--card:rgba(255,255,255,.06);--line:rgba(246,243,212,.15);--red:#ff4258;--amb:#f2a62c;--teal:#2fd1b3;--yel:#f0dd3c;--blue:#5b94d6;--grn:#8bd45a;--on:#06130f}}
-:root[data-theme="dark"]{--bg:#06130f;--bg2:#0b211b;--ink:#f6f3d4;--mute:#a9bdb4;--card:rgba(255,255,255,.06);--line:rgba(246,243,212,.15);--red:#ff4258;--amb:#f2a62c;--teal:#2fd1b3;--yel:#f0dd3c;--blue:#5b94d6;--grn:#8bd45a;--on:#06130f}
-*,*:before,*:after{box-sizing:inherit}
-html{scroll-behavior:smooth;scroll-padding-top:env(safe-area-inset-top,0px)}
-html,body{margin:0}
-body{background:var(--bg);color:var(--ink);font:400 15px/1.7 'Fira Code',ui-monospace,Menlo,monospace;font-feature-settings:"calt" 0;overflow-x:hidden;-webkit-font-smoothing:antialiased}
-body:before{content:"";position:fixed;inset:0;z-index:-1;background:linear-gradient(var(--line) 1px,transparent 1px) 0 0/56px 56px,linear-gradient(90deg,var(--line) 1px,transparent 1px) 0 0/56px 56px;opacity:.35;mask:radial-gradient(ellipse at 50% 30%,#000,transparent 75%);-webkit-mask:radial-gradient(ellipse at 50% 30%,#000,transparent 75%)}
-a{color:inherit;text-decoration:none}button{font:inherit;cursor:pointer;color:inherit}
-h1,h2,h3{margin:0;font-weight:700;line-height:.95;letter-spacing:-.04em}
-section{padding:clamp(72px,11vw,140px) 0;position:relative}
-.w{width:min(1200px,100% - 40px);margin:auto}
-.tag{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--mute)}.tag b{color:var(--red)}
-.big{font-size:clamp(2.4rem,7vw,5.6rem)}
-.r{color:var(--red)}.a{color:var(--amb)}.t{color:var(--teal)}.y{color:var(--yel)}.bl{color:var(--blue)}
-.glass{background:var(--card);border:1px solid var(--line);border-radius:22px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
-.btn{display:inline-flex;align-items:center;gap:10px;padding:14px 24px;border-radius:99px;font-weight:700;border:1px solid var(--line);background:var(--card);transition:.3s}
-.btn:hover{transform:translateY(-3px)}
-.btn.p{background:linear-gradient(120deg,var(--red),var(--amb));color:#fff;border:0;box-shadow:0 10px 40px -10px var(--red)}
-.btn:disabled{opacity:.45;pointer-events:none}
-/* nav */
-nav{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));left:50%;translate:-50% 0;width:min(1200px,100% - 24px);z-index:50;display:flex;align-items:center;gap:18px;padding:8px 10px 8px 18px;border-radius:99px}
-nav .lg{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:-.03em;font-size:20px;margin-right:auto}nav .lg i{color:var(--red);font-style:normal}
-nav .ls{display:flex;gap:4px}nav .ls a{padding:8px 13px;border-radius:99px;font-size:14px;color:var(--mute)}nav .ls a:hover,nav .ls a.on{color:var(--ink);background:var(--line)}
-#th,#mb{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:none}#mb{display:none}
-nav .btn{padding:10px 18px;font-size:14px}
-/* hero */
-#home{min-height:100svh;display:grid;align-items:center;padding-top:130px;overflow:hidden}
-.aur{position:absolute;border-radius:50%;filter:blur(90px);opacity:.4;z-index:-1;animation:fl 14s ease-in-out infinite alternate}
-@keyframes fl{to{transform:translate(60px,-40px) scale(1.2)}}
-.hero{display:grid;grid-template-columns:1.15fr .85fr;gap:30px;align-items:center}
-h1{font-size:clamp(3.2rem,10.5vw,8.6rem)}h1 span{display:block}
-.orb{display:flex;gap:12px;margin:30px 0 8px}.orb b{width:62px;height:62px;border-radius:50%;display:grid;place-items:center;font-size:24px;color:#fff;box-shadow:0 0 18px -4px rgba(255,255,255,0.25);aspect-ratio:1/1;flex-shrink:0}
-.tl{font-size:clamp(1rem,2vw,1.2rem);max-width:30ch;color:var(--mute);margin:18px 0 28px}
-.cd{display:flex;gap:10px;margin-top:34px}.cd div{padding:12px 14px;text-align:center;min-width:70px}.cd b{display:block;font-size:26px;letter-spacing:-.04em}.cd small{font-size:10px;letter-spacing:.2em;color:var(--mute)}
-.ring{width:100%;max-width:520px;margin:auto;aspect-ratio:1}.ring circle{fill:none;stroke-width:9;stroke-linecap:round;transform-origin:50% 50%;animation:sp linear infinite}
-@keyframes sp{to{transform:rotate(360deg)}}
-.mq{overflow:hidden;border-block:1px solid var(--line);background:var(--teal);color:var(--on);padding:16px 0;white-space:nowrap}
-.mq div{display:inline-block;animation:mq 28s linear infinite;font-weight:700;letter-spacing:.18em}.mq span{margin:0 26px}
-@keyframes mq{to{transform:translateX(-50%)}}
-/* feed */
-.hd{display:flex;justify-content:space-between;align-items:end;gap:30px;flex-wrap:wrap;margin-bottom:44px}.hd p{max-width:36ch;color:var(--mute);margin:0}
-.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:28px}.chips button{padding:9px 16px;border-radius:99px;border:1px solid var(--line);background:none;font-size:13px}.chips button.on{background:var(--ink);color:var(--bg)}
-.feed{display:grid;grid-template-columns:repeat(6,1fr);gap:18px}
-.card{padding:30px;display:flex;flex-direction:column;gap:14px;grid-column:span 2;min-height:280px;transition:.4s;position:relative;overflow:hidden}.card.wd{grid-column:span 4}
-.card:hover{transform:translateY(-6px);border-color:var(--c)}.card:before{content:"";position:absolute;inset:auto -20% -50% auto;width:260px;height:260px;border-radius:50%;background:var(--c);filter:blur(80px);opacity:.28}
-.card .cat{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--c);border:1px solid var(--c);align-self:start;padding:4px 10px;border-radius:99px}
-.card h3{font-size:clamp(1.5rem,3vw,2.3rem);margin-top:auto}.card p{margin:0;color:var(--mute);font-size:14px}.card time{font-size:12px;letter-spacing:.15em;color:var(--mute)}
-/* about */
-.ab{display:grid;grid-template-columns:1fr 1fr;gap:50px}.ab p{color:var(--mute);margin:0 0 18px}.ab .lead{font-size:1.4rem;color:var(--ink);font-weight:700;line-height:1.3}
-.st{display:grid;grid-template-columns:repeat(4,1fr);margin-top:70px;border-top:1px solid var(--line)}.st div{padding:28px 0 0}.st b{display:block;font-size:clamp(2.6rem,6vw,4.8rem);letter-spacing:-.05em;line-height:1}.st small{color:var(--mute)}
-/* schedule */
-.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}.tabs button{padding:18px;border-radius:16px;border:1px solid var(--line);background:var(--card);text-align:left;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px}.tabs button.on{background:linear-gradient(120deg,var(--red),var(--amb));color:#fff;border:0}
-.day{padding:clamp(24px,4vw,50px);display:grid;grid-template-columns:200px 1fr;gap:40px}.day .n{font-size:clamp(5rem,12vw,9rem);font-weight:700;line-height:.85;letter-spacing:-.06em;color:var(--red)}
-.it{display:grid;grid-template-columns:110px 1fr;gap:20px;padding:18px 0;border-bottom:1px solid var(--line)}.it b{color:var(--teal)}
-.soon{border:1px dashed var(--line);display:inline-block;padding:8px 14px;border-radius:99px;font-size:13px;margin-top:10px}
-/* pay */
-#contributions{background:linear-gradient(180deg,transparent,var(--bg2) 20%,var(--bg2) 80%,transparent)}
-.tiers{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}.tier{padding:26px 22px;display:flex;flex-direction:column;gap:10px;border-top:3px solid var(--c);transition:.35s}.tier:hover{transform:translateY(-8px);box-shadow:0 20px 50px -20px var(--c)}
-.tier h3{font-size:1.5rem;color:var(--c)}.tier small{letter-spacing:.15em;color:var(--mute);font-size:11px}.tier .am{font-size:clamp(2rem,3.4vw,2.8rem);font-weight:700;letter-spacing:-.05em;margin:14px 0}.tier button{margin-top:auto;border:0;background:var(--c);color:var(--on);padding:12px;border-radius:12px;font-weight:700}
-.sp{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:20px}.sp .glass{padding:32px}.sp .am{font-size:clamp(2.4rem,5vw,3.8rem);font-weight:700;letter-spacing:-.05em;margin:12px 0 22px}
-.sub{margin:70px 0 22px;font-size:clamp(1.8rem,4vw,3rem)}
-/* gallery */
-.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));grid-auto-rows:180px;gap:14px}.gal figure{margin:0;border-radius:18px;overflow:hidden;position:relative;cursor:pointer}.gal img,.gal video{width:100%;height:100%;object-fit:cover;transition:.6s}.gal figure:hover img{transform:scale(1.07)}.gal figcaption{position:absolute;inset:auto 0 0;padding:30px 14px 12px;background:linear-gradient(transparent,#000a);color:#fff;font-size:13px}
-.empty{padding:60px 30px;text-align:center}.empty h3{font-size:clamp(1.8rem,4vw,3rem)}.empty p{color:var(--mute)}
-/* contact */
-.ct{display:grid;grid-template-columns:1.1fr .9fr;gap:50px;align-items:start}.ln{display:flex;gap:16px;align-items:center;padding:18px 0;border-bottom:1px solid var(--line);transition:.3s}.ln:hover{padding-left:10px;color:var(--teal)}.ln small{display:block;font-size:11px;letter-spacing:.2em;color:var(--mute)}.ln i{font-style:normal;width:42px;height:42px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center}
-.qr{padding:34px;text-align:center}.qb{background:#fff;padding:18px;border-radius:16px;display:inline-block;line-height:0;margin-bottom:16px}
-footer{border-top:1px solid var(--line);padding:50px 0 40px;color:var(--mute);font-size:14px}footer .w{display:flex;justify-content:space-between;flex-wrap:wrap;gap:30px}footer b{color:var(--ink);font-size:20px}footer nav{all:unset}footer .fl{display:flex;gap:18px;flex-wrap:wrap}
-dialog{border:1px solid var(--line);border-radius:24px;background:var(--bg);color:var(--ink);padding:30px;width:min(440px,100% - 30px)}dialog::backdrop{background:#000a;backdrop-filter:blur(6px)}
-dialog.lb{width:min(1000px,100% - 20px);background:#000;color:#fff;padding:14px}.lb img,.lb video{width:100%;max-height:78vh;object-fit:contain}
-.x{float:right;background:none;border:0;font-size:26px}.copy{display:flex;gap:8px;align-items:center;margin:14px 0;padding:12px;border:1px dashed var(--line);border-radius:12px;font-size:14px;word-break:break-all}.copy button{margin-left:auto}
-.js .rv{opacity:0;transform:translateY(28px);transition:opacity .9s,transform .9s cubic-bezier(.2,.7,.2,1)}.js .rv.in{opacity:1;transform:none}
-#glow{position:fixed;width:420px;height:420px;border-radius:50%;pointer-events:none;z-index:-1;background:radial-gradient(var(--teal),transparent 65%);opacity:.14;translate:-50% -50%}
-@media(max-width:900px){nav{width:min(1200px,100% - 16px);gap:10px;padding:8px 12px}nav .ls{display:none}nav.o .ls{display:flex;position:absolute;top:64px;left:0;right:0;flex-direction:column;padding:12px;background:var(--bg);border:1px solid var(--line);border-radius:22px;z-index:60}#mb{display:block}nav .btn.reg{display:inline-flex;padding:8px 14px;font-size:13px}
-.hero,.ab,.ct,.day{grid-template-columns:1fr}.ring{max-width:320px}.feed{grid-template-columns:1fr}.card,.card.wd{grid-column:auto}.st{grid-template-columns:1fr 1fr}.tiers{grid-template-columns:1fr 1fr}.sp{grid-template-columns:1fr}.it{grid-template-columns:1fr;gap:4px}.day{gap:10px}}
-@media(max-width:600px){html,body{overflow-x:hidden;max-width:100vw;position:relative}nav{width:calc(100% - 16px);gap:6px;padding:6px 10px}nav .lg{font-size:16px;gap:6px}nav .lg .lgi{height:28px}nav .btn.reg{padding:7px 11px;font-size:12px}#th,#mb{width:34px;height:34px}.tiers{grid-template-columns:1fr}.st{grid-template-columns:1fr}.cd{flex-wrap:wrap;justify-content:center}.cd div{min-width:64px;padding:8px 10px}.cd b{font-size:20px}.pw{max-width:260px;overflow:hidden}.aur{max-width:100vw;overflow:hidden;pointer-events:none}#glow{pointer-events:none;max-width:100vw;overflow:hidden}
-.orb b{width:50px;height:50px;font-size:20px;box-shadow:0 0 12px -3px rgba(255,255,255,0.18)}
-#schedule .hd{flex-direction:column;align-items:flex-start;gap:16px}#schedule .hd .big{font-size:clamp(1.8rem,6vw,3rem);line-height:1.05;word-break:break-word}#schedule .hd .tag{margin-bottom:4px}
-}
-@media(prefers-reduced-motion:reduce){*,*:before{animation:none!important;transition:none!important;scroll-behavior:auto!important}.js .rv{opacity:1;transform:none}}
-.lgi{background:#fffbe0;border-radius:12px;padding:3px;height:40px;width:auto;display:block}
-.hbg{position:absolute;inset:-6%;z-index:-2;background:center/cover;filter:blur(36px) saturate(1.25);opacity:.5}
-:root[data-theme="dark"] .hbg{opacity:.22}
-@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .hbg{opacity:.22}}
-#home:after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,transparent 55%,var(--bg))}
-.pw{position:relative;max-width:430px;width:100%;margin:auto}
-.pw .ring{position:absolute;left:50%;top:50%;width:140%;max-width:none;translate:-50% -50%;opacity:.75}
-.pst{position:relative;z-index:1;width:100%;height:auto;border-radius:22px;box-shadow:0 40px 90px -30px #000b,0 0 0 1px var(--line);transform:perspective(1100px) rotateY(var(--ry,-7deg)) rotateX(var(--rx,3deg));transition:transform .25s ease-out}
-#cf{position:absolute;inset:0;z-index:-1;overflow:hidden;pointer-events:none}#cf i{position:absolute;top:-20px;width:8px;height:14px;opacity:.8;animation:fall linear infinite}
-@keyframes fall{to{transform:translateY(110vh) rotate(540deg)}}
-.ci{width:100%;height:190px;object-fit:cover;object-position:top;border-radius:14px}
-@media(max-width:900px){.pw{max-width:300px}.pw .ring{width:125%}}
-@media(prefers-reduced-motion:reduce){#cf{display:none}}
-</style></head><body>
-<div id="glow"></div>
-<nav class="glass" id="nav"><a class="lg" href="#home"><img class="lgi" data-img="logo" alt="HLF logo"><span>HLF<i>✦</i>2026</span></a>
-<div class="ls"><a href="#home" class="on">Home</a><a href="#about">About</a><a href="#schedule">Schedule</a><a href="#contributions">Contributions</a><a href="#gallery">Gallery</a><a href="#contact">Contact</a></div>
-<button id="th" aria-label="Toggle theme">◐</button><a class="btn p reg" href="javascript:void(0)" role="button">Register ↗</a><button id="mb" aria-label="Menu">☰</button></nav>
+<html lang="en">
 
-<section id="home"><div class="hbg"></div><div id="cf" aria-hidden="true"></div><i class="aur" style="width:480px;height:480px;background:var(--red);left:-140px;top:60px"></i><i class="aur" style="width:520px;height:520px;background:var(--teal);right:-160px;bottom:0;animation-delay:-5s"></i>
-<div class="w hero"><div>
-<p class="tag"><b>HLF / 2026</b> &nbsp;A celebration of knowledge &amp; culture</p>
-<h1><span class="r">Hadith</span><span class="a">Literature</span><span class="t">Festival</span></h1>
-<div class="orb"><b style="background:var(--red);color:#fff">18</b><b style="background:var(--amb);color:#fff">19</b><b style="background:var(--teal);color:#fff">20</b><div style="align-self:center;margin-left:8px"><b style="all:unset;font-weight:700">OCTOBER 2026</b><br><small class="tag">Chemmad · Kerala</small></div></div>
-<p class="tl">Where Hadith meets thought, expression &amp; creativity.</p>
-<a class="btn p reg" href="javascript:void(0)" role="button">Register for HLF ↗</a> <a class="btn" href="#contributions">Contribute</a>
-<div class="cd" id="cd"></div></div>
-<div class="pw"><svg class="ring" viewBox="0 0 200 200" aria-hidden="true"><g id="rg"></g></svg><img class="pst" data-img="poster" alt="HLF 2026 official poster" width="720" height="900"></div></div></section>
-<div class="mq" aria-hidden="true"><div id="mqi"></div></div>
-
-<section id="feed"><div class="w"><div class="hd rv"><div><p class="tag"><b>[01]</b> The festival journal</p><h2 class="big">Something worth <span class="t">sharing.</span></h2></div><p>Announcements, conversations and little glimpses of HLF. Follow the festival as it unfolds.</p></div>
-<div class="chips" id="chips"></div><div class="feed" id="feed-g"></div></div></section>
-
-<section id="about"><div class="w"><div class="ab"><div class="rv"><p class="tag"><b>[02]</b> About HLF</p><h2 class="big" style="margin-top:18px">Rooted in <span class="t">tradition.</span> Alive with <span class="r">possibility.</span></h2><img class="lgi" data-img="logo" alt="HLF logo" style="height:auto;width:min(340px,100%);padding:22px;border-radius:24px;margin-top:40px"></div>
-<div class="rv"><p class="lead">A meeting of minds. A celebration of the <span class="a">Prophetic tradition.</span></p>
-<p>HLF is an academic and cultural initiative bringing Hadith literature into conversation with thought, expression and creativity.</p>
-<p>Organized by the Department of Hadith and Related Sciences at Darul Huda Islamic University, the festival celebrates the rich legacy of the Prophetic tradition and its scholarly heritage.</p>
-<p>Through lectures, panel discussions, exhibitions and interactive sessions, we explore how Hadith has been preserved, transmitted and understood — and why it continues to matter today.</p>
-<p class="t">For students, researchers, scholars and curious minds across campuses.</p></div></div>
-<div class="st rv" id="st"></div></div></section>
-
-<section id="schedule"><div class="w"><div class="hd rv"><div><p class="tag"><b>[03]</b> The programme</p><h2 class="big"><span style="background:var(--red);color:#fff;padding:0 .15em">Three days.</span><br><span class="a">Open possibilities.</span></h2></div><p>18, 19 and 20 October. A space for ideas, discovery and shared learning.</p></div>
-<div class="tabs" id="tabs" role="tablist"></div><div class="day glass rv" id="day"></div></div></section>
-
-<section id="contributions"><div class="w"><div class="hd rv"><div><p class="tag"><b>[04]</b> Make it possible</p><h2 class="big">Big ideas. <span class="y">Shared support.</span></h2></div><p>Support HLF. Your contribution helps bring students, scholarship and culture together for three memorable days.</p></div>
-<div class="tiers" id="tiers"></div><h2 class="sub rv">Sponsor a <span class="t">festival day.</span></h2><div class="sp" id="sp"></div></div></section>
-
-<section id="gallery"><div class="w"><div class="hd rv"><div><p class="tag"><b>[05]</b> The visual diary</p><h2 class="big">A festival. <span class="r">A thousand stories.</span></h2></div><p>Our colours, our campus, our collective memories.</p></div>
-<div class="chips" id="gchips"></div><div class="gal" id="gal"></div></div></section>
-
-<section id="contact"><div class="w"><div class="ct"><div class="rv"><p class="tag"><b>[06]</b> Let's connect</p><h2 class="big" style="margin:18px 0 30px">Come curious. <span class="t">Leave inspired.</span></h2><div id="cl"></div></div>
-<div class="qr glass rv"><p class="tag">HLF / 2026 ✦</p><div class="qb"><div id="qr"></div></div><h3 style="font-size:1.4rem;margin-bottom:18px">Scan to Connect with HLF</h3><a class="btn p reg" href="javascript:void(0)" role="button">Register for HLF ↗</a></div></div></div></section>
-
-<footer><div class="w"><div><img class="lgi" data-img="logo" alt="HLF logo" style="height:64px;margin-bottom:14px"><b>HLF<span class="r">✦</span>2026</b><p>Hadith Literature Festival<br>18–20 October 2026 · Chemmad<br><span id="fm"></span></p></div><div class="fl"><a href="#about">About</a><a href="#schedule">Schedule</a><a href="#contributions">Contributions</a><a href="#gallery">Gallery</a><a href="#contact">Contact</a><a id="fi" target="_blank" rel="noopener">Instagram</a><a href="admin.html" style="color:var(--teal)">✦ Admin Portal</a></div></div><div class="w" style="margin-top:30px"><small>© 2026 HLF. All Rights Reserved.</small></div></footer>
-
-<dialog id="pd"><button class="x" onclick="pd.close()" aria-label="Close">×</button><p class="tag" id="pl"></p><h2 id="pa" style="font-size:3rem;margin:6px 0 4px"></h2><p style="color:var(--mute);font-size:14px">Pay with Google Pay or any UPI app.</p>
-<div style="display:grid;gap:10px"><a class="btn p" id="gp">Pay with Google Pay</a><a class="btn" id="up">Pay via UPI</a></div><div class="copy"><span id="ui"></span><button class="btn" id="cp" style="padding:8px 14px">Copy UPI ID</button></div><small id="pn" style="color:var(--red)"></small></dialog>
-<dialog class="lb" id="lb"><button class="x" onclick="lb.close()" aria-label="Close" style="color:#fff">×</button><div id="lc"></div><div style="display:flex;justify-content:space-between;margin-top:10px"><button class="btn" onclick="go(-1)">← Prev</button><span id="lt"></span><button class="btn" onclick="go(1)">Next →</button></div></dialog>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script>
-const IMG = {
-  logo: (window.HLF_SITE_IMAGES && window.HLF_SITE_IMAGES.logo) || 'assets/images/logo/hlf-logo.png',
-  favicon: (window.HLF_SITE_IMAGES && window.HLF_SITE_IMAGES.favicon) || 'assets/images/logo/favicon.png',
-  poster: (window.HLF_SITE_IMAGES && window.HLF_SITE_IMAGES.officialPoster) || 'assets/images/posters/hlf-2026-official-poster.png'
-};
-</script>
-<script>
-/* ===== CONTENT: edit here ===== */
-const PAYMENT_CONFIG=(window.HLF_CONFIG && window.HLF_CONFIG.payment)?{upiId:window.HLF_CONFIG.payment.upiId,payeeName:window.HLF_CONFIG.payment.payeeName,note:"HLF Contribution"}:{upiId:"hlf2026@dhiu",payeeName:"Hadith Literature Festival DHIU",note:"HLF Contribution"};
-const SITE={register:"#register",email:"hadithliteraturefestival@gmail.com",phones:["+91 73065 54055","+91 77367 27873"],insta:"https://www.instagram.com/hadith_literature_festival/",instaName:"@hadith_literature_festival",venue:"Darul Huda Islamic University, Chemmad, Kerala",dept:"Department of Hadith and Related Sciences",qr:window.location.href.split('#')[0]+"#register",start:"2026-10-18T00:00:00+05:30"};
-const STATS=[["100","Students","r"],["20","Colleges","a"],["15","Academic sessions","t"],["5","Programs","bl"]];
-const POSTS=[{cat:"Announcement",title:"A new chapter. A shared celebration.",text:"Hadith Literature Festival comes to Darul Huda, Chemmad, on 18–20 October 2026. Save the dates.",date:"18–20 Oct 2026",c:"--red",wide:1,img:"poster"},
-{cat:"Academic",title:"Timeless knowledge. New conversations.",text:"Explore the preservation, transmission, interpretation and contemporary relevance of Hadith literature.",date:"18–20 Oct 2026",c:"--teal"},
-{cat:"Festival",title:"See you in Chemmad.",text:"Hosted at Darul Huda Islamic University. Powered by the Department of Hadith and Related Sciences.",date:"18–20 Oct 2026",c:"--amb"}];
-const SCHEDULE=[
-  {day:1,date:"18 October 2026",dateNum:"18",month:"October 2026",items:[]},
-  {day:2,date:"19 October 2026",dateNum:"19",month:"October 2026",items:[]},
-  {day:3,date:"20 October 2026",dateNum:"20",month:"October 2026",items:[]}
-];
-window.SCHEDULE=SCHEDULE; window.POSTS=POSTS;
-const TIERS=[["Minimal",99,"--red"],["Bronze",313,"--amb"],["Silver",500,"--teal"],["Golden",786,"--yel"],["Premium",1000,"--blue"]];
-const DAYS=[[1,7000],[2,5000],[3,4000]];
-let MEDIA=[{type:"image",src:IMG.poster,cat:"Events",title:"Official poster",span:2},{type:"image",src:IMG.logo,cat:"Events",title:"HLF logo",fit:"contain",bg:"#fffbe0"}]; window.MEDIA=MEDIA;
-/* ===== /CONTENT ===== */
-const $=s=>document.querySelector(s),e=encodeURIComponent,inr=n=>"₹"+n.toLocaleString("en-IN");
-document.querySelectorAll(".reg").forEach(a=>{a.href="javascript:void(0)";a.setAttribute("role","button");a.onclick=(e)=>{e.preventDefault();e.stopPropagation();if(typeof window.openRegistrationModal==='function')window.openRegistrationModal();};});
-document.addEventListener('click',function(e){const b=e.target.closest('.reg');if(!b)return;e.preventDefault();e.stopPropagation();if(typeof window.openRegistrationModal==='function'){window.openRegistrationModal();}else if(window.__HLF_BOOT_TRIED){console.error('HLF registration handler unavailable');}});
-document.querySelectorAll("[data-img]").forEach(i=>i.src=IMG[i.dataset.img]);document.querySelector(".hbg").style.backgroundImage="url("+IMG.poster+")";
-if (window.loadDynamicSiteImages) {
-  window.loadDynamicSiteImages().then(imgs => {
-    if (imgs.officialPoster) {
-      IMG.poster = imgs.officialPoster;
-      const hbg = document.querySelector(".hbg");
-      if (hbg) hbg.style.backgroundImage = "url(" + IMG.poster + ")";
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>HLF 2026 — Hadith Literature Festival</title>
+  <meta name="description"
+    content="Hadith Literature Festival, 18–20 October 2026, Darul Huda Islamic University, Chemmad.">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&display=swap">
+  <link rel="icon" type="image/png" href="assets/images/logo/favicon.png">
+  <link rel="apple-touch-icon" href="assets/images/logo/favicon.png">
+  <link rel="stylesheet" href="css/registration.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/site-images.js"></script>
+  <script src="js/registration.js" defer></script>
+  <script>try { var t = localStorage.getItem('hlf-theme') || (matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light'); document.documentElement.dataset.theme = t } catch (e) { } document.documentElement.classList.add('js')</script>
+  <style>
+    :root {
+      --bg: #fbf7d6;
+      --bg2: #f0eeb6;
+      --ink: #17332d;
+      --mute: #4b625b;
+      --card: rgba(255, 255, 255, .55);
+      --line: rgba(23, 51, 45, .18);
+      --red: #d0021b;
+      --amb: #c07a00;
+      --teal: #12907a;
+      --yel: #d9c42a;
+      --blue: #2f5d93;
+      --grn: #5fa83a;
+      --on: #fff;
+      box-sizing: border-box;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px)
     }
-    if (imgs.logo) IMG.logo = imgs.logo;
-    document.querySelectorAll("[data-img]").forEach(i => i.src = IMG[i.dataset.img]);
-  }).catch(() => {});
-}
-const cc=["--red","--amb","--yel","--grn","--teal","--blue"];$("#cf").innerHTML=Array.from({length:26},()=>`<i style="left:${Math.random()*100}%;background:var(${cc[Math.random()*6|0]});animation-duration:${9+Math.random()*10}s;animation-delay:-${Math.random()*12}s"></i>`).join("");
-$("#mqi").innerHTML=("KNOWLEDGE <span>✦</span> CULTURE <span>✦</span> CONVERSATION <span>✦</span> CREATIVITY <span>✦</span> COMMUNITY <span>✦</span> ").repeat(4);
-// ring
-$("#rg").innerHTML=["--red","--amb","--yel","--grn","--teal","--blue"].map((c,i)=>{const r=92-i*11;return`<circle cx="100" cy="100" r="${r}" stroke="var(${c})" stroke-dasharray="${r*(2.2+i*.35)} ${r*7}" style="animation-duration:${14+i*6}s;animation-direction:${i%2?"reverse":"normal"}"/>`}).join("");
-// countdown
-const cd=$("#cd");function tick(){let d=new Date(SITE.start)-Date.now();if(d<=0){cd.innerHTML='<b class="glass" style="padding:14px 20px">HLF is live ✦</b>';return}const v=[[864e5,"Days"],[36e5,"Hrs"],[6e4,"Min"],[1e3,"Sec"]];cd.innerHTML=v.map(([m,l])=>{const n=Math.floor(d/m);d-=n*m;return`<div class="glass"><b>${String(n).padStart(2,"0")}</b><small>${l}</small></div>`}).join("")}tick();setInterval(tick,1000);
-// feed
-const cats=["All",...new Set(POSTS.map(p=>p.cat))];
-function chips(el,list,fn){el.innerHTML=list.map((c,i)=>`<button class="${i?"":"on"}">${c}</button>`).join("");el.onclick=ev=>{const b=ev.target.closest("button");if(!b)return;[...el.children].forEach(x=>x.classList.toggle("on",x===b));fn(b.textContent)}}
-function feed(c){$("#feed-g").innerHTML=POSTS.filter(p=>c=="All"||p.cat==c).map(p=>`<article class="card glass ${p.wide?"wd":""}" style="--c:var(${p.c})">${p.img?`<img class="ci" src="${IMG[p.img]}" alt="">`:""}<span class="cat">${p.cat}</span><h3>${p.title}</h3><p>${p.text}</p><time>${p.date}</time></article>`).join("")}
-chips($("#chips"),cats,feed);feed("All");
-// stats
-$("#st").innerHTML=STATS.map(([n,l,c])=>`<div><b class="${c}" data-n="${n}">0+</b><small>${l}</small></div>`).join("");
-// schedule
-let cur=0;
-function getScheduleDayMeta(d,i){
-  const dayNum=(d&&d.day)||i+1;
-  let dateNum=String(17+dayNum);
-  let month="October 2026";
-  let fullDate=`${dateNum} October 2026`;
-  let tabText=`${dateNum} OCT`;
 
-  if(d){
-    if(d.dateNum)dateNum=String(d.dateNum);
-    if(d.month)month=d.month;
-    if(typeof d.date==="string"&&d.date.trim()){
-      const s=d.date.trim();
-      const iso=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-      if(iso){
-        dateNum=String(parseInt(iso[3],10));
-        month="October 2026";
-        fullDate=`${dateNum} October 2026`;
-        tabText=`${dateNum} OCT`;
-      }else{
-        const parts=s.match(/^(\d{1,2})\s+([a-zA-Z]+)(?:\s+(\d{4}))?/);
-        if(parts){
-          dateNum=parts[1];
-          month=`${parts[2]} ${parts[3]||"2026"}`;
-          fullDate=s;
-          tabText=`${dateNum} ${parts[2].slice(0,3).toUpperCase()}`;
-        }else{
-          fullDate=s;
-          tabText=`${dateNum} OCT`;
-        }
+    @media(prefers-color-scheme:dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #06130f;
+        --bg2: #0b211b;
+        --ink: #f6f3d4;
+        --mute: #a9bdb4;
+        --card: rgba(255, 255, 255, .06);
+        --line: rgba(246, 243, 212, .15);
+        --red: #ff4258;
+        --amb: #f2a62c;
+        --teal: #2fd1b3;
+        --yel: #f0dd3c;
+        --blue: #5b94d6;
+        --grn: #8bd45a;
+        --on: #06130f
       }
     }
-  }
-  return{dayNum,dateNum,month,fullDate,tabText};
-}
 
-function sched(){
-  const tabContainer=$("#tabs");
-  if(tabContainer){
-    tabContainer.innerHTML=SCHEDULE.map((d,i)=>{
-      const m=getScheduleDayMeta(d,i);
-      return`<button role="tab" class="${i===cur?"on":""}" onclick="cur=${i};sched()"><b>DAY 0${i+1}</b><span>${m.tabText}</span></button>`;
-    }).join("");
-  }
-  const d=SCHEDULE[cur]||{items:[]};
-  const m=getScheduleDayMeta(d,cur);
-  const dayContainer=$("#day");
-  if(dayContainer){
-    dayContainer.innerHTML=`<div><p class="tag r">Day 0${cur+1}</p><div class="n">${m.dateNum}</div><p class="tag r">${m.month}</p></div><div>${d.items&&d.items.length?d.items.map(i=>`<div class="it"><b>${i.time}</b><div><h3 style="font-size:1.4rem">${i.title}</h3><p style="margin:6px 0 0;color:var(--mute)">${i.desc||""}</p></div></div>`).join(""):`<p class="tag t">The details are on their way</p><h3 style="font-size:clamp(1.8rem,4vw,3rem);margin:12px 0 18px">Good conversations take a little planning.</h3><p style="color:var(--mute)">The official programme for ${m.fullDate} will be announced here. Session timings and speakers will appear once confirmed.</p><span class="soon">Programme to be announced</span>`}</div>`;
-  }
-}
-sched();
-window.sched=sched; window.feed=feed; window.chips=chips; window.getScheduleDayMeta=getScheduleDayMeta;
-// pay
-const customCardHtml=`<div class="tier glass rv" style="--c:var(--teal);border:1px solid rgba(18,144,122,0.4)"><small>06</small><h3>Custom</h3><small>CONTRIBUTION</small><div class="am" style="font-size:1.6rem">Custom ₹</div><button onclick="pay('custom','Custom Contribution')">Choose Amount ✦</button></div>`;
-$("#tiers").innerHTML=TIERS.map(([n,a,c],i)=>`<div class="tier glass rv" style="--c:var(${c})"><small>0${i+1}</small><h3>${n}</h3><small>CONTRIBUTION</small><div class="am">${inr(a)}</div><button onclick="pay(${a},'${n} Contribution')">Contribute ${inr(a)}</button></div>`).join("")+customCardHtml;
-$("#sp").innerHTML=DAYS.map(([d,a])=>`<div class="glass rv"><p class="tag">Day 0${d} · ${17+d} October</p><h3 style="font-size:1.6rem;margin-top:10px">Day ${d} Sponsorship</h3><div class="am ${["r","a","t"][d-1]}">${inr(a)}</div><button class="btn p" onclick="pay(${a},'Day ${d} Sponsorship')">Sponsor This Day ♥</button></div>`).join("");
-function pay(a,l){if(window.openContributionModal){return window.openContributionModal(a,l)}const P=PAYMENT_CONFIG,q=`pa=${e(P.upiId)}&pn=${e(P.payeeName)}&am=${a}&cu=INR&tn=${e(P.note+" - "+l)}`;$("#pl").textContent=l;$("#pa").textContent=inr(a);$("#gp").href="tez://upi/pay?"+q;$("#up").href="upi://pay?"+q;$("#ui").textContent=P.upiId||"UPI ID not set";const off=!P.upiId;$("#gp").classList.toggle("p",!off);[$("#gp"),$("#up"),$("#cp")].forEach(b=>b.style.opacity=off?.45:1);$("#pn").textContent=off?"Organizer: add the UPI ID in PAYMENT_CONFIG to enable payments.":"";pd.showModal()}
-$("#cp").onclick=async()=>{try{await navigator.clipboard.writeText(PAYMENT_CONFIG.upiId);$("#cp").textContent="Copied ✓"}catch(x){}};
-// gallery
-let list=[],li=0;const gc=["All","Events","Sessions","Guests","Moments"];
-function gal(c){list=(window.MEDIA||MEDIA).filter(m=>c=="All"||m.cat==c);$("#gal").innerHTML=list.length?list.map((m,i)=>`<figure onclick="op(${i})" style="grid-row:span ${m.span||1}"><${m.type=="video"?"video":"img"} src="${m.src}" loading="lazy" alt="${m.title}" style="object-fit:${m.fit||"cover"};background:${m.bg||"none"}" muted></${m.type=="video"?"video":"img"}><figcaption>${m.cat} · ${m.title}</figcaption></figure>`).join(""):`<div class="empty glass" style="grid-column:1/-1"><h3 class="t">The moments are yet to come.</h3><p>Photographs, guest portraits and videos from HLF will be added as the festival unfolds.</p></div>`}
-chips($("#gchips"),gc,gal);gal("All");window.gal=gal;window.op=op;
-function op(i){li=i;const m=list[i];if(!m)return;$("#lc").innerHTML=m.type=="video"?`<video src="${m.src}" controls autoplay></video>`:`<img src="${m.src}" alt="${m.title}">`;$("#lt").textContent=m.title;if(!lb.open)lb.showModal()}
-function go(d){op((li+d+list.length)%list.length)}
-document.addEventListener("keydown",k=>{if(lb.open){if(k.key=="ArrowRight")go(1);if(k.key=="ArrowLeft")go(-1)}});
-// contact
-const L=[["✉","Email",SITE.email,"mailto:"+SITE.email],...SITE.phones.map(p=>["☏","Phone",p,"tel:"+p.replace(/\s/g,"")]),["◎","Instagram",SITE.instaName,SITE.insta],["⌖","The place to be",SITE.venue+" — "+SITE.dept,"https://maps.google.com/?q="+e(SITE.venue)]];
-$("#cl").innerHTML=L.map(([i,t,v,h])=>`<a class="ln" href="${h}" target="_blank" rel="noopener"><i>${i}</i><div><small>${t.toUpperCase()}</small>${v}</div></a>`).join("");
-$("#fm").textContent=SITE.email;$("#fi").href=SITE.insta;
-try{new QRCode($("#qr"),{text:SITE.qr,width:200,height:200,colorDark:"#0b2a22",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.M})}catch(x){}
-// ui
-const nav=$("#nav");$("#mb").onclick=()=>nav.classList.toggle("o");nav.onclick=ev=>{if(ev.target.closest(".ls a"))nav.classList.remove("o")};
-$("#th").onclick=()=>{const t=document.documentElement.dataset.theme=="dark"?"light":"dark";document.documentElement.dataset.theme=t;try{localStorage.setItem("hlf-theme",t)}catch(x){}};
-const rm=matchMedia("(prefers-reduced-motion:reduce)").matches;
-document.querySelectorAll(".card").forEach(c=>c.classList.add("rv"));
-const io=new IntersectionObserver(es=>es.forEach(x=>{if(!x.isIntersecting)return;x.target.classList.add("in");x.target.querySelectorAll("[data-n]").forEach(b=>{const n=+b.dataset.n;if(rm){b.textContent=n+"+";return}const t0=performance.now();(function f(t){const p=Math.min((t-t0)/1400,1);b.textContent=Math.round(n*(1-Math.pow(1-p,3)))+"+";if(p<1)requestAnimationFrame(f)})(t0)});io.unobserve(x.target)}),{threshold:.15});
-document.querySelectorAll(".rv").forEach(n=>io.observe(n));
-const so=new IntersectionObserver(es=>es.forEach(x=>{if(x.isIntersecting)document.querySelectorAll(".ls a").forEach(a=>a.classList.toggle("on",a.getAttribute("href")=="#"+x.target.id))}),{rootMargin:"-45% 0px -50% 0px"});
-document.querySelectorAll("section[id]").forEach(s=>so.observe(s));
-if(matchMedia("(pointer:fine)").matches&&!rm)addEventListener("pointermove",p=>{$("#glow").style.left=p.clientX+"px";$("#glow").style.top=p.clientY+"px"});
-const pw=$(".pw");if(matchMedia("(pointer:fine)").matches&&!rm)pw.addEventListener("pointermove",p=>{const b=pw.getBoundingClientRect();pw.style.setProperty("--ry",((p.clientX-b.left)/b.width-.5)*16+"deg");pw.style.setProperty("--rx",-((p.clientY-b.top)/b.height-.5)*12+"deg")});
-</script></body></html>
+    :root[data-theme="dark"] {
+      --bg: #06130f;
+      --bg2: #0b211b;
+      --ink: #f6f3d4;
+      --mute: #a9bdb4;
+      --card: rgba(255, 255, 255, .06);
+      --line: rgba(246, 243, 212, .15);
+      --red: #ff4258;
+      --amb: #f2a62c;
+      --teal: #2fd1b3;
+      --yel: #f0dd3c;
+      --blue: #5b94d6;
+      --grn: #8bd45a;
+      --on: #06130f
+    }
+
+    *,
+    *:before,
+    *:after {
+      box-sizing: inherit
+    }
+
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: env(safe-area-inset-top, 0px)
+    }
+
+    html,
+    body {
+      margin: 0
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font: 400 15px/1.7 'Fira Code', ui-monospace, Menlo, monospace;
+      font-feature-settings: "calt" 0;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased
+    }
+
+    body:before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background: linear-gradient(var(--line) 1px, transparent 1px) 0 0/56px 56px, linear-gradient(90deg, var(--line) 1px, transparent 1px) 0 0/56px 56px;
+      opacity: .35;
+      mask: radial-gradient(ellipse at 50% 30%, #000, transparent 75%);
+      -webkit-mask: radial-gradient(ellipse at 50% 30%, #000, transparent 75%)
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none
+    }
+
+    button {
+      font: inherit;
+      cursor: pointer;
+      color: inherit
+    }
+
+    h1,
+    h2,
+    h3 {
+      margin: 0;
+      font-weight: 700;
+      line-height: .95;
+      letter-spacing: -.04em
+    }
+
+    section {
+      padding: clamp(72px, 11vw, 140px) 0;
+      position: relative
+    }
+
+    .w {
+      width: min(1200px, 100% - 40px);
+      margin: auto
+    }
+
+    .tag {
+      font-size: 12px;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--mute)
+    }
+
+    .tag b {
+      color: var(--red)
+    }
+
+    .big {
+      font-size: clamp(2.4rem, 7vw, 5.6rem)
+    }
+
+    .r {
+      color: var(--red)
+    }
+
+    .a {
+      color: var(--amb)
+    }
+
+    .t {
+      color: var(--teal)
+    }
+
+    .y {
+      color: var(--yel)
+    }
+
+    .bl {
+      color: var(--blue)
+    }
+
+    .glass {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px)
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 24px;
+      border-radius: 99px;
+      font-weight: 700;
+      border: 1px solid var(--line);
+      background: var(--card);
+      transition: .3s
+    }
+
+    .btn:hover {
+      transform: translateY(-3px)
+    }
+
+    .btn.p {
+      background: linear-gradient(120deg, var(--red), var(--amb));
+      color: #fff;
+      border: 0;
+      box-shadow: 0 10px 40px -10px var(--red)
+    }
+
+    .btn:disabled {
+      opacity: .45;
+      pointer-events: none
+    }
+
+    /* nav */
+    nav {
+      position: fixed;
+      top: calc(12px + env(safe-area-inset-top, 0px));
+      left: 50%;
+      translate: -50% 0;
+      width: min(1200px, 100% - 24px);
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 8px 10px 8px 18px;
+      border-radius: 99px
+    }
+
+    nav .lg {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      letter-spacing: -.03em;
+      font-size: 20px;
+      margin-right: auto
+    }
+
+    nav .lg i {
+      color: var(--red);
+      font-style: normal
+    }
+
+    nav .ls {
+      display: flex;
+      gap: 4px
+    }
+
+    nav .ls a {
+      padding: 8px 13px;
+      border-radius: 99px;
+      font-size: 14px;
+      color: var(--mute)
+    }
+
+    nav .ls a:hover,
+    nav .ls a.on {
+      color: var(--ink);
+      background: var(--line)
+    }
+
+    #th,
+    #mb {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid var(--line);
+      background: none
+    }
+
+    #mb {
+      display: none
+    }
+
+    nav .btn {
+      padding: 10px 18px;
+      font-size: 14px
+    }
+
+    /* hero */
+    #home {
+      min-height: 100svh;
+      display: grid;
+      align-items: center;
+      padding-top: 130px;
+      overflow: hidden
+    }
+
+    .aur {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(90px);
+      opacity: .4;
+      z-index: -1;
+      animation: fl 14s ease-in-out infinite alternate
+    }
+
+    @keyframes fl {
+      to {
+        transform: translate(60px, -40px) scale(1.2)
+      }
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 30px;
+      align-items: center
+    }
+
+    h1 {
+      font-size: clamp(3.2rem, 10.5vw, 8.6rem)
+    }
+
+    h1 span {
+      display: block
+    }
+
+    .orb {
+      display: flex;
+      gap: 12px;
+      margin: 30px 0 8px
+    }
+
+    .orb b {
+      width: 62px;
+      height: 62px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 24px;
+      color: #fff;
+      box-shadow: 0 0 18px -4px rgba(255, 255, 255, 0.25);
+      aspect-ratio: 1/1;
+      flex-shrink: 0
+    }
+
+    .tl {
+      font-size: clamp(1rem, 2vw, 1.2rem);
+      max-width: 30ch;
+      color: var(--mute);
+      margin: 18px 0 28px
+    }
+
+    .cd {
+      display: flex;
+      gap: 10px;
+      margin-top: 34px
+    }
+
+    .cd div {
+      padding: 12px 14px;
+      text-align: center;
+      min-width: 70px
+    }
+
+    .cd b {
+      display: block;
+      font-size: 26px;
+      letter-spacing: -.04em
+    }
+
+    .cd small {
+      font-size: 10px;
+      letter-spacing: .2em;
+      color: var(--mute)
+    }
+
+    .ring {
+      width: 100%;
+      max-width: 520px;
+      margin: auto;
+      aspect-ratio: 1
+    }
+
+    .ring circle {
+      fill: none;
+      stroke-width: 9;
+      stroke-linecap: round;
+      transform-origin: 50% 50%;
+      animation: sp linear infinite
+    }
+
+    @keyframes sp {
+      to {
+        transform: rotate(360deg)
+      }
+    }
+
+    .mq {
+      overflow: hidden;
+      border-block: 1px solid var(--line);
+      background: var(--teal);
+      color: var(--on);
+      padding: 16px 0;
+      white-space: nowrap
+    }
+
+    .mq div {
+      display: inline-block;
+      animation: mq 28s linear infinite;
+      font-weight: 700;
+      letter-spacing: .18em
+    }
+
+    .mq span {
+      margin: 0 26px
+    }
+
+    @keyframes mq {
+      to {
+        transform: translateX(-50%)
+      }
+    }
+
+    /* feed */
+    .hd {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 30px;
+      flex-wrap: wrap;
+      margin-bottom: 44px
+    }
+
+    .hd p {
+      max-width: 36ch;
+      color: var(--mute);
+      margin: 0
+    }
+
+    .chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 28px
+    }
+
+    .chips button {
+      padding: 9px 16px;
+      border-radius: 99px;
+      border: 1px solid var(--line);
+      background: none;
+      font-size: 13px
+    }
+
+    .chips button.on {
+      background: var(--ink);
+      color: var(--bg)
+    }
+
+    .feed {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 18px
+    }
+
+    .card {
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      grid-column: span 2;
+      min-height: 280px;
+      transition: .4s;
+      position: relative;
+      overflow: hidden
+    }
+
+    .card.wd {
+      grid-column: span 4
+    }
+
+    .card:hover {
+      transform: translateY(-6px);
+      border-color: var(--c)
+    }
+
+    .card:before {
+      content: "";
+      position: absolute;
+      inset: auto -20% -50% auto;
+      width: 260px;
+      height: 260px;
+      border-radius: 50%;
+      background: var(--c);
+      filter: blur(80px);
+      opacity: .28
+    }
+
+    .card .cat {
+      font-size: 11px;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--c);
+      border: 1px solid var(--c);
+      align-self: start;
+      padding: 4px 10px;
+      border-radius: 99px
+    }
+
+    .card h3 {
+      font-size: clamp(1.5rem, 3vw, 2.3rem);
+      margin-top: auto
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--mute);
+      font-size: 14px
+    }
+
+    .card time {
+      font-size: 12px;
+      letter-spacing: .15em;
+      color: var(--mute)
+    }
+
+    /* about */
+    .ab {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 50px
+    }
+
+    .ab p {
+      color: var(--mute);
+      margin: 0 0 18px
+    }
+
+    .ab .lead {
+      font-size: 1.4rem;
+      color: var(--ink);
+      font-weight: 700;
+      line-height: 1.3
+    }
+
+    .st {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      margin-top: 70px;
+      border-top: 1px solid var(--line)
+    }
+
+    .st div {
+      padding: 28px 0 0
+    }
+
+    .st b {
+      display: block;
+      font-size: clamp(2.6rem, 6vw, 4.8rem);
+      letter-spacing: -.05em;
+      line-height: 1
+    }
+
+    .st small {
+      color: var(--mute)
+    }
+
+    /* schedule */
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 18px
+    }
+
+    .tabs button {
+      padding: 18px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: var(--card);
+      text-align: left;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 4px
+    }
+
+    .tabs button.on {
+      background: linear-gradient(120deg, var(--red), var(--amb));
+      color: #fff;
+      border: 0
+    }
+
+    .day {
+      padding: clamp(24px, 4vw, 50px);
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 40px
+    }
+
+    .day .n {
+      font-size: clamp(5rem, 12vw, 9rem);
+      font-weight: 700;
+      line-height: .85;
+      letter-spacing: -.06em;
+      color: var(--red)
+    }
+
+    .it {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      gap: 20px;
+      padding: 18px 0;
+      border-bottom: 1px solid var(--line)
+    }
+
+    .it b {
+      color: var(--teal)
+    }
+
+    .soon {
+      border: 1px dashed var(--line);
+      display: inline-block;
+      padding: 8px 14px;
+      border-radius: 99px;
+      font-size: 13px;
+      margin-top: 10px
+    }
+
+    /* pay */
+    #contributions {
+      background: linear-gradient(180deg, transparent, var(--bg2) 20%, var(--bg2) 80%, transparent)
+    }
+
+    .tiers {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 14px
+    }
+
+    .tier {
+      padding: 26px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      border-top: 3px solid var(--c);
+      transition: .35s
+    }
+
+    .tier:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 50px -20px var(--c)
+    }
+
+    .tier h3 {
+      font-size: 1.5rem;
+      color: var(--c)
+    }
+
+    .tier small {
+      letter-spacing: .15em;
+      color: var(--mute);
+      font-size: 11px
+    }
+
+    .tier .am {
+      font-size: clamp(2rem, 3.4vw, 2.8rem);
+      font-weight: 700;
+      letter-spacing: -.05em;
+      margin: 14px 0
+    }
+
+    .tier button {
+      margin-top: auto;
+      border: 0;
+      background: var(--c);
+      color: var(--on);
+      padding: 12px;
+      border-radius: 12px;
+      font-weight: 700
+    }
+
+    .sp {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 20px
+    }
+
+    .sp .glass {
+      padding: 32px
+    }
+
+    .sp .am {
+      font-size: clamp(2.4rem, 5vw, 3.8rem);
+      font-weight: 700;
+      letter-spacing: -.05em;
+      margin: 12px 0 22px
+    }
+
+    .sub {
+      margin: 70px 0 22px;
+      font-size: clamp(1.8rem, 4vw, 3rem)
+    }
+
+    /* gallery */
+    .gal {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      grid-auto-rows: 180px;
+      gap: 14px
+    }
+
+    .gal figure {
+      margin: 0;
+      border-radius: 18px;
+      overflow: hidden;
+      position: relative;
+      cursor: pointer
+    }
+
+    .gal img,
+    .gal video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: .6s
+    }
+
+    .gal figure:hover img {
+      transform: scale(1.07)
+    }
+
+    .gal figcaption {
+      position: absolute;
+      inset: auto 0 0;
+      padding: 30px 14px 12px;
+      background: linear-gradient(transparent, #000a);
+      color: #fff;
+      font-size: 13px
+    }
+
+    .empty {
+      padding: 60px 30px;
+      text-align: center
+    }
+
+    .empty h3 {
+      font-size: clamp(1.8rem, 4vw, 3rem)
+    }
+
+    .empty p {
+      color: var(--mute)
+    }
+
+    /* contact */
+    .ct {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 50px;
+      align-items: start
+    }
+
+    .ln {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      padding: 18px 0;
+      border-bottom: 1px solid var(--line);
+      transition: .3s
+    }
+
+    .ln:hover {
+      padding-left: 10px;
+      color: var(--teal)
+    }
+
+    .ln small {
+      display: block;
+      font-size: 11px;
+      letter-spacing: .2em;
+      color: var(--mute)
+    }
+
+    .ln i {
+      font-style: normal;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 1px solid var(--line);
+      display: grid;
+      place-items: center
+    }
+
+    .qr {
+      padding: 34px;
+      text-align: center
+    }
+
+    .qb {
+      background: #fff;
+      padding: 18px;
+      border-radius: 16px;
+      display: inline-block;
+      line-height: 0;
+      margin-bottom: 16px
+    }
+
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 50px 0 40px;
+      color: var(--mute);
+      font-size: 14px
+    }
+
+    footer .w {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 30px
+    }
+
+    footer b {
+      color: var(--ink);
+      font-size: 20px
+    }
+
+    footer nav {
+      all: unset
+    }
+
+    footer .fl {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap
+    }
+
+    dialog {
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: var(--bg);
+      color: var(--ink);
+      padding: 30px;
+      width: min(440px, 100% - 30px)
+    }
+
+    dialog::backdrop {
+      background: #000a;
+      backdrop-filter: blur(6px)
+    }
+
+    dialog.lb {
+      width: min(1000px, 100% - 20px);
+      background: #000;
+      color: #fff;
+      padding: 14px
+    }
+
+    .lb img,
+    .lb video {
+      width: 100%;
+      max-height: 78vh;
+      object-fit: contain
+    }
+
+    .x {
+      float: right;
+      background: none;
+      border: 0;
+      font-size: 26px
+    }
+
+    .copy {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin: 14px 0;
+      padding: 12px;
+      border: 1px dashed var(--line);
+      border-radius: 12px;
+      font-size: 14px;
+      word-break: break-all
+    }
+
+    .copy button {
+      margin-left: auto
+    }
+
+    .js .rv {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity .9s, transform .9s cubic-bezier(.2, .7, .2, 1)
+    }
+
+    .js .rv.in {
+      opacity: 1;
+      transform: none
+    }
+
+    #glow {
+      position: fixed;
+      width: 420px;
+      height: 420px;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: -1;
+      background: radial-gradient(var(--teal), transparent 65%);
+      opacity: .14;
+      translate: -50% -50%
+    }
+
+    @media(max-width:900px) {
+      nav {
+        width: min(1200px, 100% - 16px);
+        gap: 10px;
+        padding: 8px 12px
+      }
+
+      nav .ls {
+        display: none
+      }
+
+      nav.o .ls {
+        display: flex;
+        position: absolute;
+        top: 64px;
+        left: 0;
+        right: 0;
+        flex-direction: column;
+        padding: 12px;
+        background: var(--bg);
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        z-index: 60
+      }
+
+      #mb {
+        display: block
+      }
+
+      nav .btn.reg {
+        display: inline-flex;
+        padding: 8px 14px;
+        font-size: 13px
+      }
+
+      .hero,
+      .ab,
+      .ct,
+      .day {
+        grid-template-columns: 1fr
+      }
+
+      .ring {
+        max-width: 320px
+      }
+
+      .feed {
+        grid-template-columns: 1fr
+      }
+
+      .card,
+      .card.wd {
+        grid-column: auto
+      }
+
+      .st {
+        grid-template-columns: 1fr 1fr
+      }
+
+      .tiers {
+        grid-template-columns: 1fr 1fr
+      }
+
+      .sp {
+        grid-template-columns: 1fr
+      }
+
+      .it {
+        grid-template-columns: 1fr;
+        gap: 4px
+      }
+
+      .day {
+        gap: 10px
+      }
+    }
+
+    @media(max-width:600px) {
+
+      html,
+      body {
+        overflow-x: hidden;
+        max-width: 100vw;
+        position: relative
+      }
+
+      nav {
+        width: calc(100% - 16px);
+        gap: 6px;
+        padding: 6px 10px
+      }
+
+      nav .lg {
+        font-size: 16px;
+        gap: 6px
+      }
+
+      nav .lg .lgi {
+        height: 28px
+      }
+
+      nav .btn.reg {
+        padding: 7px 11px;
+        font-size: 12px
+      }
+
+      #th,
+      #mb {
+        width: 34px;
+        height: 34px
+      }
+
+      .tiers {
+        grid-template-columns: 1fr
+      }
+
+      .st {
+        grid-template-columns: 1fr
+      }
+
+      .cd {
+        flex-wrap: wrap;
+        justify-content: center
+      }
+
+      .cd div {
+        min-width: 64px;
+        padding: 8px 10px
+      }
+
+      .cd b {
+        font-size: 20px
+      }
+
+      .pw {
+        max-width: 260px;
+        overflow: hidden
+      }
+
+      .aur {
+        max-width: 100vw;
+        overflow: hidden;
+        pointer-events: none
+      }
+
+      #glow {
+        pointer-events: none;
+        max-width: 100vw;
+        overflow: hidden
+      }
+
+      .orb b {
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+        box-shadow: 0 0 12px -3px rgba(255, 255, 255, 0.18)
+      }
+
+      #schedule .hd {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px
+      }
+
+      #schedule .hd .big {
+        font-size: clamp(1.8rem, 6vw, 3rem);
+        line-height: 1.05;
+        word-break: break-word
+      }
+
+      #schedule .hd .tag {
+        margin-bottom: 4px
+      }
+    }
+
+    @media(prefers-reduced-motion:reduce) {
+
+      *,
+      *:before {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important
+      }
+
+      .js .rv {
+        opacity: 1;
+        transform: none
+      }
+    }
+
+    .lgi {
+      background: #fffbe0;
+      border-radius: 12px;
+      padding: 3px;
+      height: 40px;
+      width: auto;
+      display: block
+    }
+
+    .hbg {
+      position: absolute;
+      inset: -6%;
+      z-index: -2;
+      background: center/cover;
+      filter: blur(36px) saturate(1.25);
+      opacity: .5
+    }
+
+    :root[data-theme="dark"] .hbg {
+      opacity: .22
+    }
+
+    @media(prefers-color-scheme:dark) {
+      :root:not([data-theme="light"]) .hbg {
+        opacity: .22
+      }
+    }
+
+    #home:after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background: linear-gradient(180deg, transparent 55%, var(--bg))
+    }
+
+    .pw {
+      position: relative;
+      max-width: 430px;
+      width: 100%;
+      margin: auto
+    }
+
+    .pw .ring {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 140%;
+      max-width: none;
+      translate: -50% -50%;
+      opacity: .75
+    }
+
+    .pst {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      height: auto;
+      border-radius: 22px;
+      box-shadow: 0 40px 90px -30px #000b, 0 0 0 1px var(--line);
+      transform: perspective(1100px) rotateY(var(--ry, -7deg)) rotateX(var(--rx, 3deg));
+      transition: transform .25s ease-out
+    }
+
+    #cf {
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      overflow: hidden;
+      pointer-events: none
+    }
+
+    #cf i {
+      position: absolute;
+      top: -20px;
+      width: 8px;
+      height: 14px;
+      opacity: .8;
+      animation: fall linear infinite
+    }
+
+    @keyframes fall {
+      to {
+        transform: translateY(110vh) rotate(540deg)
+      }
+    }
+
+    .ci {
+      width: 100%;
+      height: 190px;
+      object-fit: cover;
+      object-position: top;
+      border-radius: 14px
+    }
+
+    @media(max-width:900px) {
+      .pw {
+        max-width: 300px
+      }
+
+      .pw .ring {
+        width: 125%
+      }
+    }
+
+    @media(prefers-reduced-motion:reduce) {
+      #cf {
+        display: none
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="glow"></div>
+  <nav class="glass" id="nav"><a class="lg" href="#home"><img class="lgi" data-img="logo"
+        alt="HLF logo"><span>HLF<i>✦</i>2026</span></a>
+    <div class="ls"><a href="#home" class="on">Home</a><a href="#about">About</a><a href="#schedule">Schedule</a><a
+        href="#contributions">Contributions</a><a href="#gallery">Gallery</a><a href="#contact">Contact</a></div>
+    <button id="th" aria-label="Toggle theme">◐</button><a class="btn p reg" href="javascript:void(0)"
+      role="button">Register ↗</a><button id="mb" aria-label="Menu">☰</button>
+  </nav>
+
+  <section id="home">
+    <div class="hbg"></div>
+    <div id="cf" aria-hidden="true"></div><i class="aur"
+      style="width:480px;height:480px;background:var(--red);left:-140px;top:60px"></i><i class="aur"
+      style="width:520px;height:520px;background:var(--teal);right:-160px;bottom:0;animation-delay:-5s"></i>
+    <div class="w hero">
+      <div>
+        <p class="tag"><b>HLF / 2026</b> &nbsp;A celebration of knowledge &amp; culture</p>
+        <h1><span class="r">Hadith</span><span class="a">Literature</span><span class="t">Festival</span></h1>
+        <div class="orb"><b style="background:var(--red);color:#fff">18</b><b
+            style="background:var(--amb);color:#fff">19</b><b style="background:var(--teal);color:#fff">20</b>
+          <div style="align-self:center;margin-left:8px"><b style="all:unset;font-weight:700">OCTOBER 2026</b><br><small
+              class="tag">Chemmad · Kerala</small></div>
+        </div>
+        <p class="tl">Where Hadith meets thought, expression &amp; creativity.</p>
+        <a class="btn p reg" href="javascript:void(0)" role="button">Register for HLF ↗</a> <a class="btn"
+          href="#contributions">Contribute</a>
+        <div class="cd" id="cd"></div>
+      </div>
+      <div class="pw"><svg class="ring" viewBox="0 0 200 200" aria-hidden="true">
+          <g id="rg"></g>
+        </svg><img class="pst" data-img="poster" alt="HLF 2026 official poster" width="720" height="900"></div>
+    </div>
+  </section>
+  <div class="mq" aria-hidden="true">
+    <div id="mqi"></div>
+  </div>
+
+  <section id="feed">
+    <div class="w">
+      <div class="hd rv">
+        <div>
+          <p class="tag"><b>[01]</b> The festival journal</p>
+          <h2 class="big">Something worth <span class="t">sharing.</span></h2>
+        </div>
+        <p>Announcements, conversations and little glimpses of HLF. Follow the festival as it unfolds.</p>
+      </div>
+      <div class="chips" id="chips"></div>
+      <div class="feed" id="feed-g"></div>
+    </div>
+  </section>
+
+  <section id="about">
+    <div class="w">
+      <div class="ab">
+        <div class="rv">
+          <p class="tag"><b>[02]</b> About HLF</p>
+          <h2 class="big" style="margin-top:18px">Rooted in <span class="t">tradition.</span> Alive with <span
+              class="r">possibility.</span></h2><img class="lgi" data-img="logo" alt="HLF logo"
+            style="height:auto;width:min(340px,100%);padding:22px;border-radius:24px;margin-top:40px">
+        </div>
+        <div class="rv">
+          <p class="lead">A meeting of minds. A celebration of the <span class="a">Prophetic tradition.</span></p>
+          <p>HLF is an academic and cultural initiative bringing Hadith literature into conversation with thought,
+            expression and creativity.</p>
+          <p>Organized by the Department of Hadith and Related Sciences at Darul Huda Islamic University, the festival
+            celebrates the rich legacy of the Prophetic tradition and its scholarly heritage.</p>
+          <p>Through lectures, panel discussions, exhibitions and interactive sessions, we explore how Hadith has been
+            preserved, transmitted and understood — and why it continues to matter today.</p>
+          <p class="t">For students, researchers, scholars and curious minds across campuses.</p>
+        </div>
+      </div>
+      <div class="st rv" id="st"></div>
+    </div>
+  </section>
+
+  <section id="schedule">
+    <div class="w">
+      <div class="hd rv">
+        <div>
+          <p class="tag"><b>[03]</b> The programme</p>
+          <h2 class="big"><span style="background:var(--red);color:#fff;padding:0 .15em">Three days.</span><br><span
+              class="a">Open possibilities.</span></h2>
+        </div>
+        <p>18, 19 and 20 October. A space for ideas, discovery and shared learning.</p>
+      </div>
+      <div class="tabs" id="tabs" role="tablist"></div>
+      <div class="day glass rv" id="day"></div>
+    </div>
+  </section>
+
+  <section id="contributions">
+    <div class="w">
+      <div class="hd rv">
+        <div>
+          <p class="tag"><b>[04]</b> Make it possible</p>
+          <h2 class="big">Big ideas. <span class="y">Shared support.</span></h2>
+        </div>
+        <p>Support HLF. Your contribution helps bring students, scholarship and culture together for three memorable
+          days.</p>
+      </div>
+
+      <!-- Tier cards: 01 Minimal, 02 Bronze, 03 Silver, 04 Golden -->
+      <div class="tiers-4" id="tiers"></div>
+
+      <!-- Community Support Area: Top Contributors + Support Target -->
+      <div class="contrib-community-grid">
+        <!-- TOP CONTRIBUTORS -->
+        <div class="contrib-leaderboard-card glass rv" id="contrib-leaderboard-card">
+          <div class="contrib-card-header">
+            <div>
+              <h3 class="contrib-card-title"><span class="y">✦</span> TOP CONTRIBUTORS</h3>
+              <p class="contrib-card-sub">Celebrating those who support HLF 2026</p>
+            </div>
+            <span class="tag" style="font-size: 10px; padding: 3px 8px; border-radius: 99px; border: 1px solid var(--line);">LEADERBOARD</span>
+          </div>
+          <div class="contrib-leaderboard-list" id="contrib-leaderboard-list">
+            <div class="contrib-empty-state">
+              <span style="font-size: 20px; opacity: 0.6;">⏳</span>
+              <p>Loading contributors...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- HLF 2026 SUPPORT TARGET -->
+        <div class="contrib-target-card glass rv" id="contrib-target-card">
+          <div class="contrib-card-header">
+            <div>
+              <h3 class="contrib-card-title"><span class="t">✦</span> HLF 2026 SUPPORT TARGET</h3>
+              <p class="contrib-card-sub">Community-powered academic &amp; cultural festival</p>
+            </div>
+            <span class="tag" style="font-size: 10px; padding: 3px 8px; border-radius: 99px; border: 1px solid var(--line);">PROGRESS</span>
+          </div>
+
+          <div class="contrib-target-figures">
+            <div class="amount-raised">
+              <span id="contrib-raised-amount" class="accent">₹0</span>
+              <span style="font-size: 1.1rem; font-weight: 500; color: var(--mute);"> raised of </span>
+              <span id="contrib-goal-amount">₹50,000</span>
+            </div>
+            <div class="amount-goal">Directly powering student sessions, research &amp; publications.</div>
+          </div>
+
+          <div>
+            <div class="contrib-progress-track">
+              <div class="contrib-progress-fill" id="contrib-progress-fill" style="width: 0%;"></div>
+            </div>
+            <div class="contrib-target-footer">
+              <span>Funding Scale</span>
+              <span class="contrib-target-pct" id="contrib-target-pct">0%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 05 Custom Contribution Card -->
+      <div class="custom-contrib-card glass rv">
+        <div class="custom-contrib-info">
+          <div>
+            <small class="num">05</small>
+            <h3>Custom</h3>
+            <small class="tag" style="letter-spacing: 0.15em;">CONTRIBUTION</small>
+          </div>
+          <div>
+            <p class="desc">Contribute any custom amount to champion Hadith scholarship and student culture. Every rupee makes a difference (Min ₹1).</p>
+          </div>
+        </div>
+        <button class="contrib-btn p" style="background: var(--teal); color: var(--on); --btn-glow: rgba(18, 144, 122, 0.5);" onclick="pay('custom','Custom Contribution')">Choose Amount ✦</button>
+      </div>
+
+      <h2 class="sub rv">Sponsor a <span class="t">festival day.</span></h2>
+      <div class="sp" id="sp"></div>
+    </div>
+  </section>
+
+  <section id="gallery">
+    <div class="w">
+      <div class="hd rv">
+        <div>
+          <p class="tag"><b>[05]</b> The visual diary</p>
+          <h2 class="big">A festival. <span class="r">A thousand stories.</span></h2>
+        </div>
+        <p>Our colours, our campus, our collective memories.</p>
+      </div>
+      <div class="chips" id="gchips"></div>
+      <div class="gal" id="gal"></div>
+    </div>
+  </section>
+
+  <section id="contact">
+    <div class="w">
+      <div class="ct">
+        <div class="rv">
+          <p class="tag"><b>[06]</b> Let's connect</p>
+          <h2 class="big" style="margin:18px 0 30px">Come curious. <span class="t">Leave inspired.</span></h2>
+          <div id="cl"></div>
+        </div>
+        <div class="qr glass rv">
+          <p class="tag">HLF / 2026 ✦</p>
+          <div class="qb">
+            <div id="qr"></div>
+          </div>
+          <h3 style="font-size:1.4rem;margin-bottom:18px">Scan to Connect with HLF</h3><a class="btn p reg"
+            href="javascript:void(0)" role="button">Register for HLF ↗</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="w">
+      <div><img class="lgi" data-img="logo" alt="HLF logo" style="height:64px;margin-bottom:14px"><b>HLF<span
+            class="r">✦</span>2026</b>
+        <p>Hadith Literature Festival<br>18–20 October 2026 · Chemmad<br><span id="fm"></span></p>
+      </div>
+      <div class="fl"><a href="#about">About</a><a href="#schedule">Schedule</a><a
+          href="#contributions">Contributions</a><a href="#gallery">Gallery</a><a href="#contact">Contact</a><a id="fi"
+          target="_blank" rel="noopener">Instagram</a><a href="admin.html" style="color:var(--teal)">✦ Admin Portal</a>
+      </div>
+    </div>
+    <div class="w" style="margin-top:30px"><small>© 2026 HLF. All Rights Reserved.</small></div>
+  </footer>
+
+  <dialog id="pd"><button class="x" onclick="pd.close()" aria-label="Close">×</button>
+    <p class="tag" id="pl"></p>
+    <h2 id="pa" style="font-size:3rem;margin:6px 0 4px"></h2>
+    <p style="color:var(--mute);font-size:14px">Pay with Google Pay or any UPI app.</p>
+    <div style="display:grid;gap:10px"><a class="btn p" id="gp">Pay with Google Pay</a><a class="btn" id="up">Pay via
+        UPI</a></div>
+    <div class="copy"><span id="ui"></span><button class="btn" id="cp" style="padding:8px 14px">Copy UPI ID</button>
+    </div><small id="pn" style="color:var(--red)"></small>
+  </dialog>
+  <dialog class="lb" id="lb"><button class="x" onclick="lb.close()" aria-label="Close" style="color:#fff">×</button>
+    <div id="lc"></div>
+    <div style="display:flex;justify-content:space-between;margin-top:10px"><button class="btn" onclick="go(-1)">←
+        Prev</button><span id="lt"></span><button class="btn" onclick="go(1)">Next →</button></div>
+  </dialog>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script>
+    const IMG = {
+      logo: (window.HLF_SITE_IMAGES && window.HLF_SITE_IMAGES.logo) || 'assets/images/logo/hlf-logo.png',
+      favicon: (window.HLF_SITE_IMAGES && window.HLF_SITE_IMAGES.favicon) || 'assets/images/logo/favicon.png',
+      poster: (window.HLF_SITE_IMAGES && window.HLF_SITE_IMAGES.officialPoster) || 'assets/images/posters/hlf-2026-official-poster.png'
+    };
+  </script>
+  <script>
+    /* ===== CONTENT: edit here ===== */
+    const PAYMENT_CONFIG = (window.HLF_CONFIG && window.HLF_CONFIG.payment) ? { upiId: window.HLF_CONFIG.payment.upiId, payeeName: window.HLF_CONFIG.payment.payeeName, note: "HLF Contribution" } : { upiId: "hlf2026@dhiu", payeeName: "Hadith Literature Festival DHIU", note: "HLF Contribution" };
+    const SITE = { register: "#register", email: "hadithliteraturefestival@gmail.com", phones: ["+91 7510411637"], insta: "https://www.instagram.com/hadith_literature_festival/", instaName: "@hadith_literature_festival", venue: "Darul Huda Islamic University, Chemmad, Kerala", dept: "Department of Hadith and Related Sciences", qr: window.location.href.split('#')[0] + "#register", start: "2026-10-18T00:00:00+05:30" };
+    const STATS = [["100", "Students", "r"], ["20", "Colleges", "a"], ["15", "Academic sessions", "t"], ["5", "Programs", "bl"]];
+    const POSTS = [{ cat: "Announcement", title: "A new chapter. A shared celebration.", text: "Hadith Literature Festival comes to Darul Huda, Chemmad, on 18–20 October 2026. Save the dates.", date: "18–20 Oct 2026", c: "--red", wide: 1, img: "poster" },
+    { cat: "Academic", title: "Timeless knowledge. New conversations.", text: "Explore the preservation, transmission, interpretation and contemporary relevance of Hadith literature.", date: "18–20 Oct 2026", c: "--teal" },
+    { cat: "Festival", title: "See you in Chemmad.", text: "Hosted at Darul Huda Islamic University. Powered by the Department of Hadith and Related Sciences.", date: "18–20 Oct 2026", c: "--amb" }];
+    const SCHEDULE = [
+      { day: 1, date: "18 October 2026", dateNum: "18", month: "October 2026", items: [] },
+      { day: 2, date: "19 October 2026", dateNum: "19", month: "October 2026", items: [] },
+      { day: 3, date: "20 October 2026", dateNum: "20", month: "October 2026", items: [] }
+    ];
+    window.SCHEDULE = SCHEDULE; window.POSTS = POSTS;
+    const TIERS = [["Minimal", 99, "--red"], ["Bronze", 313, "--amb"], ["Silver", 500, "--teal"], ["Golden", 786, "--yel"]];
+    const DAYS = [[1, 7000], [2, 5000], [3, 4000]];
+    let MEDIA = [{ type: "image", src: IMG.poster, cat: "Events", title: "Official poster", span: 2 }, { type: "image", src: IMG.logo, cat: "Events", title: "HLF logo", fit: "contain", bg: "#fffbe0" }]; window.MEDIA = MEDIA;
+    /* ===== /CONTENT ===== */
+    const $ = s => document.querySelector(s), e = encodeURIComponent, inr = n => "₹" + n.toLocaleString("en-IN");
+    document.querySelectorAll(".reg").forEach(a => { a.href = "javascript:void(0)"; a.setAttribute("role", "button"); a.onclick = (e) => { e.preventDefault(); e.stopPropagation(); if (typeof window.openRegistrationModal === 'function') window.openRegistrationModal(); }; });
+    document.addEventListener('click', function (e) { const b = e.target.closest('.reg'); if (!b) return; e.preventDefault(); e.stopPropagation(); if (typeof window.openRegistrationModal === 'function') { window.openRegistrationModal(); } else if (window.__HLF_BOOT_TRIED) { console.error('HLF registration handler unavailable'); } });
+    document.querySelectorAll("[data-img]").forEach(i => i.src = IMG[i.dataset.img]); document.querySelector(".hbg").style.backgroundImage = "url(" + IMG.poster + ")";
+    if (window.loadDynamicSiteImages) {
+      window.loadDynamicSiteImages().then(imgs => {
+        if (imgs.officialPoster) {
+          IMG.poster = imgs.officialPoster;
+          const hbg = document.querySelector(".hbg");
+          if (hbg) hbg.style.backgroundImage = "url(" + IMG.poster + ")";
+        }
+        if (imgs.logo) IMG.logo = imgs.logo;
+        document.querySelectorAll("[data-img]").forEach(i => i.src = IMG[i.dataset.img]);
+      }).catch(() => { });
+    }
+    const cc = ["--red", "--amb", "--yel", "--grn", "--teal", "--blue"]; $("#cf").innerHTML = Array.from({ length: 26 }, () => `<i style="left:${Math.random() * 100}%;background:var(${cc[Math.random() * 6 | 0]});animation-duration:${9 + Math.random() * 10}s;animation-delay:-${Math.random() * 12}s"></i>`).join("");
+    $("#mqi").innerHTML = ("KNOWLEDGE <span>✦</span> CULTURE <span>✦</span> CONVERSATION <span>✦</span> CREATIVITY <span>✦</span> COMMUNITY <span>✦</span> ").repeat(4);
+    // ring
+    $("#rg").innerHTML = ["--red", "--amb", "--yel", "--grn", "--teal", "--blue"].map((c, i) => { const r = 92 - i * 11; return `<circle cx="100" cy="100" r="${r}" stroke="var(${c})" stroke-dasharray="${r * (2.2 + i * .35)} ${r * 7}" style="animation-duration:${14 + i * 6}s;animation-direction:${i % 2 ? "reverse" : "normal"}"/>` }).join("");
+    // countdown
+    const cd = $("#cd"); function tick() { let d = new Date(SITE.start) - Date.now(); if (d <= 0) { cd.innerHTML = '<b class="glass" style="padding:14px 20px">HLF is live ✦</b>'; return } const v = [[864e5, "Days"], [36e5, "Hrs"], [6e4, "Min"], [1e3, "Sec"]]; cd.innerHTML = v.map(([m, l]) => { const n = Math.floor(d / m); d -= n * m; return `<div class="glass"><b>${String(n).padStart(2, "0")}</b><small>${l}</small></div>` }).join("") } tick(); setInterval(tick, 1000);
+    // feed
+    const cats = ["All", ...new Set(POSTS.map(p => p.cat))];
+    function chips(el, list, fn) { el.innerHTML = list.map((c, i) => `<button class="${i ? "" : "on"}">${c}</button>`).join(""); el.onclick = ev => { const b = ev.target.closest("button"); if (!b) return;[...el.children].forEach(x => x.classList.toggle("on", x === b)); fn(b.textContent) } }
+    function feed(c) { $("#feed-g").innerHTML = POSTS.filter(p => c == "All" || p.cat == c).map(p => `<article class="card glass ${p.wide ? "wd" : ""}" style="--c:var(${p.c})">${p.img ? `<img class="ci" src="${IMG[p.img]}" alt="">` : ""}<span class="cat">${p.cat}</span><h3>${p.title}</h3><p>${p.text}</p><time>${p.date}</time></article>`).join("") }
+    chips($("#chips"), cats, feed); feed("All");
+    // stats
+    $("#st").innerHTML = STATS.map(([n, l, c]) => `<div><b class="${c}" data-n="${n}">0+</b><small>${l}</small></div>`).join("");
+    // schedule
+    let cur = 0;
+    function getScheduleDayMeta(d, i) {
+      const dayNum = (d && d.day) || i + 1;
+      let dateNum = String(17 + dayNum);
+      let month = "October 2026";
+      let fullDate = `${dateNum} October 2026`;
+      let tabText = `${dateNum} OCT`;
+
+      if (d) {
+        if (d.dateNum) dateNum = String(d.dateNum);
+        if (d.month) month = d.month;
+        if (typeof d.date === "string" && d.date.trim()) {
+          const s = d.date.trim();
+          const iso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+          if (iso) {
+            dateNum = String(parseInt(iso[3], 10));
+            month = "October 2026";
+            fullDate = `${dateNum} October 2026`;
+            tabText = `${dateNum} OCT`;
+          } else {
+            const parts = s.match(/^(\d{1,2})\s+([a-zA-Z]+)(?:\s+(\d{4}))?/);
+            if (parts) {
+              dateNum = parts[1];
+              month = `${parts[2]} ${parts[3] || "2026"}`;
+              fullDate = s;
+              tabText = `${dateNum} ${parts[2].slice(0, 3).toUpperCase()}`;
+            } else {
+              fullDate = s;
+              tabText = `${dateNum} OCT`;
+            }
+          }
+        }
+      }
+      return { dayNum, dateNum, month, fullDate, tabText };
+    }
+
+    function sched() {
+      const tabContainer = $("#tabs");
+      if (tabContainer) {
+        tabContainer.innerHTML = SCHEDULE.map((d, i) => {
+          const m = getScheduleDayMeta(d, i);
+          return `<button role="tab" class="${i === cur ? "on" : ""}" onclick="cur=${i};sched()"><b>DAY 0${i + 1}</b><span>${m.tabText}</span></button>`;
+        }).join("");
+      }
+      const d = SCHEDULE[cur] || { items: [] };
+      const m = getScheduleDayMeta(d, cur);
+      const dayContainer = $("#day");
+      if (dayContainer) {
+        dayContainer.innerHTML = `<div><p class="tag r">Day 0${cur + 1}</p><div class="n">${m.dateNum}</div><p class="tag r">${m.month}</p></div><div>${d.items && d.items.length ? d.items.map(i => `<div class="it"><b>${i.time}</b><div><h3 style="font-size:1.4rem">${i.title}</h3><p style="margin:6px 0 0;color:var(--mute)">${i.desc || ""}</p></div></div>`).join("") : `<p class="tag t">The details are on their way</p><h3 style="font-size:clamp(1.8rem,4vw,3rem);margin:12px 0 18px">Good conversations take a little planning.</h3><p style="color:var(--mute)">The official programme for ${m.fullDate} will be announced here. Session timings and speakers will appear once confirmed.</p><span class="soon">Programme to be announced</span>`}</div>`;
+      }
+    }
+    sched();
+    window.sched = sched; window.feed = feed; window.chips = chips; window.getScheduleDayMeta = getScheduleDayMeta;
+    // pay - Render 01 to 04 Tier Cards
+    $("#tiers").innerHTML = TIERS.map(([n, a, c], i) => `
+      <div class="tier glass rv" style="--c:var(${c})">
+        <small>0${i + 1}</small>
+        <h3>${n}</h3>
+        <small class="tag" style="letter-spacing: 0.15em;">CONTRIBUTION</small>
+        <div class="am">${inr(a)}</div>
+        <button class="contrib-btn" style="background:var(${c});color:var(--on);--btn-glow:var(${c})" onclick="pay(${a},'${n} Contribution')">Contribute ${inr(a)}</button>
+      </div>
+    `).join("");
+
+    // Public Contribution Target & Top Contributors System
+    async function loadPublicContributionData() {
+      const DEFAULT_TARGET = 50000;
+      let target = DEFAULT_TARGET;
+      let raised = 0;
+      let topContributors = [];
+
+      const sb = (typeof window.getSupabase === 'function') ? window.getSupabase() : null;
+      if (sb) {
+        try {
+          const { data, error } = await sb.rpc('get_public_contribution_data');
+          if (!error && data) {
+            if (typeof data.target === 'number' && data.target > 0) target = data.target;
+            if (typeof data.raised === 'number') raised = data.raised;
+            if (Array.isArray(data.top_contributors)) topContributors = data.top_contributors;
+          } else {
+            const { data: sRow } = await sb.from('festival_settings').select('donation_goal').eq('id', 'general').maybeSingle();
+            if (sRow && sRow.donation_goal && Number(sRow.donation_goal) > 0) {
+              target = Number(sRow.donation_goal);
+            }
+          }
+        } catch (err) {
+          console.warn('Could not load public contribution data, using safe fallback:', err);
+        }
+      }
+
+      renderSupportTargetUI(raised, target);
+      renderTopContributorsUI(topContributors);
+    }
+
+    function renderSupportTargetUI(raised, target) {
+      const safeTarget = (typeof target === 'number' && target > 0) ? target : 50000;
+      const safeRaised = (typeof raised === 'number' && raised >= 0) ? raised : 0;
+      const rawPct = safeTarget > 0 ? (safeRaised / safeTarget) * 100 : 0;
+      const displayPct = rawPct > 0 ? (rawPct >= 100 ? 100 : Math.round(rawPct * 10) / 10) : 0;
+      const barPct = Math.min(100, Math.max(0, rawPct));
+
+      const raisedEl = document.getElementById('contrib-raised-amount');
+      const goalEl = document.getElementById('contrib-goal-amount');
+      const pctEl = document.getElementById('contrib-target-pct');
+      const barEl = document.getElementById('contrib-progress-fill');
+
+      if (raisedEl) raisedEl.textContent = '₹' + safeRaised.toLocaleString('en-IN');
+      if (goalEl) goalEl.textContent = '₹' + safeTarget.toLocaleString('en-IN');
+      if (pctEl) pctEl.textContent = displayPct + '%';
+      if (barEl) {
+        requestAnimationFrame(() => {
+          barEl.style.width = barPct + '%';
+        });
+      }
+    }
+
+    function renderTopContributorsUI(contributors) {
+      const listEl = document.getElementById('contrib-leaderboard-list');
+      if (!listEl) return;
+
+      if (!contributors || contributors.length === 0) {
+        listEl.innerHTML = `
+          <div class="contrib-empty-state">
+            <span style="font-size: 24px; opacity: .7">✦</span>
+            <strong>Be the first supporter</strong>
+            <p>Contributions will appear here once verified.</p>
+          </div>
+        `;
+        return;
+      }
+
+      listEl.innerHTML = contributors.slice(0, 5).map((c, i) => {
+        const rank = String(c.rank || (i + 1)).padStart(2, '0');
+        const isTop1 = (i === 0);
+        const amountStr = '₹' + Number(c.amount).toLocaleString('en-IN');
+        const name = c.name ? String(c.name).replace(/[&<>"']/g, s => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[s])) : 'Anonymous';
+        return `
+          <div class="contrib-leaderboard-row ${isTop1 ? 'top-1' : ''}">
+            <div class="contrib-rank-name">
+              <span class="contrib-rank">${rank}</span>
+              <span class="contrib-name" title="${name}">${name}</span>
+            </div>
+            <div class="contrib-amount">${amountStr}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    loadPublicContributionData();
+    window.loadPublicContributionData = loadPublicContributionData;
+    $("#sp").innerHTML = DAYS.map(([d, a]) => `<div class="glass rv"><p class="tag">Day 0${d} · ${17 + d} October</p><h3 style="font-size:1.6rem;margin-top:10px">Day ${d} Sponsorship</h3><div class="am ${["r", "a", "t"][d - 1]}">${inr(a)}</div><button class="btn p" onclick="pay(${a},'Day ${d} Sponsorship')">Sponsor This Day ♥</button></div>`).join("");
+    function pay(a, l) { if (window.openContributionModal) { return window.openContributionModal(a, l) } const P = PAYMENT_CONFIG, q = `pa=${e(P.upiId)}&pn=${e(P.payeeName)}&am=${a}&cu=INR&tn=${e(P.note + " - " + l)}`; $("#pl").textContent = l; $("#pa").textContent = inr(a); $("#gp").href = "tez://upi/pay?" + q; $("#up").href = "upi://pay?" + q; $("#ui").textContent = P.upiId || "UPI ID not set"; const off = !P.upiId; $("#gp").classList.toggle("p", !off);[$("#gp"), $("#up"), $("#cp")].forEach(b => b.style.opacity = off ? .45 : 1); $("#pn").textContent = off ? "Organizer: add the UPI ID in PAYMENT_CONFIG to enable payments." : ""; pd.showModal() }
+    $("#cp").onclick = async () => { try { await navigator.clipboard.writeText(PAYMENT_CONFIG.upiId); $("#cp").textContent = "Copied ✓" } catch (x) { } };
+    // gallery
+    let list = [], li = 0; const gc = ["All", "Events", "Sessions", "Guests", "Moments"];
+    function gal(c) { list = (window.MEDIA || MEDIA).filter(m => c == "All" || m.cat == c); $("#gal").innerHTML = list.length ? list.map((m, i) => `<figure onclick="op(${i})" style="grid-row:span ${m.span || 1}"><${m.type == "video" ? "video" : "img"} src="${m.src}" loading="lazy" alt="${m.title}" style="object-fit:${m.fit || "cover"};background:${m.bg || "none"}" muted></${m.type == "video" ? "video" : "img"}><figcaption>${m.cat} · ${m.title}</figcaption></figure>`).join("") : `<div class="empty glass" style="grid-column:1/-1"><h3 class="t">The moments are yet to come.</h3><p>Photographs, guest portraits and videos from HLF will be added as the festival unfolds.</p></div>` }
+    chips($("#gchips"), gc, gal); gal("All"); window.gal = gal; window.op = op;
+    function op(i) { li = i; const m = list[i]; if (!m) return; $("#lc").innerHTML = m.type == "video" ? `<video src="${m.src}" controls autoplay></video>` : `<img src="${m.src}" alt="${m.title}">`; $("#lt").textContent = m.title; if (!lb.open) lb.showModal() }
+    function go(d) { op((li + d + list.length) % list.length) }
+    document.addEventListener("keydown", k => { if (lb.open) { if (k.key == "ArrowRight") go(1); if (k.key == "ArrowLeft") go(-1) } });
+    // contact
+    const L = [["✉", "Email", SITE.email, "mailto:" + SITE.email], ...SITE.phones.map(p => ["☏", "Phone", p, "tel:" + p.replace(/\s/g, "")]), ["◎", "Instagram", SITE.instaName, SITE.insta], ["⌖", "The place to be", SITE.venue + " — " + SITE.dept, "https://maps.google.com/?q=" + e(SITE.venue)]];
+    $("#cl").innerHTML = L.map(([i, t, v, h]) => `<a class="ln" href="${h}" target="_blank" rel="noopener"><i>${i}</i><div><small>${t.toUpperCase()}</small>${v}</div></a>`).join("");
+    $("#fm").textContent = SITE.email; $("#fi").href = SITE.insta;
+    try { new QRCode($("#qr"), { text: SITE.qr, width: 200, height: 200, colorDark: "#0b2a22", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M }) } catch (x) { }
+    // ui
+    const nav = $("#nav"); $("#mb").onclick = () => nav.classList.toggle("o"); nav.onclick = ev => { if (ev.target.closest(".ls a")) nav.classList.remove("o") };
+    $("#th").onclick = () => { const t = document.documentElement.dataset.theme == "dark" ? "light" : "dark"; document.documentElement.dataset.theme = t; try { localStorage.setItem("hlf-theme", t) } catch (x) { } };
+    const rm = matchMedia("(prefers-reduced-motion:reduce)").matches;
+    document.querySelectorAll(".card").forEach(c => c.classList.add("rv"));
+    const io = new IntersectionObserver(es => es.forEach(x => { if (!x.isIntersecting) return; x.target.classList.add("in"); x.target.querySelectorAll("[data-n]").forEach(b => { const n = +b.dataset.n; if (rm) { b.textContent = n + "+"; return } const t0 = performance.now(); (function f(t) { const p = Math.min((t - t0) / 1400, 1); b.textContent = Math.round(n * (1 - Math.pow(1 - p, 3))) + "+"; if (p < 1) requestAnimationFrame(f) })(t0) }); io.unobserve(x.target) }), { threshold: .15 });
+    document.querySelectorAll(".rv").forEach(n => io.observe(n));
+    const so = new IntersectionObserver(es => es.forEach(x => { if (x.isIntersecting) document.querySelectorAll(".ls a").forEach(a => a.classList.toggle("on", a.getAttribute("href") == "#" + x.target.id)) }), { rootMargin: "-45% 0px -50% 0px" });
+    document.querySelectorAll("section[id]").forEach(s => so.observe(s));
+    if (matchMedia("(pointer:fine)").matches && !rm) addEventListener("pointermove", p => { $("#glow").style.left = p.clientX + "px"; $("#glow").style.top = p.clientY + "px" });
+    const pw = $(".pw"); if (matchMedia("(pointer:fine)").matches && !rm) pw.addEventListener("pointermove", p => { const b = pw.getBoundingClientRect(); pw.style.setProperty("--ry", ((p.clientX - b.left) / b.width - .5) * 16 + "deg"); pw.style.setProperty("--rx", -((p.clientY - b.top) / b.height - .5) * 12 + "deg") });
+  </script>
+</body>
+
+</html>

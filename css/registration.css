@@ -1164,3 +1164,385 @@
   }
 }
 
+/* ============================================================
+   HLF 2026 — CONTRIBUTION SECTION ENHANCEMENTS
+   - Tier Cards (4-column grid)
+   - Contribution Button Interaction & Animation System
+   - Top Contributors Leaderboard Card
+   - Support Target & Animated Progress Bar
+   - Custom Contribution Card
+   ============================================================ */
+
+/* Button Interaction & Animation System */
+.contrib-btn {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s ease, filter 0.25s ease;
+  will-change: transform;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  border: 0;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 12px 18px;
+  text-decoration: none;
+  font-family: inherit;
+}
+
+.contrib-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px -4px var(--btn-glow, rgba(18, 144, 122, 0.45));
+}
+
+.contrib-btn:active {
+  transform: scale(0.96) translateY(0);
+  transition-duration: 0.1s;
+}
+
+.contrib-btn:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+/* Subtle diagonal shine sweep */
+.contrib-btn::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -120%;
+  width: 50%;
+  height: 200%;
+  background: linear-gradient(
+    105deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.28) 50%,
+    transparent 80%
+  );
+  transform: skewX(-20deg);
+  pointer-events: none;
+  animation: contribBtnShine 6.5s ease-in-out infinite;
+}
+
+@keyframes contribBtnShine {
+  0%, 80% {
+    left: -120%;
+  }
+  90%, 100% {
+    left: 200%;
+  }
+}
+
+/* Tiers Grid (4 items: 01 Minimal, 02 Bronze, 03 Silver, 04 Golden) */
+.tiers-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+/* Community Support Grid (Leaderboard + Support Target) */
+.contrib-community-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+/* Top Contributors Card */
+.contrib-leaderboard-card {
+  padding: 26px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-top: 3px solid var(--yel);
+  position: relative;
+  overflow: hidden;
+  min-height: 250px;
+}
+
+.contrib-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.contrib-card-title {
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  margin: 0;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.contrib-card-sub {
+  font-size: 12px;
+  color: var(--mute);
+  margin: 4px 0 0;
+}
+
+.contrib-leaderboard-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+  flex: 1;
+}
+
+.contrib-leaderboard-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+  font-size: 13px;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.contrib-leaderboard-row:hover {
+  transform: translateX(3px);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.contrib-leaderboard-row.top-1 {
+  background: linear-gradient(90deg, rgba(217, 196, 42, 0.14), rgba(208, 2, 27, 0.08));
+  border-color: rgba(217, 196, 42, 0.45);
+  box-shadow: 0 4px 16px -4px rgba(217, 196, 42, 0.2);
+  font-weight: 600;
+}
+
+.contrib-rank-name {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.contrib-rank {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--mute);
+  letter-spacing: 0.05em;
+  min-width: 20px;
+}
+
+.contrib-leaderboard-row.top-1 .contrib-rank {
+  color: var(--yel);
+}
+
+.contrib-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 8px;
+}
+
+.contrib-amount {
+  font-weight: 700;
+  color: var(--teal);
+  letter-spacing: -0.02em;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.contrib-leaderboard-row.top-1 .contrib-amount {
+  color: var(--yel);
+  font-size: 15px;
+}
+
+.contrib-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px 16px;
+  color: var(--mute);
+  flex: 1;
+  gap: 6px;
+}
+
+.contrib-empty-state p {
+  margin: 0;
+  font-size: 13px;
+}
+
+/* Support Target Card */
+.contrib-target-card {
+  padding: 26px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 3px solid var(--teal);
+  position: relative;
+  overflow: hidden;
+  min-height: 250px;
+}
+
+.contrib-target-figures {
+  margin: 10px 0;
+}
+
+.contrib-target-figures .amount-raised {
+  font-size: clamp(1.8rem, 3.2vw, 2.5rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  color: var(--ink);
+  line-height: 1.1;
+}
+
+.contrib-target-figures .amount-raised span.accent {
+  color: var(--teal);
+}
+
+.contrib-target-figures .amount-goal {
+  font-size: 13px;
+  color: var(--mute);
+  margin-top: 6px;
+}
+
+.contrib-progress-track {
+  width: 100%;
+  height: 14px;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+:root[data-theme="dark"] .contrib-progress-track {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.contrib-progress-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--teal), var(--yel));
+  box-shadow: 0 0 14px -2px var(--teal);
+  transition: width 1.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.contrib-target-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--mute);
+  margin-top: 6px;
+}
+
+.contrib-target-pct {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--teal);
+  letter-spacing: -0.03em;
+}
+
+/* Custom Contribution Card (05 Custom) */
+.custom-contrib-card {
+  padding: 22px 26px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-top: 3px solid var(--teal);
+  margin-top: 16px;
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
+}
+
+.custom-contrib-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 40px -16px var(--teal);
+}
+
+.custom-contrib-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+}
+
+.custom-contrib-info small.num {
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  color: var(--mute);
+  display: block;
+}
+
+.custom-contrib-info h3 {
+  font-size: 1.5rem;
+  color: var(--teal);
+  margin: 0;
+}
+
+.custom-contrib-info .desc {
+  font-size: 13px;
+  color: var(--mute);
+  margin: 0;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .contrib-btn::after {
+    animation: none !important;
+    display: none !important;
+  }
+  .contrib-btn,
+  .contrib-leaderboard-row,
+  .custom-contrib-card {
+    transition: none !important;
+  }
+  .contrib-progress-fill {
+    transition: none !important;
+  }
+  .contrib-btn:hover,
+  .contrib-btn:active,
+  .contrib-leaderboard-row:hover,
+  .custom-contrib-card:hover {
+    transform: none !important;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+  .tiers-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .contrib-community-grid {
+    grid-template-columns: 1fr;
+  }
+  .custom-contrib-card {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: left;
+  }
+}
+
+@media (max-width: 600px) {
+  .tiers-4 {
+    grid-template-columns: 1fr;
+  }
+  .custom-contrib-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .custom-contrib-card button {
+    width: 100%;
+  }
+}
+
+
