@@ -1202,12 +1202,11 @@
               <h3 class="contrib-card-title"><span class="y">✦</span> TOP CONTRIBUTORS</h3>
               <p class="contrib-card-sub">Celebrating those who support HLF 2026</p>
             </div>
-            <span class="tag" style="font-size: 10px; padding: 3px 8px; border-radius: 99px; border: 1px solid var(--line);">LEADERBOARD</span>
           </div>
           <div class="contrib-leaderboard-list" id="contrib-leaderboard-list">
             <div class="contrib-empty-state">
-              <span style="font-size: 20px; opacity: 0.6;">⏳</span>
-              <p>Loading contributors...</p>
+              <span class="empty-icon">✦</span>
+              <p class="empty-title">Be the first supporter</p>
             </div>
           </div>
         </div>
@@ -1482,9 +1481,9 @@
       if (!contributors || contributors.length === 0) {
         listEl.innerHTML = `
           <div class="contrib-empty-state">
-            <span style="font-size: 24px; opacity: .7">✦</span>
-            <strong>Be the first supporter</strong>
-            <p>Contributions will appear here once verified.</p>
+            <span class="empty-icon">✦</span>
+            <p class="empty-title">Be the first supporter</p>
+            <p style="margin:2px 0 0;font-size:11px;color:var(--mute);">Contributions will appear here once verified.</p>
           </div>
         `;
         return;
@@ -1492,11 +1491,11 @@
 
       listEl.innerHTML = contributors.slice(0, 5).map((c, i) => {
         const rank = String(c.rank || (i + 1)).padStart(2, '0');
-        const isTop1 = (i === 0);
+        const rankClass = (i === 0) ? 'rank-1' : (i === 1 ? 'rank-2' : (i === 2 ? 'rank-3' : 'rank-normal'));
         const amountStr = '₹' + Number(c.amount).toLocaleString('en-IN');
         const name = c.name ? String(c.name).replace(/[&<>"']/g, s => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[s])) : 'Anonymous';
         return `
-          <div class="contrib-leaderboard-row ${isTop1 ? 'top-1' : ''}">
+          <div class="contrib-leaderboard-row ${rankClass}" style="--row-i: ${i};">
             <div class="contrib-rank-name">
               <span class="contrib-rank">${rank}</span>
               <span class="contrib-name" title="${name}">${name}</span>

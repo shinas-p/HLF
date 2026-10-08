@@ -87,6 +87,16 @@ test('css/registration.css: Contribution button animation system (.contrib-btn)'
   assert(regCss.includes('.contrib-btn::after'), 'Button shine pseudo-element missing');
 });
 
+test('css/registration.css: Vertical ranked leaderboard styles and accents', () => {
+  assert(regCss.includes('.contrib-leaderboard-row {'), '.contrib-leaderboard-row missing');
+  assert(regCss.includes('.contrib-leaderboard-row.rank-1'), '.rank-1 (Gold) accent missing');
+  assert(regCss.includes('.contrib-leaderboard-row.rank-2'), '.rank-2 (Silver) accent missing');
+  assert(regCss.includes('.contrib-leaderboard-row.rank-3'), '.rank-3 (Bronze) accent missing');
+  assert(regCss.includes('.contrib-leaderboard-row.rank-normal'), '.rank-normal muted styling missing');
+  assert(regCss.includes('border-bottom: 1px solid var(--line)'), 'Subtle row separator missing');
+  assert(regCss.includes('@keyframes leaderboardFadeIn'), 'leaderboardFadeIn animation missing');
+});
+
 test('css/registration.css: Grid layouts (.tiers-4 and .contrib-community-grid)', () => {
   assert(regCss.includes('.tiers-4 {'), '.tiers-4 style missing');
   assert(regCss.includes('grid-template-columns: repeat(4, 1fr)'), '4 columns missing');

@@ -91,7 +91,7 @@
     // Check for #register in URL
     if (window.location.hash === '#register') {
       setTimeout(() => {
-        try { openRegistrationModal(); } catch (e) {}
+        try { openRegistrationModal(); } catch (e) { }
       }, 150);
     }
   }
@@ -154,12 +154,12 @@
                 <!-- Full Name -->
                 <div class="reg-field reg-col-2">
                   <label class="reg-label" for="reg-fullname">Full Name <span class="req">*</span></label>
-                  <input type="text" id="reg-fullname" class="reg-input" placeholder="e.g. Sayyid Ahmed" required autocomplete="name">
+                  <input type="text" id="reg-fullname" class="reg-input" placeholder="e.g. Muhammed Shinas" required autocomplete="name">
                 </div>
 
                 <!-- Mobile -->
                 <div class="reg-field">
-                  <label class="reg-label" for="reg-mobile">Mobile Number <span class="req">*</span></label>
+                  <label class="reg-label" for="reg-mobile">Whatsapp Number <span class="req">*</span></label>
                   <input type="tel" id="reg-mobile" class="reg-input" placeholder="10-digit mobile number" maxlength="10" required autocomplete="tel">
                 </div>
 
@@ -408,7 +408,7 @@
       if (e.target !== dialog) return;
       const rect = dialog.getBoundingClientRect();
       const isInDialog = (rect.top <= e.clientY && e.clientY <= rect.top + rect.height &&
-                          rect.left <= e.clientX && e.clientX <= rect.left + rect.width);
+        rect.left <= e.clientX && e.clientX <= rect.left + rect.width);
       if (!isInDialog) {
         closeRegistrationModal();
       }
@@ -435,7 +435,7 @@
         const txt = document.getElementById('step2-copy-id-text');
         txt.textContent = 'Copied ✓';
         setTimeout(() => { txt.textContent = 'Copy ID'; }, 2000);
-      } catch (e) {}
+      } catch (e) { }
     };
 
     // Copy UPI ID Button
@@ -510,7 +510,7 @@
         li.className = 'reg-combobox-item' + (hiddenInput.value === inst ? ' selected' : '');
         li.dataset.value = inst;
         li.dataset.index = idx;
-        
+
         if (q && inst.toLowerCase().includes(q) && inst !== 'Other') {
           const matchStart = inst.toLowerCase().indexOf(q);
           const matchEnd = matchStart + q.length;
@@ -855,7 +855,7 @@
           colorLight: '#ffffff',
           correctLevel: window.QRCode.CorrectLevel.M
         });
-      } catch (e) {}
+      } catch (e) { }
     }
   }
 
@@ -1153,7 +1153,7 @@
       const btn = document.getElementById('success-copy-id-btn');
       btn.textContent = 'Copied ✓';
       setTimeout(() => { btn.textContent = '📋 Copy Registration ID'; }, 2000);
-    } catch (err) {}
+    } catch (err) { }
   }
 
   // 9. Printable Registration Confirmation
@@ -1663,7 +1663,7 @@
       if (e.target !== dialog) return;
       const rect = dialog.getBoundingClientRect();
       const isInDialog = (rect.top <= e.clientY && e.clientY <= rect.top + rect.height &&
-                          rect.left <= e.clientX && e.clientX <= rect.left + rect.width);
+        rect.left <= e.clientX && e.clientX <= rect.left + rect.width);
       if (!isInDialog) {
         closeContributionModal();
       }
@@ -1680,7 +1680,7 @@
         const copyTxt = document.getElementById('contrib-copy-text');
         copyTxt.textContent = 'Copied ✓';
         setTimeout(() => { copyTxt.textContent = 'Copy UPI ID'; }, 2000);
-      } catch (err) {}
+      } catch (err) { }
     };
 
     // Form submission handlers & button clicks
@@ -2715,7 +2715,7 @@
             });
           });
 
-          const dynSchedule = Object.keys(dayMap).sort((a,b)=>Number(a)-Number(b)).map(k => dayMap[k]);
+          const dynSchedule = Object.keys(dayMap).sort((a, b) => Number(a) - Number(b)).map(k => dayMap[k]);
           if (dynSchedule.length > 0) {
             window.SCHEDULE.splice(0, window.SCHEDULE.length, ...dynSchedule);
             if (typeof window.sched === 'function') {
