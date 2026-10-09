@@ -1960,6 +1960,15 @@
         };
       }
     });
+
+    // Wire up all dedicated contribute CTA buttons to default to Custom Contribution
+    document.querySelectorAll('.btn-contribute-cta').forEach(btn => {
+      btn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        openContributionModal('custom', 'Custom Contribution');
+      };
+    });
   }
 
   // 12. Open Contribution Modal
@@ -1970,6 +1979,12 @@
     }
     const d = document.getElementById('contrib-dialog');
     if (!d) return;
+
+    // Default to 'custom' if called without an explicit amount/tier (e.g. from nav or hero Contribute button)
+    if (amount === undefined && tierName === undefined) {
+      amount = 'custom';
+      tierName = 'Custom Contribution';
+    }
 
     const isCustom = amount === 'custom' || (tierName && String(tierName).toLowerCase().includes('custom'));
     const customWrap = document.getElementById('contrib-custom-amount-wrap');
@@ -1994,7 +2009,10 @@
         if (customInput) customInput.value = '';
       }
       if (customWrap) customWrap.style.display = 'block';
-      if (customInput) customInput.required = true;
+      if (customInput) {
+        customInput.required = true;
+        customInput.disabled = false;
+      }
     } else {
       currentTier = tierName || 'Minimal Contribution';
       currentAmount = Number(amount) || 99;
@@ -2005,10 +2023,14 @@
       }
     }
 
-    // Fresh session: start clean on Step 1
+    // Fresh session: start clean on Step 1, reset errors and stale inputs
+    clearContribErrors();
     if (nameInput) nameInput.value = '';
     if (mobileInput) mobileInput.value = '';
     if (emailInput) emailInput.value = '';
+    if (isCustom && !amount) {
+      if (customInput) customInput.value = '';
+    }
     resetContribScreenshot();
 
     activeContributionData = {
@@ -2722,8 +2744,16 @@
   window.loadSupabaseData = loadSupabaseData;
   window.bootHLFInteractions = bootHLFInteractions;
 
-  // Delegated click handler: Guaranteed to intercept all .reg clicks anywhere in document
+  // Delegated click handler: Guaranteed to intercept all .reg and .btn-contribute-cta clicks anywhere in document
   document.addEventListener('click', function (e) {
+    const contributeButton = e.target.closest('.btn-contribute-cta');
+    if (contributeButton) {
+      e.preventDefault();
+      e.stopPropagation();
+      openContributionModal('custom', 'Custom Contribution');
+      return;
+    }
+
     const registerButton = e.target.closest('.reg');
     if (!registerButton) return;
 
