@@ -207,6 +207,162 @@
       pointer-events: none
     }
 
+    /* Premium Animated Contribute Button System */
+    .btn-contribute-cta {
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+      background: linear-gradient(125deg, #d0021b 0%, #dc2e12 42%, #c07a00 100%);
+      color: #ffffff !important;
+      font-weight: 700;
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      border-radius: 99px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+      cursor: pointer;
+      box-shadow: 0 4px 18px -2px rgba(208, 2, 27, 0.45), 0 2px 8px -1px rgba(192, 122, 0, 0.35);
+      transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.25s ease;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    :root[data-theme="dark"] .btn-contribute-cta {
+      background: linear-gradient(125deg, #ff4258 0%, #e6391d 45%, #f2a62c 100%);
+      box-shadow: 0 4px 22px -2px rgba(255, 66, 88, 0.5), 0 2px 10px -1px rgba(242, 166, 44, 0.4);
+      border-color: rgba(255, 255, 255, 0.32);
+    }
+
+    .btn-contribute-cta:hover {
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 0 8px 28px -2px rgba(208, 2, 27, 0.7), 0 4px 16px 0 rgba(192, 122, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.45);
+      border-color: rgba(255, 255, 255, 0.5);
+      color: #ffffff !important;
+    }
+
+    :root[data-theme="dark"] .btn-contribute-cta:hover {
+      box-shadow: 0 8px 32px -2px rgba(255, 66, 88, 0.75), 0 4px 18px 0 rgba(242, 166, 44, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.5);
+    }
+
+    .btn-contribute-cta:active {
+      transform: translateY(-1px) scale(0.99);
+    }
+
+    /* Text and icon remain crisp and sharp above the sweeping shine */
+    .btn-contribute-cta>* {
+      position: relative;
+      z-index: 2;
+      color: #ffffff !important;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    .btn-contribute-cta .btn-sparkle {
+      color: #fff6c9 !important;
+      font-size: 1.05em;
+      line-height: 1;
+      display: inline-block;
+      transform: translateY(-0.5px);
+      filter: drop-shadow(0 0 4px rgba(255, 246, 201, 0.65));
+    }
+
+    /* Continuous glossy light reflection sweeping across button surface */
+    .btn-contribute-cta::after {
+      content: "";
+      position: absolute;
+      top: -60%;
+      left: -70%;
+      width: 60%;
+      height: 220%;
+      background: linear-gradient(90deg,
+          rgba(255, 255, 255, 0) 0%,
+          rgba(255, 255, 255, 0.08) 25%,
+          rgba(255, 255, 255, 0.68) 50%,
+          rgba(255, 255, 255, 0.08) 75%,
+          rgba(255, 255, 255, 0) 100%);
+      transform: translateX(-120%) skewX(-24deg);
+      pointer-events: none;
+      z-index: 1;
+      animation: contributeGlossyShine 3.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+
+    @keyframes contributeGlossyShine {
+      0% {
+        transform: translateX(-120%) skewX(-24deg);
+        opacity: 0;
+      }
+
+      5% {
+        opacity: 1;
+      }
+
+      38% {
+        opacity: 1;
+      }
+
+      48% {
+        transform: translateX(380%) skewX(-24deg);
+        opacity: 0;
+      }
+
+      100% {
+        transform: translateX(380%) skewX(-24deg);
+        opacity: 0;
+      }
+    }
+
+    /* Hero button container & styles */
+    .hero-actions {
+      display: inline-flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .hero-contrib {
+      font-size: 15px;
+      padding: 14px 26px;
+    }
+
+    .hero-reg {
+      font-size: 15px;
+      padding: 14px 24px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      color: var(--ink);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .hero-reg:hover {
+      border-color: var(--red);
+      color: var(--ink);
+    }
+
+    /* Nav CTA styles */
+    nav .btn-contribute-cta.nav-contrib {
+      padding: 8px 16px;
+      font-size: 13px;
+      line-height: 1.2;
+      flex-shrink: 0;
+    }
+
+    nav .btn.nav-reg {
+      padding: 8px 16px;
+      font-size: 13px;
+      line-height: 1.2;
+      flex-shrink: 0;
+      background: var(--card);
+      border: 1px solid var(--line);
+      color: var(--ink);
+    }
+
+    nav .btn.nav-reg:hover {
+      border-color: var(--red);
+      color: var(--ink);
+    }
+
     /* nav */
     nav {
       position: fixed;
@@ -766,7 +922,9 @@
     }
 
     @keyframes progSpin {
-      to { transform: rotate(360deg); }
+      to {
+        transform: rotate(360deg);
+      }
     }
 
     /* pay */
@@ -1080,7 +1238,14 @@
         display: block
       }
 
-      nav .btn.reg {
+      nav .btn.reg,
+      nav .btn.nav-reg {
+        display: inline-flex;
+        padding: 8px 14px;
+        font-size: 13px
+      }
+
+      nav .btn-contribute-cta.nav-contrib {
         display: inline-flex;
         padding: 8px 14px;
         font-size: 13px
@@ -1153,7 +1318,7 @@
       nav {
         width: calc(100% - 16px);
         gap: 6px;
-        padding: 6px 10px
+        padding: 6px 8px
       }
 
       nav .lg {
@@ -1161,19 +1326,65 @@
         gap: 6px
       }
 
+      nav .lg span {
+        display: none
+      }
+
       nav .lg .lgi {
         height: 28px
       }
 
-      nav .btn.reg {
-        padding: 7px 11px;
+      nav .btn.reg,
+      nav .btn.nav-reg {
+        padding: 6px 10px;
         font-size: 12px
+      }
+
+      nav .btn-contribute-cta.nav-contrib {
+        padding: 6px 11px;
+        font-size: 12px;
+        gap: 5px
       }
 
       #th,
       #mb {
-        width: 34px;
-        height: 34px
+        width: 32px;
+        height: 32px
+      }
+
+      .hero-actions {
+        width: 100%;
+        gap: 10px
+      }
+
+      .hero-contrib,
+      .hero-reg {
+        font-size: 14px;
+        padding: 12px 20px
+      }
+    }
+
+    @media(max-width:380px) {
+      nav {
+        gap: 4px;
+        padding: 5px 6px
+      }
+
+      nav .btn-contribute-cta.nav-contrib {
+        padding: 5px 8px;
+        font-size: 11px;
+        gap: 3px
+      }
+
+      nav .btn.nav-reg {
+        padding: 5px 7px;
+        font-size: 11px
+      }
+
+      #th,
+      #mb {
+        width: 30px;
+        height: 30px
       }
 
       .tiers {
@@ -1242,10 +1453,21 @@
     @media(prefers-reduced-motion:reduce) {
 
       *,
-      *:before {
+      *:before,
+      *:after {
         animation: none !important;
         transition: none !important;
         scroll-behavior: auto !important
+      }
+
+      .btn-contribute-cta::after {
+        animation: none !important;
+        display: none !important
+      }
+
+      .btn-contribute-cta {
+        transition: none !important;
+        transform: none !important
       }
 
       .js .rv {
@@ -1373,8 +1595,13 @@
         alt="HLF logo"><span>HLF<i>✦</i>2026</span></a>
     <div class="ls"><a href="#home" class="on">Home</a><a href="#about">About</a><a href="#schedule">Schedule</a><a
         href="#contributions">Contributions</a><a href="#gallery">Gallery</a><a href="#contact">Contact</a></div>
-    <button id="th" aria-label="Toggle theme">◐</button><a class="btn p reg" href="javascript:void(0)"
-      role="button">Register ↗</a><button id="mb" aria-label="Menu">☰</button>
+
+    <a class="btn reg nav-reg" href="javascript:void(0)" role="button" aria-label="Register for HLF 2026"><span>Register
+        ↗</span></a>
+    <a class="btn btn-contribute-cta nav-contrib" href="javascript:void(0)" role="button"
+      aria-label="Contribute to HLF 2026"><span class="btn-sparkle">✦</span><span>Contribute</span></a>
+    <button id="th" aria-label="Toggle theme">◐</button>
+    <button id="mb" aria-label="Menu">☰</button>
   </nav>
 
   <section id="home">
@@ -1392,8 +1619,15 @@
               class="tag">Chemmad · Kerala</small></div>
         </div>
         <p class="tl">Where Hadith meets thought, expression &amp; creativity.</p>
-        <a class="btn p reg" href="javascript:void(0)" role="button">Register for HLF ↗</a> <a class="btn"
-          href="#contributions">Contribute</a>
+        <div class="hero-actions">
+          <a class="btn btn-contribute-cta hero-contrib" href="javascript:void(0)" role="button"
+            aria-label="Contribute to HLF 2026">
+            <span class="btn-sparkle">✦</span><span>Contribute</span>
+          </a>
+          <a class="btn reg hero-reg" href="javascript:void(0)" role="button" aria-label="Register for HLF 2026">
+            <span>Register for HLF ↗</span>
+          </a>
+        </div>
         <div class="cd" id="cd"></div>
       </div>
       <div class="pw"><svg class="ring" viewBox="0 0 200 200" aria-hidden="true">
@@ -1638,7 +1872,29 @@
     /* ===== /CONTENT ===== */
     const $ = s => document.querySelector(s), e = encodeURIComponent, inr = n => "₹" + n.toLocaleString("en-IN");
     document.querySelectorAll(".reg").forEach(a => { a.href = "javascript:void(0)"; a.setAttribute("role", "button"); a.onclick = (e) => { e.preventDefault(); e.stopPropagation(); if (typeof window.openRegistrationModal === 'function') window.openRegistrationModal(); }; });
-    document.addEventListener('click', function (e) { const b = e.target.closest('.reg'); if (!b) return; e.preventDefault(); e.stopPropagation(); if (typeof window.openRegistrationModal === 'function') { window.openRegistrationModal(); } else if (window.__HLF_BOOT_TRIED) { console.error('HLF registration handler unavailable'); } });
+    document.querySelectorAll(".btn-contribute-cta").forEach(a => { a.href = "javascript:void(0)"; a.setAttribute("role", "button"); a.onclick = (e) => { e.preventDefault(); e.stopPropagation(); if (typeof window.openContributionModal === 'function') { window.openContributionModal(); } else if (typeof window.pay === 'function') { window.pay(99, 'Festival Contribution'); } }; });
+    document.addEventListener('click', function (e) {
+      const c = e.target.closest('.btn-contribute-cta');
+      if (c) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof window.openContributionModal === 'function') {
+          window.openContributionModal();
+        } else if (typeof window.pay === 'function') {
+          window.pay(99, 'Festival Contribution');
+        }
+        return;
+      }
+      const b = e.target.closest('.reg');
+      if (!b) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof window.openRegistrationModal === 'function') {
+        window.openRegistrationModal();
+      } else if (window.__HLF_BOOT_TRIED) {
+        console.error('HLF registration handler unavailable');
+      }
+    });
     document.querySelectorAll("[data-img]").forEach(i => i.src = IMG[i.dataset.img]); document.querySelector(".hbg").style.backgroundImage = "url(" + IMG.poster + ")";
     if (window.loadDynamicSiteImages) {
       window.loadDynamicSiteImages().then(imgs => {

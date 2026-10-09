@@ -189,8 +189,15 @@
   async function verifyAdminAccess(user) {
     const sb = window.getSupabase();
     try {
-      // Check if user ID is in admin_users table
-      const { data, error } = await sb.from('admin_users').select('*').eq('id', user.id).single();
+      // Check if user ID or email is in admin_users table
+      let { data, error } = await sb.from('admin_users').select('*').eq('id', user.id).maybeSingle();
+
+      if (!data && user.email) {
+        const { data: byEmail } = await sb.from('admin_users').select('*').ilike('email', user.email.trim()).maybeSingle();
+        if (byEmail) {
+          data = byEmail;
+        }
+      }
 
       if (error || !data) {
         // Not an authorized admin
