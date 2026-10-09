@@ -606,6 +606,138 @@
       color: var(--teal)
     }
 
+    /* Database-driven Programme Cards */
+    .it.prog-item {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 24px;
+      padding: 22px 0;
+      border-bottom: 1px solid var(--line);
+      align-items: start;
+    }
+
+    .it.prog-item:last-child {
+      border-bottom: 0;
+    }
+
+    .prog-time-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .prog-time-badge {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--teal);
+      letter-spacing: -0.02em;
+      line-height: 1.3;
+    }
+
+    .prog-type-pill {
+      display: inline-flex;
+      align-items: center;
+      align-self: flex-start;
+      padding: 3px 8px;
+      border-radius: 99px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: rgba(18, 144, 122, 0.12);
+      color: var(--teal);
+      border: 1px solid rgba(18, 144, 122, 0.25);
+    }
+
+    .prog-body {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .prog-num-tag {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--red);
+    }
+
+    .prog-title {
+      font-size: clamp(1.2rem, 2.2vw, 1.45rem);
+      font-weight: 700;
+      line-height: 1.35;
+      margin: 0;
+      color: var(--ink);
+      word-break: break-word;
+    }
+
+    .prog-subject {
+      font-size: 1.02rem;
+      font-weight: 500;
+      color: var(--ink);
+      line-height: 1.5;
+      margin: 2px 0 4px 0;
+      white-space: pre-line;
+      opacity: 0.95;
+    }
+
+    .prog-meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--mute);
+      margin-top: 2px;
+    }
+
+    .prog-meta-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .prog-participants-box {
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .prog-role-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 6px 10px;
+      font-size: 13px;
+    }
+
+    .prog-role-label {
+      font-weight: 700;
+      color: var(--amb);
+      letter-spacing: 0.03em;
+      min-width: fit-content;
+    }
+
+    .prog-role-names {
+      color: var(--ink);
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .prog-person-chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 10px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 99px;
+      font-size: 12.5px;
+      line-height: 1.3;
+    }
+
     .soon {
       border: 1px dashed var(--line);
       display: inline-block;
@@ -613,6 +745,28 @@
       border-radius: 99px;
       font-size: 13px;
       margin-top: 10px
+    }
+
+    .prog-state-card {
+      padding: 36px 24px;
+      text-align: center;
+      border-radius: 12px;
+      margin: 12px 0;
+      border: 1px dashed var(--line);
+    }
+
+    .prog-spinner {
+      width: 32px;
+      height: 32px;
+      margin: 0 auto 12px;
+      border: 3px solid rgba(18, 144, 122, 0.2);
+      border-top-color: var(--teal);
+      border-radius: 50%;
+      animation: progSpin 0.9s linear infinite;
+    }
+
+    @keyframes progSpin {
+      to { transform: rotate(360deg); }
     }
 
     /* pay */
@@ -969,6 +1123,19 @@
         gap: 4px
       }
 
+      .it.prog-item {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        padding: 16px 0;
+      }
+
+      .prog-time-wrap {
+        flex-direction: row;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px 12px;
+      }
+
       .day {
         gap: 10px
       }
@@ -1314,7 +1481,8 @@
               <h3 class="contrib-card-title"><span class="y">✦</span> TOP CONTRIBUTORS</h3>
               <p class="contrib-card-sub">Celebrating those who support HLF 2026</p>
             </div>
-            <span class="tag" style="font-size: 10px; padding: 3px 8px; border-radius: 99px; border: 1px solid var(--line);">LEADERBOARD</span>
+            <span class="tag"
+              style="font-size: 10px; padding: 3px 8px; border-radius: 99px; border: 1px solid var(--line);">LEADERBOARD</span>
           </div>
           <div id="contrib-leaderboard-list">
             <div class="contrib-empty-state">
@@ -1331,7 +1499,8 @@
               <h3 class="contrib-card-title"><span class="t">✦</span> HLF 2026 SUPPORT TARGET</h3>
               <p class="contrib-card-sub">Community-powered academic &amp; cultural festival</p>
             </div>
-            <span class="tag" style="font-size: 10px; padding: 3px 8px; border-radius: 99px; border: 1px solid var(--line);">PROGRESS</span>
+            <span class="tag"
+              style="font-size: 10px; padding: 3px 8px; border-radius: 99px; border: 1px solid var(--line);">PROGRESS</span>
           </div>
 
           <div class="contrib-target-figures">
@@ -1364,10 +1533,13 @@
             <small class="tag" style="letter-spacing: 0.15em;">CONTRIBUTION</small>
           </div>
           <div>
-            <p class="desc">Contribute any custom amount to champion Hadith scholarship and student culture. Every rupee makes a difference (Min ₹1).</p>
+            <p class="desc">Contribute any custom amount to champion Hadith scholarship and student culture. Every rupee
+              makes a difference (Min ₹1).</p>
           </div>
         </div>
-        <button class="contrib-btn p" style="background: var(--teal); color: var(--on); --btn-glow: rgba(18, 144, 122, 0.5);" onclick="pay('custom','Custom Contribution')">Choose Amount ✦</button>
+        <button class="contrib-btn p"
+          style="background: var(--teal); color: var(--on); --btn-glow: rgba(18, 144, 122, 0.5);"
+          onclick="pay('custom','Custom Contribution')">Choose Amount ✦</button>
       </div>
 
       <h2 class="sub rv">Sponsor a <span class="t">festival day.</span></h2>
@@ -1529,23 +1701,251 @@
       return { dayNum, dateNum, month, fullDate, tabText };
     }
 
+    function escapeHtml(s) {
+      if (!s) return '';
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function renderScheduleItem(i) {
+      const timeStr = `${i.start_time || ''}${i.end_time ? ' – ' + i.end_time : ''}`.trim();
+      const numBadge = (i.session_number || '').trim();
+      const typeTag = (i.session_type || i.category || '').trim();
+
+      let mainTitle = (i.title || '').trim();
+      let subjectText = (i.subject || '').trim();
+
+      // If title is "SESSION 01" and subject is "Hadith Studies...", display subject as main headline
+      if (subjectText && mainTitle && mainTitle.toUpperCase().startsWith('SESSION')) {
+        mainTitle = subjectText;
+        subjectText = '';
+      }
+
+      // Group participants by role
+      let participantsHtml = '';
+      const parts = Array.isArray(i.participants) ? i.participants : [];
+      if (parts.length > 0) {
+        const roleGroups = {};
+        parts.forEach(p => {
+          if (!p || !p.name) return;
+          const r = (p.role || 'Participant').trim();
+          if (!roleGroups[r]) roleGroups[r] = [];
+          roleGroups[r].push(p.name);
+        });
+
+        const groupsHtml = Object.keys(roleGroups).map(role => {
+          const names = roleGroups[role];
+          const count = names.length;
+          let label = role;
+          if (count > 1) {
+            if (role.toLowerCase() === 'panelist') label = 'Panelists';
+            else if (role.toLowerCase() === 'guest') label = 'Guests';
+            else if (role.toLowerCase() === 'speaker') label = 'Speakers';
+            else if (role.toLowerCase() === 'performer') label = 'Performers';
+          }
+          const chips = names.map(n => `<span class="prog-person-chip">${escapeHtml(n)}</span>`).join('');
+          return `
+            <div class="prog-role-group">
+              <span class="prog-role-label">${escapeHtml(label)}:</span>
+              <div class="prog-role-names">${chips}</div>
+            </div>
+          `;
+        }).join('');
+
+        if (groupsHtml) {
+          participantsHtml = `<div class="prog-participants-box">${groupsHtml}</div>`;
+        }
+      }
+
+      // Venue / Category meta
+      let metaHtml = '';
+      const metaItems = [];
+      if (i.venue && i.venue.trim()) {
+        metaItems.push(`<span class="prog-meta-item">📍 ${escapeHtml(i.venue)}</span>`);
+      }
+      if (metaItems.length > 0) {
+        metaHtml = `<div class="prog-meta-row">${metaItems.join('')}</div>`;
+      }
+
+      return `
+        <div class="it prog-item">
+          <div class="prog-time-wrap">
+            <b class="prog-time-badge">${escapeHtml(timeStr)}</b>
+            ${typeTag && typeTag.toLowerCase() !== 'session' ? `<span class="prog-type-pill">${escapeHtml(typeTag)}</span>` : ''}
+          </div>
+          <div class="prog-body">
+            ${numBadge ? `<div class="prog-num-tag">${escapeHtml(numBadge)}</div>` : ''}
+            <h3 class="prog-title">${escapeHtml(mainTitle)}</h3>
+            ${subjectText ? `<p class="prog-subject">${escapeHtml(subjectText)}</p>` : ''}
+            ${participantsHtml}
+            ${metaHtml}
+          </div>
+        </div>
+      `;
+    }
+
+    let isScheduleLoading = true;
+    let scheduleLoadError = false;
+
     function sched() {
+      const schedList = (window.SCHEDULE && window.SCHEDULE.length > 0) ? window.SCHEDULE : SCHEDULE;
       const tabContainer = $("#tabs");
       if (tabContainer) {
-        tabContainer.innerHTML = SCHEDULE.map((d, i) => {
+        tabContainer.innerHTML = schedList.map((d, i) => {
           const m = getScheduleDayMeta(d, i);
-          return `<button role="tab" class="${i === cur ? "on" : ""}" onclick="cur=${i};sched()"><b>DAY 0${i + 1}</b><span>${m.tabText}</span></button>`;
+          return `<button role="tab" class="${i === cur ? "on" : ""}" onclick="cur=${i};window.cur=${i};sched()"><b>DAY 0${i + 1}</b><span>${m.tabText}</span></button>`;
         }).join("");
       }
-      const d = SCHEDULE[cur] || { items: [] };
+      const d = schedList[cur] || { items: [] };
       const m = getScheduleDayMeta(d, cur);
       const dayContainer = $("#day");
       if (dayContainer) {
-        dayContainer.innerHTML = `<div><p class="tag r">Day 0${cur + 1}</p><div class="n">${m.dateNum}</div><p class="tag r">${m.month}</p></div><div>${d.items && d.items.length ? d.items.map(i => `<div class="it"><b>${i.time}</b><div><h3 style="font-size:1.4rem">${i.title}</h3><p style="margin:6px 0 0;color:var(--mute)">${i.desc || ""}</p></div></div>`).join("") : `<p class="tag t">The details are on their way</p><h3 style="font-size:clamp(1.8rem,4vw,3rem);margin:12px 0 18px">Good conversations take a little planning.</h3><p style="color:var(--mute)">The official programme for ${m.fullDate} will be announced here. Session timings and speakers will appear once confirmed.</p><span class="soon">Programme to be announced</span>`}</div>`;
+        let contentHtml = '';
+        if (scheduleLoadError) {
+          contentHtml = `
+            <div class="prog-state-card prog-error-state glass">
+              <span class="tag r">Connection Error</span>
+              <h3 style="font-size:1.4rem;margin:12px 0 8px">Unable to load programme schedule</h3>
+              <p style="color:var(--mute);font-size:13px">Could not retrieve official schedule data from Supabase.</p>
+              <button class="btn" onclick="loadScheduleFromDatabase()" style="margin-top:12px;padding:8px 16px;cursor:pointer">Retry</button>
+            </div>
+          `;
+        } else if (isScheduleLoading && (!d.items || d.items.length === 0)) {
+          contentHtml = `
+            <div class="prog-state-card prog-loading-state glass">
+              <div class="prog-spinner"></div>
+              <p class="tag t" style="margin:12px 0 6px">Loading Official Programme...</p>
+              <p style="color:var(--mute);font-size:13px">Fetching published sessions and participants...</p>
+            </div>
+          `;
+        } else if (d.items && d.items.length > 0) {
+          contentHtml = d.items.map(renderScheduleItem).join("");
+        } else {
+          contentHtml = `
+            <div class="prog-state-card prog-empty-state glass">
+              <span class="tag t">No Sessions Scheduled</span>
+              <h3 style="font-size:clamp(1.4rem,3vw,2rem);margin:12px 0 8px">Sessions for this day will be published soon.</h3>
+              <p style="color:var(--mute);font-size:13px">Check back for upcoming announcements for ${escapeHtml(m.fullDate)}.</p>
+            </div>
+          `;
+        }
+
+        dayContainer.innerHTML = `<div><p class="tag r">Day 0${cur + 1}</p><div class="n">${m.dateNum}</div><p class="tag r">${m.month}</p></div><div>${contentHtml}</div>`;
       }
     }
+
+    async function loadScheduleFromDatabase(retryCount = 0) {
+      const sb = (typeof window.getSupabase === 'function') ? window.getSupabase() : null;
+      if (!sb) {
+        if (retryCount < 10) {
+          setTimeout(() => loadScheduleFromDatabase(retryCount + 1), 200);
+          return;
+        }
+        console.warn('Supabase client unavailable after retries.');
+        isScheduleLoading = false;
+        scheduleLoadError = true;
+        sched();
+        return;
+      }
+      try {
+        const [{ data: daysData, error: daysErr }, { data: itemsData, error: itemsErr }] = await Promise.all([
+          sb.from('programme_days').select('*').eq('is_published', true).order('display_order', { ascending: true }),
+          sb.from('programme_items')
+            .select('*, programme_session_participants(role, display_order, programme_people(id, name, designation))')
+            .eq('is_published', true)
+            .order('day_number', { ascending: true })
+            .order('display_order', { ascending: true })
+            .order('sort_order', { ascending: true })
+        ]);
+
+        if (daysErr) console.warn('Programme days error:', daysErr);
+        if (itemsErr) console.warn('Programme items error:', itemsErr);
+
+        if (itemsData) {
+          itemsData.forEach(item => {
+            if (Array.isArray(item.programme_session_participants) && item.programme_session_participants.length > 0) {
+              const relParts = item.programme_session_participants
+                .slice()
+                .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
+                .map(p => ({
+                  name: p.programme_people ? p.programme_people.name : '',
+                  role: p.role || 'Participant'
+                }))
+                .filter(p => Boolean(p.name));
+              if (relParts.length > 0) {
+                item.participants = relParts;
+              }
+            }
+          });
+        }
+
+        if (daysData && daysData.length > 0) {
+          const loadedSchedule = daysData.map((d, idx) => {
+            const dayItems = (itemsData || [])
+              .filter(item => item.day_number === d.day_number || item.day_id === d.id)
+              .sort((a, b) => {
+                const ordA = a.display_order ?? a.sort_order ?? 0;
+                const ordB = b.display_order ?? b.sort_order ?? 0;
+                if (ordA !== ordB) return ordA - ordB;
+                return (a.start_time || '').localeCompare(b.start_time || '');
+              });
+
+            return {
+              id: d.id,
+              day: d.day_number,
+              dayName: d.day_name,
+              date: d.date,
+              dateNum: String(parseInt(String(d.date).split('-')[2] || (17 + d.day_number), 10)),
+              month: 'October 2026',
+              items: dayItems
+            };
+          });
+
+          window.SCHEDULE = loadedSchedule;
+          SCHEDULE.splice(0, SCHEDULE.length, ...loadedSchedule);
+          isScheduleLoading = false;
+          scheduleLoadError = false;
+          sched();
+        } else if (itemsData && itemsData.length > 0) {
+          const days = [1, 2, 3];
+          const loadedSchedule = days.map(dayNum => {
+            const dayItems = itemsData.filter(i => i.day_number === dayNum);
+            return {
+              day: dayNum,
+              date: `2026-10-${17 + dayNum}`,
+              dateNum: String(17 + dayNum),
+              month: 'October 2026',
+              items: dayItems
+            };
+          });
+          window.SCHEDULE = loadedSchedule;
+          SCHEDULE.splice(0, SCHEDULE.length, ...loadedSchedule);
+          isScheduleLoading = false;
+          scheduleLoadError = false;
+          sched();
+        } else {
+          isScheduleLoading = false;
+          scheduleLoadError = false;
+          sched();
+        }
+      } catch (err) {
+        console.warn('Error loading schedule from database:', err);
+        isScheduleLoading = false;
+        scheduleLoadError = true;
+        sched();
+      }
+    }
+
     sched();
-    window.sched = sched; window.feed = feed; window.chips = chips; window.getScheduleDayMeta = getScheduleDayMeta;
+    loadScheduleFromDatabase();
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => loadScheduleFromDatabase());
+    }
+    window.sched = sched; window.feed = feed; window.chips = chips; window.getScheduleDayMeta = getScheduleDayMeta; window.loadScheduleFromDatabase = loadScheduleFromDatabase;
     // pay - Render 01 to 04 Tier Cards
     $("#tiers").innerHTML = TIERS.map(([n, a, c], i) => `
       <div class="tier glass rv" style="--c:var(${c})">

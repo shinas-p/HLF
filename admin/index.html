@@ -1235,13 +1235,34 @@
 
       <!-- TAB 6: PROGRAMME / SCHEDULE -->
       <div class="tab-pane" id="pane-programme" style="display: none;">
+        <!-- FESTIVAL DAYS MANAGEMENT PANEL -->
+        <div class="panel" style="margin-bottom: 24px;">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Festival Days</h2>
+              <p style="margin: 4px 0 0; color: var(--mute); font-size: 13px;">Manage festival dates, order, and publishing status.</p>
+            </div>
+            <button type="button" class="btn" id="open-new-day-btn" style="border-color: var(--teal); color: var(--teal);">+ Add Day</button>
+          </div>
+          <div id="programme-days-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px;">
+            <!-- Rendered by renderProgrammeDays() -->
+          </div>
+        </div>
+
+        <!-- SESSIONS MANAGEMENT PANEL -->
         <div class="panel">
           <div class="panel-header">
             <div>
               <h2 class="panel-title">Programme / Schedule Sessions</h2>
-              <p style="margin: 4px 0 0; color: var(--mute); font-size: 13px;">Organize 3-day festival sessions, lectures, symposiums, and venues.</p>
+              <p style="margin: 4px 0 0; color: var(--mute); font-size: 13px;">Organize sessions, subjects, timings, and participant roles.</p>
             </div>
-            <button type="button" class="btn primary" id="open-new-session-btn">+ Add Session</button>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <div class="view-toggle" style="display: flex; background: var(--bg); border: 1px solid var(--line); border-radius: 99px; padding: 2px;">
+                <button type="button" id="prog-view-cards-btn" class="btn btn-sm" style="border-radius: 99px; background: var(--card); border: 0; padding: 6px 12px; font-size: 12px;">Cards View</button>
+                <button type="button" id="prog-view-table-btn" class="btn btn-sm" style="border-radius: 99px; background: transparent; border: 0; padding: 6px 12px; font-size: 12px; color: var(--mute);">Table View</button>
+              </div>
+              <button type="button" class="btn primary" id="open-new-session-btn">+ Add Session</button>
+            </div>
           </div>
 
           <div class="filters-bar">
@@ -1251,18 +1272,27 @@
               <option value="2">Day 02 (19 October)</option>
               <option value="3">Day 03 (20 October)</option>
             </select>
+            <input type="search" id="prog-search-input" class="search-input" placeholder="Search sessions, topics, participants...">
           </div>
 
-          <div class="table-container">
+          <!-- CARDS VIEW CONTAINER -->
+          <div id="programme-cards-container" style="display: flex; flex-direction: column; gap: 24px;">
+            <!-- Populated via JS -->
+          </div>
+
+          <!-- TABLE VIEW CONTAINER -->
+          <div class="table-container" id="programme-table-wrapper" style="display: none; margin-top: 14px;">
             <table class="data-table">
               <thead>
                 <tr>
                   <th>Day</th>
+                  <th>Order</th>
                   <th>Time</th>
-                  <th>Title</th>
-                  <th>Speaker</th>
+                  <th>Session # / Type</th>
+                  <th>Title & Subject</th>
+                  <th>Participants</th>
                   <th>Venue</th>
-                  <th>Category</th>
+                  <th>Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -1464,7 +1494,7 @@
   </dialog>
 
   <!-- PROGRAMME SESSION MODAL -->
-  <dialog class="admin-modal" id="session-modal">
+  <dialog class="admin-modal" id="session-modal" style="max-width: 680px; width: 95%;">
     <div class="modal-hdr">
       <h3 id="session-modal-title">Add Programme Session</h3>
       <button type="button" class="modal-close" onclick="document.getElementById('session-modal').close()">×</button>
@@ -1473,51 +1503,155 @@
       <input type="hidden" id="edit-session-id">
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
         <div class="form-group">
-          <label>Day Number</label>
-          <select id="edit-session-day" class="filter-select">
-            <option value="1">Day 1 (18 Oct 2026)</option>
-            <option value="2">Day 2 (19 Oct 2026)</option>
-            <option value="3">Day 3 (20 Oct 2026)</option>
+          <label>Festival Day <span style="color:var(--red);">*</span></label>
+          <select id="edit-session-day" class="filter-select" required>
+            <!-- Populated from programme_days -->
           </select>
         </div>
         <div class="form-group">
           <label>Date String</label>
-          <input type="text" id="edit-session-date" value="2026-10-18">
+          <input type="text" id="edit-session-date" value="2026-10-18" placeholder="YYYY-MM-DD">
         </div>
       </div>
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
         <div class="form-group">
-          <label>Start Time</label>
-          <input type="text" id="edit-session-start" placeholder="09:00 AM" required>
+          <label>Session Number (e.g. SESSION 01, INAUGURAL)</label>
+          <input type="text" id="edit-session-number" placeholder="SESSION 01 or leave blank">
+        </div>
+        <div class="form-group">
+          <label>Session Type</label>
+          <select id="edit-session-type" class="filter-select">
+            <option value="Session">Session</option>
+            <option value="Inaugural">Inaugural</option>
+            <option value="Programme">Programme</option>
+            <option value="Special Programme">Special Programme</option>
+            <option value="Storytelling">Storytelling</option>
+            <option value="Quiz">Quiz</option>
+            <option value="Kaviyarangu">Kaviyarangu</option>
+            <option value="Performance">Performance</option>
+            <option value="Panel">Panel</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Session Title <span style="color:var(--red);">*</span></label>
+        <input type="text" id="edit-session-title" placeholder="e.g. SESSION 01 or Kaviyarangu or Mehfil-e-Ishq" required>
+      </div>
+      <div class="form-group">
+        <label>Subject / Topic (Discussion Topic or Academic Paper)</label>
+        <textarea id="edit-session-subject" rows="2" placeholder="e.g. The Prophet ﷺ as Teacher, Legislator, and Source of Knowledge"></textarea>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group">
+          <label>Start Time <span style="color:var(--red);">*</span></label>
+          <input type="text" id="edit-session-start" placeholder="08:30 AM" required>
         </div>
         <div class="form-group">
           <label>End Time</label>
-          <input type="text" id="edit-session-end" placeholder="10:30 AM">
+          <input type="text" id="edit-session-end" placeholder="09:30 AM">
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+        <div class="form-group">
+          <label>Venue</label>
+          <input type="text" id="edit-session-venue" placeholder="Auditorium">
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <input type="text" id="edit-session-cat" placeholder="Academic Session">
+        </div>
+        <div class="form-group">
+          <label>Display Order</label>
+          <input type="number" id="edit-session-order" value="1" min="0">
         </div>
       </div>
       <div class="form-group">
-        <label>Session Title</label>
-        <input type="text" id="edit-session-title" placeholder="Grand Inaugural Ceremony" required>
-      </div>
-      <div class="form-group">
-        <label>Speaker / Presenter</label>
-        <input type="text" id="edit-session-speaker" placeholder="Eminent Hadith Scholars">
-      </div>
-      <div class="form-group">
-        <label>Venue</label>
-        <input type="text" id="edit-session-venue" placeholder="Imam Al-Bukhari Auditorium">
-      </div>
-      <div class="form-group">
-        <label>Category</label>
-        <input type="text" id="edit-session-cat" placeholder="Keynote / Panel / Workshop">
-      </div>
-      <div class="form-group">
-        <label>Description</label>
+        <label>Description (Optional Overview)</label>
         <textarea id="edit-session-desc" rows="2" placeholder="Brief session overview"></textarea>
       </div>
-      <button type="submit" class="btn primary" style="width: 100%;">Save Session</button>
+
+      <!-- STRUCTURED PARTICIPANT MANAGEMENT -->
+      <div style="border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 16px; background: rgba(0,0,0,0.03);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 6px;">
+          <label style="font-weight: 700; color: var(--ink); margin: 0;">Session Participants & Roles</label>
+          <span style="font-size: 11px; color: var(--mute);">Roles: Panelist, Guest, Speaker, Led By, Storytelling...</span>
+        </div>
+
+        <div id="modal-participants-list" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;">
+          <!-- Dynamically populated list of participants -->
+        </div>
+
+        <!-- Add Participant Row -->
+        <div style="display: grid; grid-template-columns: 1.5fr 1.2fr auto; gap: 8px; align-items: end;">
+          <div class="form-group" style="margin: 0;">
+            <label style="font-size: 11px;">Participant Name</label>
+            <input type="text" id="modal-new-part-name" list="all-people-datalist" placeholder="Name (e.g. Dr. Salahuddin Hudawi)">
+          </div>
+          <div class="form-group" style="margin: 0;">
+            <label style="font-size: 11px;">Role</label>
+            <select id="modal-new-part-role" class="filter-select" style="padding: 10px 12px; font-size: 12px;">
+              <option value="Panelist">Panelist</option>
+              <option value="Speaker">Speaker</option>
+              <option value="Guest">Guest</option>
+              <option value="Led By">Led By</option>
+              <option value="Storytelling">Storytelling</option>
+              <option value="Programme Leader">Programme Leader</option>
+              <option value="Performer">Performer</option>
+            </select>
+          </div>
+          <button type="button" class="btn" id="modal-add-part-btn" style="padding: 10px 14px; font-size: 12px; border-color: var(--teal); color: var(--teal);">+ Add</button>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 18px;">
+        <input type="checkbox" id="edit-session-published" checked style="width: 18px; height: 18px;">
+        <label for="edit-session-published" style="font-size: 13px; cursor: pointer; user-select: none;">Published (visible on public website)</label>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <button type="button" class="btn" onclick="document.getElementById('session-modal').close()" style="flex: 1; justify-content: center;">Cancel</button>
+        <button type="submit" class="btn primary" style="flex: 2; justify-content: center;">Save Session</button>
+      </div>
     </form>
   </dialog>
+
+  <!-- FESTIVAL DAY MODAL -->
+  <dialog class="admin-modal" id="day-modal" style="max-width: 480px; width: 95%;">
+    <div class="modal-hdr">
+      <h3 id="day-modal-title">Festival Day</h3>
+      <button type="button" class="modal-close" onclick="document.getElementById('day-modal').close()">×</button>
+    </div>
+    <form id="day-form">
+      <input type="hidden" id="edit-day-id">
+      <div class="form-group">
+        <label>Day Number <span style="color:var(--red);">*</span></label>
+        <input type="number" id="edit-day-number" min="1" max="10" required placeholder="1">
+      </div>
+      <div class="form-group">
+        <label>Date (YYYY-MM-DD) <span style="color:var(--red);">*</span></label>
+        <input type="date" id="edit-day-date" required>
+      </div>
+      <div class="form-group">
+        <label>Day Name (e.g. Sunday, Monday, Tuesday) <span style="color:var(--red);">*</span></label>
+        <input type="text" id="edit-day-name" required placeholder="Sunday">
+      </div>
+      <div class="form-group">
+        <label>Display Order</label>
+        <input type="number" id="edit-day-order" value="1" min="0">
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; margin: 14px 0;">
+        <input type="checkbox" id="edit-day-published" checked style="width: 18px; height: 18px;">
+        <label for="edit-day-published" style="font-size: 13px; cursor: pointer;">Published (visible publicly)</label>
+      </div>
+      <div style="display: flex; gap: 10px; margin-top: 14px;">
+        <button type="button" class="btn" onclick="document.getElementById('day-modal').close()" style="flex: 1; justify-content: center;">Cancel</button>
+        <button type="submit" class="btn primary" style="flex: 2; justify-content: center;">Save Day</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- DATALIST FOR PARTICIPANT AUTOCOMPLETE -->
+  <datalist id="all-people-datalist"></datalist>
 
   <!-- GALLERY EDIT MODAL -->
   <dialog class="admin-modal" id="gallery-edit-modal">

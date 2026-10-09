@@ -2657,71 +2657,10 @@
         console.warn('Could not sync dynamic gallery:', err);
       }
 
-      // B. Dynamic Schedule Items
+      // B. Dynamic Schedule Items — Synchronize with Master Programme Management System
       try {
-        const { data: progData } = await sb.from('programme_items')
-          .select('*')
-          .eq('status', 'scheduled')
-          .order('day_number', { ascending: true })
-          .order('sort_order', { ascending: true });
-
-        if (progData && progData.length > 0 && typeof window.SCHEDULE !== 'undefined') {
-          // Pre-populate dayMap with all 3 festival days
-          const dayMap = {
-            1: { day: 1, dateNum: "18", month: "October 2026", date: "18 October 2026", items: [] },
-            2: { day: 2, dateNum: "19", month: "October 2026", date: "19 October 2026", items: [] },
-            3: { day: 3, dateNum: "20", month: "October 2026", date: "20 October 2026", items: [] }
-          };
-
-          progData.forEach(item => {
-            const dayNum = parseInt(item.day_number, 10) || 1;
-            if (!dayMap[dayNum]) {
-              const defaultDateNum = String(17 + dayNum);
-              dayMap[dayNum] = {
-                day: dayNum,
-                dateNum: defaultDateNum,
-                month: "October 2026",
-                date: `${defaultDateNum} October 2026`,
-                items: []
-              };
-            }
-
-            if (item.date) {
-              const s = item.date.trim();
-              const iso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-              if (iso) {
-                dayMap[dayNum].dateNum = String(parseInt(iso[3], 10));
-                dayMap[dayNum].date = `${dayMap[dayNum].dateNum} October 2026`;
-              } else {
-                const parts = s.match(/^(\d{1,2})\s+([a-zA-Z]+)(?:\s+(\d{4}))?/);
-                if (parts) {
-                  dayMap[dayNum].dateNum = parts[1];
-                  dayMap[dayNum].month = `${parts[2]} ${parts[3] || '2026'}`;
-                  dayMap[dayNum].date = s;
-                }
-              }
-            }
-
-            const timeStr = (item.start_time || '') + (item.end_time ? ' – ' + item.end_time : '');
-            let descStr = '';
-            if (item.speaker) descStr += '✦ ' + item.speaker + ' | ';
-            if (item.venue) descStr += '📍 ' + item.venue + ' — ';
-            if (item.description) descStr += item.description;
-
-            dayMap[dayNum].items.push({
-              time: timeStr,
-              title: item.title,
-              desc: descStr
-            });
-          });
-
-          const dynSchedule = Object.keys(dayMap).sort((a, b) => Number(a) - Number(b)).map(k => dayMap[k]);
-          if (dynSchedule.length > 0) {
-            window.SCHEDULE.splice(0, window.SCHEDULE.length, ...dynSchedule);
-            if (typeof window.sched === 'function') {
-              window.sched();
-            }
-          }
+        if (typeof window.loadScheduleFromDatabase === 'function') {
+          await window.loadScheduleFromDatabase();
         }
       } catch (err) {
         console.warn('Could not sync dynamic schedule:', err);

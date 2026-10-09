@@ -1983,77 +1983,462 @@
   window.deleteAnnouncement = deleteAnnouncement;
 
   // -------------------------------------------------------------
-  // PROGRAMME / SCHEDULE MANAGEMENT
+  // PROGRAMME & SCHEDULE MANAGEMENT SYSTEM
   // -------------------------------------------------------------
+  let allProgrammeDays = [];
+  let allProgrammePeople = [];
+  let currentSessionParticipants = [];
+  let currentProgView = 'cards';
+
   async function loadProgramme() {
     const sb = window.getSupabase();
+    if (!sb) return;
     try {
-      const { data, error } = await sb.from('programme_items')
-        .select('*')
-        .order('day_number', { ascending: true })
-        .order('sort_order', { ascending: true });
-      if (error) throw error;
-      allProgramme = data || [];
-      renderProgrammeTable();
+      const [daysRes, itemsRes, peopleRes] = await Promise.all([
+        sb.from('programme_days').select('*').order('display_order', { ascending: true }),
+        sb.from('programme_items').select('*').order('day_number', { ascending: true }).order('display_order', { ascending: true }).order('sort_order', { ascending: true }),
+        sb.from('programme_people').select('*').order('name', { ascending: true })
+      ]);
+
+      if (daysRes.error) console.warn('Load programme_days error:', daysRes.error);
+      if (itemsRes.error) console.warn('Load programme_items error:', itemsRes.error);
+      if (peopleRes.error) console.warn('Load programme_people error:', peopleRes.error);
+
+      allProgrammeDays = daysRes.data || [];
+      allProgramme = itemsRes.data || [];
+      allProgrammePeople = peopleRes.data || [];
+
+      updateDaySelectOptions();
+      updatePeopleDatalist();
+
+      renderProgrammeDays();
+      renderProgrammeSessions();
     } catch (err) {
       console.warn('Load programme error:', err);
     }
   }
+  window.loadProgramme = loadProgramme;
 
-  function renderProgrammeTable() {
-    const tbody = document.getElementById('programme-tbody');
-    const dayFilter = document.getElementById('prog-day-filter').value;
+  function updatePeopleDatalist() {
+    const datalist = document.getElementById('all-people-datalist');
+    if (!datalist) return;
+    datalist.innerHTML = allProgrammePeople.map(p => `<option value="${escapeHtml(p.name)}">`).join('');
+  }
 
-    const filtered = allProgramme.filter(p => {
-      if (dayFilter !== 'all' && String(p.day_number) !== dayFilter) return false;
-      return true;
-    });
+  function updateDaySelectOptions() {
+    const daySelect = document.getElementById('edit-session-day');
+    if (daySelect && allProgrammeDays.length > 0) {
+      daySelect.innerHTML = allProgrammeDays.map(d => `
+        <option value="${d.day_number}" data-date="${d.date}">Day 0${d.day_number} (${escapeHtml(d.date)} — ${escapeHtml(d.day_name)})</option>
+      `).join('');
+    }
 
-    if (filtered.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--mute);">No sessions found for this day.</td></tr>`;
+    const dayFilter = document.getElementById('prog-day-filter');
+    if (dayFilter && allProgrammeDays.length > 0) {
+      const currentVal = dayFilter.value;
+      dayFilter.innerHTML = `
+        <option value="all">All Days (${allProgramme.length} sessions)</option>
+        ${allProgrammeDays.map(d => {
+          const count = allProgramme.filter(p => p.day_number === d.day_number || p.day_id === d.id).length;
+          return `<option value="${d.day_number}">Day 0${d.day_number} (${escapeHtml(d.date)} · ${count} sessions)</option>`;
+        }).join('')}
+      `;
+      if (currentVal) dayFilter.value = currentVal;
+    }
+  }
+
+  // DAY MANAGEMENT
+  function renderProgrammeDays() {
+    const container = document.getElementById('programme-days-container');
+    if (!container) return;
+
+    if (allProgrammeDays.length === 0) {
+      container.innerHTML = `
+        <div style="grid-column: 1 / -1; padding: 20px; text-align: center; color: var(--mute); border: 1px dashed var(--line); border-radius: 14px;">
+          No festival days found. Click "+ Add Day" to create one.
+        </div>
+      `;
       return;
     }
 
-    tbody.innerHTML = filtered.map(p => `
-      <tr>
-        <td><strong>Day ${p.day_number}</strong></td>
-        <td><code>${escapeHtml(p.start_time || '')} ${p.end_time ? '– ' + escapeHtml(p.end_time) : ''}</code></td>
-        <td><strong>${escapeHtml(p.title)}</strong><br><small style="color: var(--mute);">${escapeHtml(p.description || '')}</small></td>
-        <td>${escapeHtml(p.speaker || '—')}</td>
-        <td>${escapeHtml(p.venue || '—')}</td>
-        <td><span class="badge">${escapeHtml(p.category || 'General')}</span></td>
-        <td>
-          <button class="btn btn-sm" onclick="editSession('${p.id}')">✏️</button>
-          <button class="btn btn-sm danger" onclick="deleteSession('${p.id}')">🗑️</button>
-        </td>
-      </tr>
-    `).join('');
+    container.innerHTML = allProgrammeDays.map(d => {
+      const daySessions = allProgramme.filter(p => p.day_number === d.day_number || p.day_id === d.id);
+      const isPub = d.is_published !== false;
+      return `
+        <div class="stat-card" style="border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; background: var(--card);">
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span class="badge" style="background: rgba(208, 2, 27, 0.15); color: var(--red);">DAY 0${d.day_number}</span>
+              <span class="badge" style="background: ${isPub ? 'rgba(18, 144, 122, 0.15)' : 'rgba(255, 255, 255, 0.1)'}; color: ${isPub ? 'var(--teal)' : 'var(--mute)'};">
+                ${isPub ? '● Published' : '○ Draft'}
+              </span>
+            </div>
+            <h4 style="margin: 0 0 4px; font-size: 1.1rem; color: var(--ink);">${escapeHtml(d.day_name)}</h4>
+            <div style="font-size: 12px; color: var(--mute); margin-bottom: 8px;">📅 ${escapeHtml(d.date)}</div>
+            <div style="font-size: 12px; color: var(--teal); font-weight: 600;">✦ ${daySessions.length} Sessions</div>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 14px; border-top: 1px solid var(--line); padding-top: 10px;">
+            <button class="btn btn-sm" onclick="openEditDay('${d.id}')" style="flex: 1; justify-content: center;">✏️ Edit</button>
+            <button class="btn btn-sm" onclick="openNewSessionForDay(${d.day_number})" style="flex: 1; justify-content: center; color: var(--teal);">+ Add Session</button>
+            <button class="btn btn-sm danger" onclick="deleteDay('${d.id}')" title="Delete Day">🗑️</button>
+          </div>
+        </div>
+      `;
+    }).join('');
   }
 
-  document.getElementById('prog-day-filter').onchange = renderProgrammeTable;
+  function openNewDay() {
+    const nextDayNum = allProgrammeDays.length > 0 ? Math.max(...allProgrammeDays.map(d => d.day_number || 0)) + 1 : 1;
+    document.getElementById('day-modal-title').textContent = 'Add Festival Day';
+    document.getElementById('edit-day-id').value = '';
+    document.getElementById('edit-day-number').value = nextDayNum;
+    document.getElementById('edit-day-date').value = `2026-10-${17 + nextDayNum}`;
+    document.getElementById('edit-day-name').value = '';
+    document.getElementById('edit-day-order').value = nextDayNum;
+    document.getElementById('edit-day-published').checked = true;
+    document.getElementById('day-modal').showModal();
+  }
+  window.openNewDay = openNewDay;
 
-  document.getElementById('open-new-session-btn').onclick = () => {
+  function openEditDay(dayId) {
+    const d = allProgrammeDays.find(x => x.id === dayId);
+    if (!d) return;
+    document.getElementById('day-modal-title').textContent = `Edit Day 0${d.day_number}`;
+    document.getElementById('edit-day-id').value = d.id;
+    document.getElementById('edit-day-number').value = d.day_number;
+    document.getElementById('edit-day-date').value = d.date;
+    document.getElementById('edit-day-name').value = d.day_name;
+    document.getElementById('edit-day-order').value = d.display_order ?? d.day_number;
+    document.getElementById('edit-day-published').checked = d.is_published !== false;
+    document.getElementById('day-modal').showModal();
+  }
+  window.openEditDay = openEditDay;
+
+  const dayForm = document.getElementById('day-form');
+  if (dayForm) {
+    dayForm.onsubmit = async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('edit-day-id').value;
+      const day_number = parseInt(document.getElementById('edit-day-number').value, 10);
+      const date = document.getElementById('edit-day-date').value;
+      const day_name = document.getElementById('edit-day-name').value.trim();
+      const display_order = parseInt(document.getElementById('edit-day-order').value, 10) || day_number;
+      const is_published = document.getElementById('edit-day-published').checked;
+
+      const sb = window.getSupabase();
+      try {
+        if (id) {
+          const { error } = await sb.from('programme_days').update({
+            day_number, date, day_name, display_order, is_published, updated_at: new Date().toISOString()
+          }).eq('id', id);
+          if (error) throw error;
+          showToast('Festival day updated!');
+        } else {
+          const { error } = await sb.from('programme_days').insert({
+            day_number, date, day_name, display_order, is_published
+          });
+          if (error) throw error;
+          showToast('New festival day created!');
+        }
+        document.getElementById('day-modal').close();
+        await loadProgramme();
+      } catch (err) {
+        alert('Day save error: ' + err.message);
+      }
+    };
+  }
+
+  async function deleteDay(dayId) {
+    const d = allProgrammeDays.find(x => x.id === dayId);
+    if (!d) return;
+    const count = allProgramme.filter(p => p.day_number === d.day_number || p.day_id === d.id).length;
+    if (count > 0) {
+      if (!confirm(`Day 0${d.day_number} currently has ${count} session(s). Deleting this day will remove its grouping. Continue?`)) {
+        return;
+      }
+    } else {
+      if (!confirm(`Are you sure you want to delete Day 0${d.day_number} (${d.day_name})?`)) return;
+    }
+
+    const sb = window.getSupabase();
+    try {
+      const { error } = await sb.from('programme_days').delete().eq('id', dayId);
+      if (error) throw error;
+      showToast('Festival day deleted.');
+      await loadProgramme();
+    } catch (err) {
+      alert('Delete day error: ' + err.message);
+    }
+  }
+  window.deleteDay = deleteDay;
+
+  // SESSION MANAGEMENT
+  function renderProgrammeSessions() {
+    const filterVal = document.getElementById('prog-day-filter') ? document.getElementById('prog-day-filter').value : 'all';
+    const query = document.getElementById('prog-search-input') ? document.getElementById('prog-search-input').value.toLowerCase().trim() : '';
+
+    let list = allProgramme.filter(p => {
+      if (filterVal !== 'all' && String(p.day_number) !== filterVal) return false;
+      if (query) {
+        const text = `${p.title || ''} ${p.subject || ''} ${p.session_number || ''} ${p.speaker || ''} ${p.venue || ''} ${JSON.stringify(p.participants || '')}`.toLowerCase();
+        if (!text.includes(query)) return false;
+      }
+      return true;
+    });
+
+    renderProgrammeCards(list);
+    renderProgrammeTableRows(list);
+  }
+
+  function renderProgrammeCards(list) {
+    const container = document.getElementById('programme-cards-container');
+    if (!container) return;
+
+    if (list.length === 0) {
+      container.innerHTML = `
+        <div style="padding: 30px; text-align: center; color: var(--mute); border: 1px dashed var(--line); border-radius: 16px;">
+          No sessions match the selected filter.
+        </div>
+      `;
+      return;
+    }
+
+    // Group by Day
+    const dayGroups = {};
+    list.forEach(p => {
+      const dayNum = p.day_number || 1;
+      if (!dayGroups[dayNum]) dayGroups[dayNum] = [];
+      dayGroups[dayNum].push(p);
+    });
+
+    const sortedDayNums = Object.keys(dayGroups).sort((a, b) => Number(a) - Number(b));
+
+    container.innerHTML = sortedDayNums.map(dayNum => {
+      const dayMeta = allProgrammeDays.find(d => d.day_number === Number(dayNum));
+      const dayTitle = dayMeta ? `DAY 0${dayNum} — ${dayMeta.date} (${dayMeta.day_name.toUpperCase()})` : `DAY 0${dayNum}`;
+      const sessions = dayGroups[dayNum].sort((a, b) => {
+        const ordA = a.display_order ?? a.sort_order ?? 0;
+        const ordB = b.display_order ?? b.sort_order ?? 0;
+        if (ordA !== ordB) return ordA - ordB;
+        return (a.start_time || '').localeCompare(b.start_time || '');
+      });
+
+      return `
+        <div class="day-group" style="background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--line); padding-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span class="badge" style="background: var(--red); color: #fff;">DAY 0${dayNum}</span>
+              <h3 style="margin: 0; font-size: 1.15rem; color: var(--ink);">${escapeHtml(dayTitle)}</h3>
+            </div>
+            <button type="button" class="btn btn-sm" onclick="openNewSessionForDay(${dayNum})" style="border-color: var(--teal); color: var(--teal);">
+              + Add Session to Day ${dayNum}
+            </button>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            ${sessions.map(s => {
+              const timeStr = `${s.start_time || ''}${s.end_time ? ' – ' + s.end_time : ''}`;
+              const parts = Array.isArray(s.participants) ? s.participants : [];
+              const isPub = s.is_published !== false;
+
+              // Participant badges
+              let partsHtml = '';
+              if (parts.length > 0) {
+                const roleMap = {};
+                parts.forEach(p => {
+                  const r = p.role || 'Participant';
+                  if (!roleMap[r]) roleMap[r] = [];
+                  roleMap[r].push(p.name);
+                });
+                partsHtml = Object.keys(roleMap).map(role => `
+                  <div style="font-size: 12px; display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;">
+                    <span style="font-weight: 700; color: var(--amb); min-width: fit-content;">${escapeHtml(role)}:</span>
+                    <span style="color: var(--ink);">${roleMap[role].map(n => `<span style="display: inline-block; padding: 1px 8px; background: rgba(0,0,0,0.05); border: 1px solid var(--line); border-radius: 99px; margin: 2px;">${escapeHtml(n)}</span>`).join('')}</span>
+                  </div>
+                `).join('');
+              }
+
+              return `
+                <div style="border: 1px solid var(--line); border-radius: 14px; padding: 16px; background: var(--bg); display: flex; flex-direction: column; gap: 8px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                      <code style="color: var(--teal); font-weight: 700; font-size: 13px;">${escapeHtml(timeStr)}</code>
+                      ${s.session_number ? `<span class="badge" style="background: rgba(208, 2, 27, 0.12); color: var(--red);">${escapeHtml(s.session_number)}</span>` : ''}
+                      ${s.session_type ? `<span class="badge" style="background: rgba(18, 144, 122, 0.12); color: var(--teal);">${escapeHtml(s.session_type)}</span>` : ''}
+                      <span class="badge" style="background: ${isPub ? 'rgba(95, 168, 58, 0.15)' : 'rgba(255, 255, 255, 0.1)'}; color: ${isPub ? 'var(--grn)' : 'var(--mute)'};">
+                        ${isPub ? '● Published' : '○ Draft'}
+                      </span>
+                    </div>
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                      <span style="font-size: 11px; color: var(--mute); margin-right: 4px;">Order: #${s.display_order ?? s.sort_order ?? 0}</span>
+                      <button class="btn btn-sm" onclick="editSession('${s.id}')" title="Edit Session">✏️ Edit</button>
+                      <button class="btn btn-sm danger" onclick="deleteSession('${s.id}')" title="Delete Session">🗑️</button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 style="margin: 0 0 4px; font-size: 1.15rem; color: var(--ink);">${escapeHtml(s.title)}</h4>
+                    ${s.subject ? `<div style="font-size: 13px; color: var(--ink); margin: 4px 0 6px; line-height: 1.4; white-space: pre-line;">📖 <strong>Topic:</strong> ${escapeHtml(s.subject)}</div>` : ''}
+                    ${s.description && s.description !== s.subject && s.description !== s.title ? `<div style="font-size: 12px; color: var(--mute); margin-bottom: 6px;">${escapeHtml(s.description)}</div>` : ''}
+                  </div>
+
+                  ${partsHtml ? `<div style="display: flex; flex-direction: column; gap: 4px; padding-top: 6px; border-top: 1px dashed var(--line);">${partsHtml}</div>` : ''}
+
+                  <div style="display: flex; gap: 14px; font-size: 11px; color: var(--mute); margin-top: 4px; flex-wrap: wrap;">
+                    ${s.venue ? `<span>📍 ${escapeHtml(s.venue)}</span>` : ''}
+                    ${s.category ? `<span>🏷️ ${escapeHtml(s.category)}</span>` : ''}
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderProgrammeTableRows(list) {
+    const tbody = document.getElementById('programme-tbody');
+    if (!tbody) return;
+
+    if (list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--mute);">No sessions found.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = list.map(p => {
+      const parts = Array.isArray(p.participants) ? p.participants : [];
+      const partsText = parts.length > 0 ? parts.map(x => `${x.name} (${x.role})`).join(', ') : (p.speaker || '—');
+      const isPub = p.is_published !== false;
+
+      return `
+        <tr>
+          <td><strong>Day 0${p.day_number}</strong></td>
+          <td><code>#${p.display_order ?? p.sort_order ?? 0}</code></td>
+          <td><code>${escapeHtml(p.start_time || '')} ${p.end_time ? '– ' + escapeHtml(p.end_time) : ''}</code></td>
+          <td>
+            <strong>${escapeHtml(p.session_number || '—')}</strong><br>
+            <span class="badge" style="background: rgba(18, 144, 122, 0.12); color: var(--teal); font-size: 10px;">${escapeHtml(p.session_type || 'Session')}</span>
+          </td>
+          <td>
+            <strong>${escapeHtml(p.title)}</strong>
+            ${p.subject ? `<br><small style="color: var(--teal);">${escapeHtml(p.subject)}</small>` : ''}
+          </td>
+          <td style="max-width: 200px; font-size: 12px;">${escapeHtml(partsText)}</td>
+          <td>${escapeHtml(p.venue || '—')}</td>
+          <td>
+            <span class="badge" style="background: ${isPub ? 'rgba(95, 168, 58, 0.15)' : 'rgba(255, 255, 255, 0.1)'}; color: ${isPub ? 'var(--grn)' : 'var(--mute)'}; font-size: 10px;">
+              ${isPub ? 'Published' : 'Draft'}
+            </span>
+          </td>
+          <td>
+            <div style="display: flex; gap: 4px;">
+              <button class="btn btn-sm" onclick="editSession('${p.id}')">✏️</button>
+              <button class="btn btn-sm danger" onclick="deleteSession('${p.id}')">🗑️</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // View toggle handlers
+  const cardsBtn = document.getElementById('prog-view-cards-btn');
+  const tableBtn = document.getElementById('prog-view-table-btn');
+  const cardsContainer = document.getElementById('programme-cards-container');
+  const tableWrapper = document.getElementById('programme-table-wrapper');
+
+  if (cardsBtn && tableBtn && cardsContainer && tableWrapper) {
+    cardsBtn.onclick = () => {
+      currentProgView = 'cards';
+      cardsBtn.style.background = 'var(--card)';
+      cardsBtn.style.color = 'inherit';
+      tableBtn.style.background = 'transparent';
+      tableBtn.style.color = 'var(--mute)';
+      cardsContainer.style.display = 'flex';
+      tableWrapper.style.display = 'none';
+      renderProgrammeSessions();
+    };
+    tableBtn.onclick = () => {
+      currentProgView = 'table';
+      tableBtn.style.background = 'var(--card)';
+      tableBtn.style.color = 'inherit';
+      cardsBtn.style.background = 'transparent';
+      cardsBtn.style.color = 'var(--mute)';
+      cardsContainer.style.display = 'none';
+      tableWrapper.style.display = 'block';
+      renderProgrammeSessions();
+    };
+  }
+
+  const progDayFilter = document.getElementById('prog-day-filter');
+  if (progDayFilter) progDayFilter.onchange = renderProgrammeSessions;
+
+  const progSearch = document.getElementById('prog-search-input');
+  if (progSearch) progSearch.oninput = renderProgrammeSessions;
+
+  const openNewDayBtn = document.getElementById('open-new-day-btn');
+  if (openNewDayBtn) openNewDayBtn.onclick = openNewDay;
+
+  const openNewSessionBtn = document.getElementById('open-new-session-btn');
+  if (openNewSessionBtn) {
+    openNewSessionBtn.onclick = () => openNewSession();
+  }
+
+  function openNewSession(dayNumber = 1) {
     document.getElementById('session-modal-title').textContent = 'Add Programme Session';
     document.getElementById('edit-session-id').value = '';
-    document.getElementById('edit-session-day').value = '1';
-    document.getElementById('edit-session-date').value = '2026-10-18';
+    
+    const daySelect = document.getElementById('edit-session-day');
+    if (daySelect) {
+      daySelect.value = String(dayNumber);
+      const selectedOpt = daySelect.options[daySelect.selectedIndex];
+      if (selectedOpt && selectedOpt.dataset.date) {
+        document.getElementById('edit-session-date').value = selectedOpt.dataset.date;
+      } else {
+        document.getElementById('edit-session-date').value = `2026-10-${17 + dayNumber}`;
+      }
+    }
+
+    const daySessions = allProgramme.filter(p => p.day_number === dayNumber);
+    const nextOrder = daySessions.length + 1;
+
+    document.getElementById('edit-session-number').value = `SESSION 0${nextOrder}`;
+    document.getElementById('edit-session-type').value = 'Session';
+    document.getElementById('edit-session-title').value = '';
+    document.getElementById('edit-session-subject').value = '';
     document.getElementById('edit-session-start').value = '';
     document.getElementById('edit-session-end').value = '';
-    document.getElementById('edit-session-title').value = '';
-    document.getElementById('edit-session-speaker').value = '';
     document.getElementById('edit-session-venue').value = 'Imam Al-Bukhari Auditorium';
-    document.getElementById('edit-session-cat').value = 'Ceremony';
+    document.getElementById('edit-session-cat').value = 'Academic Session';
+    document.getElementById('edit-session-order').value = nextOrder;
     document.getElementById('edit-session-desc').value = '';
-    document.getElementById('session-modal').showModal();
-  };
+    document.getElementById('edit-session-published').checked = true;
 
-  const festivalDayDates = { 1: '2026-10-18', 2: '2026-10-19', 3: '2026-10-20' };
-  document.getElementById('edit-session-day').addEventListener('change', (e) => {
-    const dVal = parseInt(e.target.value, 10);
-    if (festivalDayDates[dVal]) {
-      document.getElementById('edit-session-date').value = festivalDayDates[dVal];
-    }
-  });
+    currentSessionParticipants = [];
+    renderModalParticipants();
+    document.getElementById('session-modal').showModal();
+  }
+  window.openNewSession = openNewSession;
+
+  function openNewSessionForDay(dayNumber) {
+    openNewSession(dayNumber);
+  }
+  window.openNewSessionForDay = openNewSessionForDay;
+
+  const editSessionDayEl = document.getElementById('edit-session-day');
+  if (editSessionDayEl) {
+    editSessionDayEl.addEventListener('change', (e) => {
+      const dVal = parseInt(e.target.value, 10);
+      const opt = e.target.options[e.target.selectedIndex];
+      if (opt && opt.dataset.date) {
+        document.getElementById('edit-session-date').value = opt.dataset.date;
+      } else {
+        const dObj = allProgrammeDays.find(d => d.day_number === dVal);
+        if (dObj) document.getElementById('edit-session-date').value = dObj.date;
+      }
+    });
+  }
 
   function editSession(id) {
     const s = allProgramme.find(x => x.id === id);
@@ -2062,56 +2447,199 @@
     document.getElementById('edit-session-id').value = s.id;
     document.getElementById('edit-session-day').value = s.day_number || 1;
     document.getElementById('edit-session-date').value = s.date || '2026-10-18';
+    document.getElementById('edit-session-number').value = s.session_number || '';
+    document.getElementById('edit-session-type').value = s.session_type || 'Session';
+    document.getElementById('edit-session-title').value = s.title || '';
+    document.getElementById('edit-session-subject').value = s.subject || '';
     document.getElementById('edit-session-start').value = s.start_time || '';
     document.getElementById('edit-session-end').value = s.end_time || '';
-    document.getElementById('edit-session-title').value = s.title || '';
-    document.getElementById('edit-session-speaker').value = s.speaker || '';
     document.getElementById('edit-session-venue').value = s.venue || '';
     document.getElementById('edit-session-cat').value = s.category || '';
+    document.getElementById('edit-session-order').value = s.display_order ?? s.sort_order ?? 1;
     document.getElementById('edit-session-desc').value = s.description || '';
+    document.getElementById('edit-session-published').checked = s.is_published !== false;
+
+    currentSessionParticipants = Array.isArray(s.participants) ? JSON.parse(JSON.stringify(s.participants)) : [];
+    renderModalParticipants();
     document.getElementById('session-modal').showModal();
   }
   window.editSession = editSession;
 
-  document.getElementById('session-form').onsubmit = async (e) => {
-    e.preventDefault();
-    const id = document.getElementById('edit-session-id').value;
-    const day_number = parseInt(document.getElementById('edit-session-day').value, 10);
-    const date = document.getElementById('edit-session-date').value.trim();
-    const start_time = document.getElementById('edit-session-start').value.trim();
-    const end_time = document.getElementById('edit-session-end').value.trim();
-    const title = document.getElementById('edit-session-title').value.trim();
-    const speaker = document.getElementById('edit-session-speaker').value.trim();
-    const venue = document.getElementById('edit-session-venue').value.trim();
-    const category = document.getElementById('edit-session-cat').value.trim();
-    const description = document.getElementById('edit-session-desc').value.trim();
+  // PARTICIPANT MANAGEMENT IN MODAL
+  function renderModalParticipants() {
+    const list = document.getElementById('modal-participants-list');
+    if (!list) return;
 
-    const sb = window.getSupabase();
-    try {
-      if (id) {
-        await sb.from('programme_items').update({
-          day_number, date, start_time, end_time, title, speaker, venue, category, description
-        }).eq('id', id);
-        showToast('Session updated!');
-      } else {
-        await sb.from('programme_items').insert({
-          day_number, date, start_time, end_time, title, speaker, venue, category, description,
-          sort_order: allProgramme.length + 1, status: 'scheduled'
-        });
-        showToast('New session added to schedule!');
-      }
-      document.getElementById('session-modal').close();
-      await loadProgramme();
-    } catch (err) {
-      alert('Session save error: ' + err.message);
+    if (currentSessionParticipants.length === 0) {
+      list.innerHTML = `<div style="font-size: 12px; color: var(--mute); font-style: italic;">No participants assigned to this session yet.</div>`;
+      return;
     }
-  };
+
+    list.innerHTML = currentSessionParticipants.map((p, idx) => `
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
+          <strong style="font-size: 13px; color: var(--ink);">${escapeHtml(p.name)}</strong>
+          <select onchange="updateParticipantRole(${idx}, this.value)" class="filter-select" style="padding: 4px 8px; font-size: 11px;">
+            <option value="Panelist" ${p.role === 'Panelist' ? 'selected' : ''}>Panelist</option>
+            <option value="Speaker" ${p.role === 'Speaker' ? 'selected' : ''}>Speaker</option>
+            <option value="Guest" ${p.role === 'Guest' ? 'selected' : ''}>Guest</option>
+            <option value="Led By" ${p.role === 'Led By' ? 'selected' : ''}>Led By</option>
+            <option value="Storytelling" ${p.role === 'Storytelling' ? 'selected' : ''}>Storytelling</option>
+            <option value="Programme Leader" ${p.role === 'Programme Leader' ? 'selected' : ''}>Programme Leader</option>
+            <option value="Performer" ${p.role === 'Performer' ? 'selected' : ''}>Performer</option>
+          </select>
+        </div>
+        <div style="display: flex; gap: 4px;">
+          ${idx > 0 ? `<button type="button" class="btn btn-sm" onclick="moveParticipant(${idx}, -1)" title="Move Up">↑</button>` : ''}
+          ${idx < currentSessionParticipants.length - 1 ? `<button type="button" class="btn btn-sm" onclick="moveParticipant(${idx}, 1)" title="Move Down">↓</button>` : ''}
+          <button type="button" class="btn btn-sm danger" onclick="removeParticipant(${idx})" title="Remove">×</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function updateParticipantRole(idx, newRole) {
+    if (currentSessionParticipants[idx]) {
+      currentSessionParticipants[idx].role = newRole;
+    }
+  }
+  window.updateParticipantRole = updateParticipantRole;
+
+  function moveParticipant(idx, dir) {
+    const target = idx + dir;
+    if (target < 0 || target >= currentSessionParticipants.length) return;
+    const temp = currentSessionParticipants[idx];
+    currentSessionParticipants[idx] = currentSessionParticipants[target];
+    currentSessionParticipants[target] = temp;
+    renderModalParticipants();
+  }
+  window.moveParticipant = moveParticipant;
+
+  function removeParticipant(idx) {
+    currentSessionParticipants.splice(idx, 1);
+    renderModalParticipants();
+  }
+  window.removeParticipant = removeParticipant;
+
+  const addPartBtn = document.getElementById('modal-add-part-btn');
+  if (addPartBtn) {
+    addPartBtn.onclick = () => {
+      const nameInput = document.getElementById('modal-new-part-name');
+      const roleSelect = document.getElementById('modal-new-part-role');
+      const name = nameInput.value.trim();
+      const role = roleSelect.value;
+      if (!name) return;
+
+      currentSessionParticipants.push({ name, role });
+      nameInput.value = '';
+      renderModalParticipants();
+    };
+  }
+
+  // Save session submit handler
+  const sessionForm = document.getElementById('session-form');
+  if (sessionForm) {
+    sessionForm.onsubmit = async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('edit-session-id').value;
+      const day_number = parseInt(document.getElementById('edit-session-day').value, 10);
+      const date = document.getElementById('edit-session-date').value.trim();
+      const session_number = document.getElementById('edit-session-number').value.trim();
+      const session_type = document.getElementById('edit-session-type').value;
+      const title = document.getElementById('edit-session-title').value.trim();
+      const subject = document.getElementById('edit-session-subject').value.trim();
+      const start_time = document.getElementById('edit-session-start').value.trim();
+      const end_time = document.getElementById('edit-session-end').value.trim();
+      const venue = document.getElementById('edit-session-venue').value.trim();
+      const category = document.getElementById('edit-session-cat').value.trim();
+      const display_order = parseInt(document.getElementById('edit-session-order').value, 10) || 1;
+      const description = document.getElementById('edit-session-desc').value.trim();
+      const is_published = document.getElementById('edit-session-published').checked;
+
+      const dayObj = allProgrammeDays.find(d => d.day_number === day_number);
+      const day_id = dayObj ? dayObj.id : null;
+      const speakerSummary = currentSessionParticipants.map(p => p.name).join(', ');
+
+      const payload = {
+        day_id,
+        day_number,
+        date,
+        session_number: session_number || null,
+        session_type,
+        title,
+        subject: subject || null,
+        start_time,
+        end_time: end_time || null,
+        venue,
+        category,
+        display_order,
+        sort_order: display_order,
+        description: description || null,
+        is_published,
+        status: 'scheduled',
+        participants: currentSessionParticipants,
+        speaker: speakerSummary,
+        updated_at: new Date().toISOString()
+      };
+
+      const sb = window.getSupabase();
+      try {
+        let savedSessionId = id;
+        if (id) {
+          const { error } = await sb.from('programme_items').update(payload).eq('id', id);
+          if (error) throw error;
+          showToast('Session updated successfully!');
+        } else {
+          const { data: newSession, error } = await sb.from('programme_items').insert(payload).select().single();
+          if (error) throw error;
+          savedSessionId = newSession.id;
+          showToast('New session added to programme!');
+        }
+
+        // Sync participants to relational tables
+        if (savedSessionId && currentSessionParticipants.length > 0) {
+          try {
+            for (const p of currentSessionParticipants) {
+              await sb.from('programme_people').upsert({ name: p.name }, { onConflict: 'name' });
+            }
+            const { data: freshPeople } = await sb.from('programme_people').select('*');
+            if (freshPeople) allProgrammePeople = freshPeople;
+
+            await sb.from('programme_session_participants').delete().eq('session_id', savedSessionId);
+            const partRows = currentSessionParticipants.map((p, idx) => {
+              const person = allProgrammePeople.find(x => x.name.trim().toLowerCase() === p.name.trim().toLowerCase());
+              return {
+                session_id: savedSessionId,
+                person_id: person ? person.id : null,
+                role: p.role || 'Participant',
+                display_order: idx + 1
+              };
+            }).filter(row => row.person_id !== null);
+
+            if (partRows.length > 0) {
+              await sb.from('programme_session_participants').insert(partRows);
+            }
+          } catch (syncErr) {
+            console.warn('Participant relational sync warning:', syncErr);
+          }
+        } else if (savedSessionId) {
+          await sb.from('programme_session_participants').delete().eq('session_id', savedSessionId);
+        }
+
+        document.getElementById('session-modal').close();
+        await loadProgramme();
+      } catch (err) {
+        alert('Session save error: ' + err.message);
+      }
+    };
+  }
 
   async function deleteSession(id) {
     if (!confirm('Are you sure you want to delete this programme session?')) return;
     const sb = window.getSupabase();
     try {
-      await sb.from('programme_items').delete().eq('id', id);
+      const { error } = await sb.from('programme_items').delete().eq('id', id);
+      if (error) throw error;
       showToast('Session deleted.');
       await loadProgramme();
     } catch (err) {
