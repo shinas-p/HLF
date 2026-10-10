@@ -1903,8 +1903,15 @@
     <p style="color:var(--mute);font-size:14px">Pay with Google Pay or any UPI app.</p>
     <div style="display:grid;gap:10px"><a class="btn p" id="gp">Pay with Google Pay</a><a class="btn" id="up">Pay via
         UPI</a></div>
-    <div class="copy"><span id="ui"></span><button class="btn" id="cp" style="padding:8px 14px">Copy UPI ID</button>
-    </div><small id="pn" style="color:var(--red)"></small>
+    <div class="copy"><span id="ui"></span><button type="button" class="btn" id="cp" style="padding:8px 14px">Copy UPI ID</button>
+    </div>
+    <div class="reg-payment-disclaimer" style="margin-top:12px;font-size:11.5px;line-height:1.55;background:rgba(230,162,60,0.08);border:1px solid rgba(230,162,60,0.35);border-left:3.5px solid var(--amb);border-radius:10px;padding:12px 14px;color:var(--ink);text-align:left;">
+      <div style="font-weight:700;color:var(--amb);margin-bottom:4px;display:flex;gap:6px;align-items:center;">
+        <span>ℹ️</span> <strong>Payment Help</strong>
+      </div>
+      <p style="margin:0;font-size:11.5px;line-height:1.55;color:var(--ink);">If you are unable to complete your payment using the UPI payment button, or your UPI app displays a warning or payment error, you can copy our official UPI ID and pay manually from your preferred UPI app. Open Google Pay, Paytm, PhonePe, or another supported UPI app, choose the option to pay using a UPI ID, and enter the copied ID. Before paying, verify that the displayed recipient name and amount are correct. If the warning persists or the recipient details do not match, do not proceed; contact the HLF organizers for assistance.</p>
+    </div>
+    <small id="pn" style="color:var(--red)"></small>
   </dialog>
   <dialog class="lb" id="lb"><button class="x" onclick="lb.close()" aria-label="Close" style="color:#fff">×</button>
     <div id="lc"></div>
@@ -1922,7 +1929,7 @@
   </script>
   <script>
     /* ===== CONTENT: edit here ===== */
-    const PAYMENT_CONFIG = (window.HLF_CONFIG && window.HLF_CONFIG.payment) ? { upiId: window.HLF_CONFIG.payment.upiId, payeeName: window.HLF_CONFIG.payment.payeeName, note: "HLF Contribution" } : { upiId: "hlf2026@dhiu", payeeName: "Hadith Literature Festival DHIU", note: "HLF Contribution" };
+    const PAYMENT_CONFIG = (window.HLF_CONFIG && window.HLF_CONFIG.payment) ? { upiId: window.HLF_CONFIG.payment.upiId, payeeName: window.HLF_CONFIG.payment.payeeName, note: "HLF Contribution" } : { upiId: "9847411637@kotakbank", payeeName: "SHINAS", note: "HLF Contribution" };
     const SITE = { register: "#register", email: "hadithliteraturefestival@gmail.com", phones: ["+91 7510411637"], insta: "https://www.instagram.com/hadith_literature_festival/", instaName: "@hadith_literature_festival", venue: "Darul Huda Islamic University, Chemmad, Kerala", dept: "Department of Hadith and Related Sciences", qr: window.location.href.split('#')[0] + "#register", start: "2026-10-18T00:00:00+05:30" };
     const STATS = [["100", "Students", "r"], ["20", "Colleges", "a"], ["15", "Academic sessions", "t"], ["5", "Programs", "bl"]];
     const POSTS = [{ cat: "Announcement", title: "A new chapter. A shared celebration.", text: "Hadith Literature Festival comes to Darul Huda, Chemmad, on 18–20 October 2026. Save the dates.", date: "18–20 Oct 2026", c: "--red", wide: 1, img: "poster" },
@@ -1964,14 +1971,22 @@
       }
     });
     document.querySelectorAll("[data-img]").forEach(i => i.src = IMG[i.dataset.img]); document.querySelector(".hbg").style.backgroundImage = "url(" + IMG.poster + ")";
-    if (window.loadDynamicSiteImages) {
-      window.loadDynamicSiteImages().then(imgs => {
+    const dynamicImagesPromise = window.loadDynamicSiteImagesPromise || (window.loadDynamicSiteImages ? window.loadDynamicSiteImages() : null);
+    if (dynamicImagesPromise) {
+      dynamicImagesPromise.then(imgs => {
+        if (!imgs) return;
         if (imgs.officialPoster) {
           IMG.poster = imgs.officialPoster;
           const hbg = document.querySelector(".hbg");
           if (hbg) hbg.style.backgroundImage = "url(" + IMG.poster + ")";
         }
         if (imgs.logo) IMG.logo = imgs.logo;
+        if (imgs.favicon) {
+          IMG.favicon = imgs.favicon;
+          document.querySelectorAll("link[rel*='icon']").forEach(l => {
+            l.href = imgs.favicon;
+          });
+        }
         document.querySelectorAll("[data-img]").forEach(i => i.src = IMG[i.dataset.img]);
       }).catch(() => { });
     }
@@ -2434,7 +2449,32 @@
     window.loadPublicContributionData = loadPublicContributionData;
     $("#sp").innerHTML = DAYS.map(([d, a]) => `<div class="glass rv"><p class="tag">Day 0${d} · ${17 + d} October</p><h3 style="font-size:1.6rem;margin-top:10px">Day ${d} Sponsorship</h3><div class="am ${["r", "a", "t"][d - 1]}">${inr(a)}</div><button class="btn p" onclick="pay(${a},'Day ${d} Sponsorship')">Sponsor This Day ♥</button></div>`).join("");
     function pay(a, l) { if (window.openContributionModal) { return window.openContributionModal(a, l) } const P = PAYMENT_CONFIG, q = `pa=${e(P.upiId)}&pn=${e(P.payeeName)}&am=${a}&cu=INR&tn=${e(P.note + " - " + l)}`; $("#pl").textContent = l; $("#pa").textContent = inr(a); $("#gp").href = "tez://upi/pay?" + q; $("#up").href = "upi://pay?" + q; $("#ui").textContent = P.upiId || "UPI ID not set"; const off = !P.upiId; $("#gp").classList.toggle("p", !off);[$("#gp"), $("#up"), $("#cp")].forEach(b => b.style.opacity = off ? .45 : 1); $("#pn").textContent = off ? "Organizer: add the UPI ID in PAYMENT_CONFIG to enable payments." : ""; pd.showModal() }
-    $("#cp").onclick = async () => { try { await navigator.clipboard.writeText(PAYMENT_CONFIG.upiId); $("#cp").textContent = "Copied ✓" } catch (x) { } };
+    $("#cp").onclick = async (e) => {
+      if (e && e.preventDefault) e.preventDefault();
+      try {
+        const uId = PAYMENT_CONFIG.upiId;
+        let ok = false;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          try { await navigator.clipboard.writeText(uId); ok = true; } catch (x) {}
+        }
+        if (!ok && typeof document !== "undefined") {
+          try {
+            const ta = document.createElement("textarea");
+            ta.value = uId; ta.style.position = "fixed"; ta.style.left = "-9999px";
+            document.body.appendChild(ta); ta.select();
+            ok = document.execCommand("copy");
+            document.body.removeChild(ta);
+          } catch (x) {}
+        }
+        if (ok) {
+          $("#cp").textContent = "UPI ID copied ✓";
+          setTimeout(() => { $("#cp").textContent = "Copy UPI ID"; }, 2500);
+        } else {
+          $("#cp").textContent = "Manual copy needed";
+          setTimeout(() => { $("#cp").textContent = "Copy UPI ID"; }, 3000);
+        }
+      } catch (x) {}
+    };
     // gallery
     let list = [], li = 0; const gc = ["All", "Events", "Sessions", "Guests", "Moments"];
     function gal(c) { list = (window.MEDIA || MEDIA).filter(m => c == "All" || m.cat == c); $("#gal").innerHTML = list.length ? list.map((m, i) => `<figure onclick="op(${i})" style="grid-row:span ${m.span || 1}"><${m.type == "video" ? "video" : "img"} src="${m.src}" loading="lazy" alt="${m.title}" style="object-fit:${m.fit || "cover"};background:${m.bg || "none"}" muted></${m.type == "video" ? "video" : "img"}><figcaption>${m.cat} · ${m.title}</figcaption></figure>`).join("") : `<div class="empty glass" style="grid-column:1/-1"><h3 class="t">The moments are yet to come.</h3><p>Photographs, guest portraits and videos from HLF will be added as the festival unfolds.</p></div>` }

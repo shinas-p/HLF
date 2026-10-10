@@ -2663,8 +2663,8 @@
     try {
       const { data } = await sb.from('festival_settings').select('*').eq('id', 'general').single();
       if (data) {
-        document.getElementById('set-upi-id').value = data.upi_id || 'hlf2026@dhiu';
-        document.getElementById('set-payee-name').value = data.upi_payee_name || 'Hadith Literature Festival DHIU';
+        document.getElementById('set-upi-id').value = data.upi_id || '9847411637@kotakbank';
+        document.getElementById('set-payee-name').value = data.upi_payee_name || 'SHINAS';
         document.getElementById('set-qr-url').value = data.upi_qr_image_url || 'assets/hlf-upi-qr.png';
         document.getElementById('set-contact-email').value = data.contact_email || 'hadithliteraturefestival@gmail.com';
         document.getElementById('set-contact-phone').value = data.contact_phone || '+91 73065 54055';
@@ -2756,35 +2756,51 @@
       featuredImage: resolveAssetUrl('assets/images/posters/hlf-2026-official-poster.png')
     };
 
-    // Update previews with defaults first
     const logoImg = document.getElementById('brand-logo-preview');
     const faviconImg = document.getElementById('brand-favicon-preview');
     const posterImg = document.getElementById('brand-poster-preview');
     const heroImg = document.getElementById('brand-hero-preview');
 
-    if (logoImg) logoImg.src = defaultImages.logo;
-    if (faviconImg) faviconImg.src = defaultImages.favicon;
-    if (posterImg) posterImg.src = defaultImages.officialPoster;
-    if (heroImg) heroImg.src = defaultImages.featuredImage;
-
     const sb = window.getSupabase ? window.getSupabase() : null;
-    if (!sb) return;
+    if (!sb) {
+      if (logoImg && !logoImg.src) { logoImg.src = defaultImages.logo; logoImg.dataset.savedSrc = defaultImages.logo; }
+      if (faviconImg && !faviconImg.src) { faviconImg.src = defaultImages.favicon; faviconImg.dataset.savedSrc = defaultImages.favicon; }
+      if (posterImg && !posterImg.src) { posterImg.src = defaultImages.officialPoster; posterImg.dataset.savedSrc = defaultImages.officialPoster; }
+      if (heroImg && !heroImg.src) { heroImg.src = defaultImages.featuredImage; heroImg.dataset.savedSrc = defaultImages.featuredImage; }
+      return;
+    }
 
     try {
-      // 1. Active poster from Supabase
-      const { data: pData } = await sb
-        .from('posters')
-        .select('image_url')
-        .eq('is_active', true)
-        .order('created_at', { ascending: false })
-        .limit(1)
+      // 1. Fetch persistent site branding from festival_settings
+      const { data: sData, error: sErr } = await sb
+        .from('festival_settings')
+        .select('logo_url, favicon_url, official_poster_url')
+        .eq('id', 'general')
         .maybeSingle();
 
-      if (pData?.image_url && posterImg) {
-        posterImg.src = pData.image_url;
+      const activeLogo = (sData && sData.logo_url && sData.logo_url.trim()) ? sData.logo_url.trim() : defaultImages.logo;
+      const activeFavicon = (sData && sData.favicon_url && sData.favicon_url.trim()) ? sData.favicon_url.trim() : defaultImages.favicon;
+      let activePoster = (sData && sData.official_poster_url && sData.official_poster_url.trim()) ? sData.official_poster_url.trim() : null;
+
+      // 2. Fallback to active poster in posters table if not configured in festival_settings
+      if (!activePoster) {
+        const { data: pData } = await sb
+          .from('posters')
+          .select('image_url')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (pData?.image_url && pData.image_url.trim()) {
+          activePoster = pData.image_url.trim();
+        } else {
+          activePoster = defaultImages.officialPoster;
+        }
       }
 
-      // 2. Featured hero image from gallery_items
+      // 3. Featured hero image from gallery_items
+      let activeHero = activePoster;
       const { data: gData } = await sb
         .from('gallery_items')
         .select('image_url')
@@ -2793,19 +2809,40 @@
         .limit(1)
         .maybeSingle();
 
-      if (gData?.image_url && heroImg) {
-        heroImg.src = gData.image_url;
-      } else if (pData?.image_url && heroImg) {
-        heroImg.src = pData.image_url;
+      if (gData?.image_url && gData.image_url.trim()) {
+        activeHero = gData.image_url.trim();
+      }
+
+      // Apply to preview elements and cache the confirmed saved source
+      if (logoImg) {
+        logoImg.src = activeLogo;
+        logoImg.dataset.savedSrc = activeLogo;
+      }
+      if (faviconImg) {
+        faviconImg.src = activeFavicon;
+        faviconImg.dataset.savedSrc = activeFavicon;
+        document.querySelectorAll("link[rel*='icon']").forEach(l => l.href = activeFavicon);
+      }
+      if (posterImg) {
+        posterImg.src = activePoster;
+        posterImg.dataset.savedSrc = activePoster;
+      }
+      if (heroImg) {
+        heroImg.src = activeHero;
+        heroImg.dataset.savedSrc = activeHero;
       }
     } catch (e) {
       console.warn('Could not load remote branding images:', e);
+      if (logoImg && !logoImg.src) { logoImg.src = defaultImages.logo; logoImg.dataset.savedSrc = defaultImages.logo; }
+      if (faviconImg && !faviconImg.src) { faviconImg.src = defaultImages.favicon; faviconImg.dataset.savedSrc = defaultImages.favicon; }
+      if (posterImg && !posterImg.src) { posterImg.src = defaultImages.officialPoster; posterImg.dataset.savedSrc = defaultImages.officialPoster; }
+      if (heroImg && !heroImg.src) { heroImg.src = defaultImages.featuredImage; heroImg.dataset.savedSrc = defaultImages.featuredImage; }
     }
   }
   window.loadSiteBranding = loadSiteBranding;
 
   function setupBrandingHandlers() {
-    const bindUpload = (fileInputId, previewImgId, uploadBtnId, onUploadFn) => {
+    const bindUpload = (fileInputId, previewImgId, uploadBtnId, onUploadFn, validationOptions = {}) => {
       const fileInput = document.getElementById(fileInputId);
       const previewImg = document.getElementById(previewImgId);
       const uploadBtn = document.getElementById(uploadBtnId);
@@ -2815,6 +2852,30 @@
       fileInput.onchange = (e) => {
         if (e.target.files && e.target.files[0]) {
           const file = e.target.files[0];
+
+          // Validate file size limit
+          const maxBytes = (validationOptions.maxMB || 10) * 1024 * 1024;
+          if (file.size > maxBytes) {
+            alert(`File size exceeds ${validationOptions.maxMB || 10}MB limit. Please select a smaller file.`);
+            fileInput.value = '';
+            return;
+          }
+
+          // Validate file extension/type
+          if (Array.isArray(validationOptions.allowedExtensions) && validationOptions.allowedExtensions.length > 0) {
+            const ext = (file.name.split('.').pop() || '').toLowerCase();
+            if (!validationOptions.allowedExtensions.includes(ext)) {
+              alert(`Invalid file format .${ext}. Allowed formats: ${validationOptions.allowedExtensions.join(', ')}`);
+              fileInput.value = '';
+              return;
+            }
+          }
+
+          // Remember previous saved source before showing temporary preview
+          if (!previewImg.dataset.savedSrc && previewImg.src) {
+            previewImg.dataset.savedSrc = previewImg.src;
+          }
+
           const reader = new FileReader();
           reader.onload = (ev) => {
             previewImg.src = ev.target.result;
@@ -2835,7 +2896,13 @@
           await onUploadFn(fileInput.files[0]);
           fileInput.value = '';
         } catch (err) {
-          alert('Upload failed: ' + err.message);
+          console.error('Branding upload failed:', err);
+          alert('Upload failed: ' + (err.message || err));
+          // Restore previously confirmed saved image
+          if (previewImg.dataset.savedSrc) {
+            previewImg.src = previewImg.dataset.savedSrc;
+          }
+          fileInput.value = '';
         } finally {
           uploadBtn.disabled = false;
           uploadBtn.innerHTML = origText;
@@ -2843,66 +2910,152 @@
       };
     };
 
-    // 1. Logo Replacement
+    // 1. Logo Replacement (PNG, JPG, WebP, SVG — max 10MB)
     bindUpload('brand-logo-file', 'brand-logo-preview', 'save-logo-btn', async (file) => {
       const sb = window.getSupabase();
-      const ext = file.name.split('.').pop() || 'png';
-      const path = 'branding/hlf-logo_' + Date.now() + '.' + ext;
-      const { error: upErr } = await sb.storage.from('hlf-posters').upload(path, file, { upsert: true });
-      if (upErr) throw upErr;
-      const { data: { publicUrl } } = sb.storage.from('hlf-posters').getPublicUrl(path);
-      showToast('HLF Logo updated successfully!');
-      await loadSiteBranding();
-    });
+      if (!sb) throw new Error('Supabase client not initialized');
 
-    // 2. Favicon Replacement
+      const ext = (file.name.split('.').pop() || 'png').toLowerCase();
+      const path = 'branding/hlf-logo_' + Date.now() + '.' + ext;
+      const { error: upErr } = await sb.storage.from('hlf-posters').upload(path, file, {
+        upsert: true,
+        contentType: file.type || 'image/png'
+      });
+      if (upErr) throw upErr;
+
+      const { data: { publicUrl } } = sb.storage.from('hlf-posters').getPublicUrl(path);
+      if (!publicUrl) throw new Error('Could not resolve public storage URL for uploaded logo.');
+
+      // Persist in festival_settings via RPC or direct update
+      let saved = false;
+      try {
+        const { error: rpcErr } = await sb.rpc('update_site_branding', {
+          p_logo_url: publicUrl,
+          p_logo_path: path
+        });
+        if (!rpcErr) saved = true;
+      } catch (_) {}
+
+      if (!saved) {
+        const { error: dbErr } = await sb.from('festival_settings').update({
+          logo_url: publicUrl,
+          logo_path: path,
+          updated_at: new Date().toISOString()
+        }).eq('id', 'general');
+        if (dbErr) throw dbErr;
+      }
+
+      showToast('HLF Logo uploaded & persisted successfully!');
+      await loadSiteBranding();
+    }, { maxMB: 10, allowedExtensions: ['png', 'jpg', 'jpeg', 'webp', 'svg'] });
+
+    // 2. Favicon Replacement (PNG, ICO, SVG, WebP — max 5MB)
     bindUpload('brand-favicon-file', 'brand-favicon-preview', 'save-favicon-btn', async (file) => {
       const sb = window.getSupabase();
-      const ext = file.name.split('.').pop() || 'png';
-      const path = 'branding/favicon_' + Date.now() + '.' + ext;
-      const { error: upErr } = await sb.storage.from('hlf-posters').upload(path, file, { upsert: true });
-      if (upErr) throw upErr;
-      const { data: { publicUrl } } = sb.storage.from('hlf-posters').getPublicUrl(path);
-      showToast('Favicon updated successfully!');
-      await loadSiteBranding();
-    });
+      if (!sb) throw new Error('Supabase client not initialized');
 
-    // 3. Official Poster Replacement
+      const ext = (file.name.split('.').pop() || 'png').toLowerCase();
+      const path = 'branding/favicon_' + Date.now() + '.' + ext;
+      const { error: upErr } = await sb.storage.from('hlf-posters').upload(path, file, {
+        upsert: true,
+        contentType: file.type || 'image/png'
+      });
+      if (upErr) throw upErr;
+
+      const { data: { publicUrl } } = sb.storage.from('hlf-posters').getPublicUrl(path);
+      if (!publicUrl) throw new Error('Could not resolve public storage URL for uploaded favicon.');
+
+      // Persist in festival_settings via RPC or direct update
+      let saved = false;
+      try {
+        const { error: rpcErr } = await sb.rpc('update_site_branding', {
+          p_favicon_url: publicUrl,
+          p_favicon_path: path
+        });
+        if (!rpcErr) saved = true;
+      } catch (_) {}
+
+      if (!saved) {
+        const { error: dbErr } = await sb.from('festival_settings').update({
+          favicon_url: publicUrl,
+          favicon_path: path,
+          updated_at: new Date().toISOString()
+        }).eq('id', 'general');
+        if (dbErr) throw dbErr;
+      }
+
+      showToast('Browser Favicon uploaded & persisted successfully!');
+      await loadSiteBranding();
+    }, { maxMB: 5, allowedExtensions: ['png', 'ico', 'svg', 'webp', 'jpg', 'jpeg'] });
+
+    // 3. Official Poster Replacement (JPG, PNG, WebP — max 10MB)
     bindUpload('brand-poster-file', 'brand-poster-preview', 'save-poster-btn', async (file) => {
       const sb = window.getSupabase();
-      const ext = file.name.split('.').pop() || 'jpg';
-      const path = 'posters/official-poster_' + Date.now() + '.' + ext;
-      const { error: upErr } = await sb.storage.from('hlf-posters').upload(path, file, { upsert: true });
-      if (upErr) throw upErr;
-      const { data: { publicUrl } } = sb.storage.from('hlf-posters').getPublicUrl(path);
+      if (!sb) throw new Error('Supabase client not initialized');
 
-      // Set all other posters inactive and insert new active poster
-      await sb.from('posters').update({ is_active: false }).neq('id', '00000000-0000-0000-0000-000000000000');
-      await sb.from('posters').insert({
-        title: 'Official HLF 2026 Poster',
-        description: 'Primary festival promotional poster',
-        image_url: publicUrl,
-        storage_path: path,
-        is_active: true
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+      const path = 'posters/official-poster_' + Date.now() + '.' + ext;
+      const { error: upErr } = await sb.storage.from('hlf-posters').upload(path, file, {
+        upsert: true,
+        contentType: file.type || 'image/jpeg'
       });
+      if (upErr) throw upErr;
+
+      const { data: { publicUrl } } = sb.storage.from('hlf-posters').getPublicUrl(path);
+      if (!publicUrl) throw new Error('Could not resolve public storage URL for uploaded poster.');
+
+      // Persist in festival_settings and posters table
+      let saved = false;
+      try {
+        const { error: rpcErr } = await sb.rpc('update_site_branding', {
+          p_official_poster_url: publicUrl,
+          p_official_poster_path: path
+        });
+        if (!rpcErr) saved = true;
+      } catch (_) {}
+
+      if (!saved) {
+        await sb.from('festival_settings').update({
+          official_poster_url: publicUrl,
+          official_poster_path: path,
+          updated_at: new Date().toISOString()
+        }).eq('id', 'general');
+
+        await sb.from('posters').update({ is_active: false }).neq('id', '00000000-0000-0000-0000-000000000000');
+        const { error: insErr } = await sb.from('posters').insert({
+          title: 'Official HLF 2026 Poster',
+          description: 'Primary festival promotional poster',
+          image_url: publicUrl,
+          storage_path: path,
+          is_active: true
+        });
+        if (insErr) throw insErr;
+      }
 
       showToast('Official Poster uploaded & set as active festival poster!');
       await loadSiteBranding();
       if (typeof loadPosters === 'function') await loadPosters();
-    });
+    }, { maxMB: 10, allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'] });
 
     // 4. Featured Hero Visual Replacement
     bindUpload('brand-hero-file', 'brand-hero-preview', 'save-hero-btn', async (file) => {
       const sb = window.getSupabase();
-      const ext = file.name.split('.').pop() || 'jpg';
+      if (!sb) throw new Error('Supabase client not initialized');
+
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
       const path = 'gallery/featured-hero_' + Date.now() + '.' + ext;
-      const { error: upErr } = await sb.storage.from('hlf-gallery').upload(path, file, { upsert: true });
+      const { error: upErr } = await sb.storage.from('hlf-gallery').upload(path, file, {
+        upsert: true,
+        contentType: file.type || 'image/jpeg'
+      });
       if (upErr) throw upErr;
+
       const { data: { publicUrl } } = sb.storage.from('hlf-gallery').getPublicUrl(path);
+      if (!publicUrl) throw new Error('Could not resolve public storage URL for featured visual.');
 
       // Unset previous featured images in gallery and insert new featured image
       await sb.from('gallery_items').update({ featured: false }).neq('id', '00000000-0000-0000-0000-000000000000');
-      await sb.from('gallery_items').insert({
+      const { error: insErr } = await sb.from('gallery_items').insert({
         title: 'HLF Landing Featured Visual',
         description: 'Homepage featured visual showcase',
         image_url: publicUrl,
@@ -2912,11 +3065,12 @@
         featured: true,
         display_order: 1
       });
+      if (insErr) throw insErr;
 
       showToast('Landing Page Featured Visual updated successfully!');
       await loadSiteBranding();
       if (typeof loadGallery === 'function') await loadGallery();
-    });
+    }, { maxMB: 10, allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'] });
   }
 
   // Setup branding handlers on init

@@ -21,11 +21,11 @@ const HLF_CONFIG = {
     registrationFee: 50
   },
 
-  // UPI Payment Config (configurable via admin / DB)
+  // UPI Payment Config (synced with festival_settings from Supabase)
   payment: {
     fee: 50,
-    upiId: 'hlf2026@dhiu', // Can be updated via Admin Dashboard
-    payeeName: 'Hadith Literature Festival DHIU',
+    upiId: '9847411637@kotakbank', // Synchronized with festival_settings
+    payeeName: 'SHINAS',
     note: 'HLF 2026 Registration',
     qrImagePath: '' // Rendered dynamically via QRCode canvas
   }

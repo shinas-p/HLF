@@ -11,6 +11,345 @@
   let selectedScreenshotFile = null;
   let selectedContribScreenshotFile = null;
 
+  const REG_DRAFT_KEY = 'hlf_registration_draft_v1';
+  const CONTRIB_DRAFT_KEY = 'hlf_contribution_draft_v1';
+
+  // Centralized payment config getter (ensures consistent UPI ID & payee across entire site)
+  function getPaymentConfig() {
+    const fallback = {
+      fee: 50,
+      upiId: '9847411637@kotakbank',
+      payeeName: 'SHINAS',
+      note: 'HLF 2026 Registration',
+      qrImagePath: ''
+    };
+    if (typeof window !== 'undefined' && window.HLF_CONFIG && window.HLF_CONFIG.payment) {
+      return {
+        fee: window.HLF_CONFIG.payment.fee || fallback.fee,
+        upiId: window.HLF_CONFIG.payment.upiId || fallback.upiId,
+        payeeName: window.HLF_CONFIG.payment.payeeName || fallback.payeeName,
+        note: window.HLF_CONFIG.payment.note || fallback.note,
+        qrImagePath: window.HLF_CONFIG.payment.qrImagePath || fallback.qrImagePath
+      };
+    }
+    return fallback;
+  }
+
+  function saveToStorage(key, data) {
+    try {
+      const s = JSON.stringify(data);
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem(key, s);
+      if (typeof localStorage !== 'undefined') localStorage.setItem(key, s);
+    } catch (e) {
+      console.warn('Storage save failed:', e);
+    }
+  }
+
+  function getFromStorage(key) {
+    try {
+      if (typeof sessionStorage !== 'undefined') {
+        const s = sessionStorage.getItem(key);
+        if (s) return JSON.parse(s);
+      }
+      if (typeof localStorage !== 'undefined') {
+        const l = localStorage.getItem(key);
+        if (l) return JSON.parse(l);
+      }
+    } catch (e) {
+      console.warn('Storage read failed:', e);
+    }
+    return null;
+  }
+
+  function removeFromStorage(key) {
+    try {
+      if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem(key);
+      if (typeof localStorage !== 'undefined') localStorage.removeItem(key);
+    } catch (e) {}
+  }
+
+  // Safe Clipboard Copy Helper with Document ExecCommand Fallback
+  async function copyUpiIdToClipboard(buttonEl, textSpanEl, feedbackEl) {
+    const config = getPaymentConfig();
+    const upiId = config.upiId;
+    if (!upiId) return;
+
+    let success = false;
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      try {
+        await navigator.clipboard.writeText(upiId);
+        success = true;
+      } catch (err) {
+        console.warn('navigator.clipboard.writeText failed, using fallback:', err);
+      }
+    }
+
+    if (!success && typeof document !== 'undefined') {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = upiId;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        ta.style.top = '0';
+        ta.setAttribute('readonly', '');
+        document.body.appendChild(ta);
+        ta.select();
+        ta.setSelectionRange(0, ta.value.length);
+        success = document.execCommand('copy');
+        document.body.removeChild(ta);
+      } catch (fbErr) {
+        console.warn('execCommand copy fallback failed:', fbErr);
+      }
+    }
+
+    if (success) {
+      if (textSpanEl) {
+        const orig = textSpanEl.textContent;
+        textSpanEl.textContent = 'UPI ID copied ✓';
+        if (buttonEl) buttonEl.classList.add('copied');
+        setTimeout(() => {
+          textSpanEl.textContent = orig;
+          if (buttonEl) buttonEl.classList.remove('copied');
+        }, 2500);
+      }
+      if (feedbackEl) {
+        feedbackEl.textContent = 'UPI ID copied to clipboard!';
+        feedbackEl.className = 'copy-feedback-msg';
+        feedbackEl.style.display = 'inline-block';
+        setTimeout(() => { feedbackEl.style.display = 'none'; }, 2500);
+      }
+    } else {
+      if (textSpanEl) {
+        textSpanEl.textContent = 'Manual copy needed';
+        setTimeout(() => { textSpanEl.textContent = 'Copy UPI ID'; }, 3000);
+      }
+      if (feedbackEl) {
+        feedbackEl.innerHTML = `Could not auto-copy. Please manually copy: <strong>${escapeHtml(upiId)}</strong>`;
+        feedbackEl.className = 'copy-feedback-msg error';
+        feedbackEl.style.display = 'inline-block';
+      }
+      const isContrib = buttonEl && buttonEl.id === 'contrib-copy-upi-btn';
+      const upiDisplay = document.getElementById(isContrib ? 'contrib-upi-id-text' : 'reg-upi-id-text');
+      if (upiDisplay && window.getSelection) {
+        try {
+          const selection = window.getSelection();
+          const range = document.createRange();
+          range.selectNodeContents(upiDisplay);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        } catch (e) {}
+      }
+    }
+  }
+
+  // Registration draft persistence
+  function saveRegistrationDraft(stepOverride) {
+    const fullName = (document.getElementById('reg-fullname')?.value || '').trim();
+    const mobile = (document.getElementById('reg-mobile')?.value || '').trim();
+    const email = (document.getElementById('reg-email')?.value || '').trim();
+    const institution = (document.getElementById('reg-institution')?.value || '').trim();
+    const otherInstitution = (document.getElementById('reg-other-institution')?.value || '').trim();
+    const course = (document.getElementById('reg-course')?.value || '').trim();
+    const department = (document.getElementById('reg-department')?.value || '').trim();
+    const district = (document.getElementById('reg-district')?.value || '').trim();
+    const notes = (document.getElementById('reg-notes')?.value || '').trim();
+    const consent = !!document.getElementById('reg-consent')?.checked;
+
+    const step2El = document.getElementById('reg-step2-view');
+    const currentStep = stepOverride || (step2El && step2El.style.display !== 'none' ? 2 : 1);
+
+    const draft = {
+      step: currentStep,
+      timestamp: Date.now(),
+      formData: {
+        fullName,
+        mobile,
+        email,
+        institution,
+        otherInstitution,
+        course,
+        department,
+        district,
+        notes,
+        consent
+      },
+      activeRegistrationData: activeRegistrationData || null
+    };
+
+    saveToStorage(REG_DRAFT_KEY, draft);
+  }
+
+  function restoreRegistrationDraft() {
+    const draft = getFromStorage(REG_DRAFT_KEY);
+    if (!draft || !draft.formData) return null;
+
+    if (draft.timestamp && Date.now() - draft.timestamp > 24 * 60 * 60 * 1000) {
+      removeFromStorage(REG_DRAFT_KEY);
+      return null;
+    }
+
+    const { formData } = draft;
+    if (formData.fullName && document.getElementById('reg-fullname')) {
+      document.getElementById('reg-fullname').value = formData.fullName;
+    }
+    if (formData.mobile && document.getElementById('reg-mobile')) {
+      document.getElementById('reg-mobile').value = formData.mobile;
+    }
+    if (formData.email && document.getElementById('reg-email')) {
+      document.getElementById('reg-email').value = formData.email;
+    }
+    if (formData.institution && document.getElementById('reg-institution')) {
+      document.getElementById('reg-institution').value = formData.institution;
+      const searchInput = document.getElementById('reg-institution-search');
+      if (searchInput) searchInput.value = formData.institution;
+      if (formData.institution === 'Other') {
+        const otherGroup = document.getElementById('reg-other-institution-group');
+        if (otherGroup) otherGroup.style.display = 'block';
+        if (formData.otherInstitution && document.getElementById('reg-other-institution')) {
+          document.getElementById('reg-other-institution').value = formData.otherInstitution;
+        }
+      }
+    }
+    if (formData.course && document.getElementById('reg-course')) {
+      document.getElementById('reg-course').value = formData.course;
+    }
+    if (formData.department && document.getElementById('reg-department')) {
+      document.getElementById('reg-department').value = formData.department;
+    }
+    if (formData.district && document.getElementById('reg-district')) {
+      document.getElementById('reg-district').value = formData.district;
+    }
+    if (formData.notes && document.getElementById('reg-notes')) {
+      document.getElementById('reg-notes').value = formData.notes;
+    }
+    if (formData.consent && document.getElementById('reg-consent')) {
+      document.getElementById('reg-consent').checked = formData.consent;
+    }
+
+    if (draft.activeRegistrationData) {
+      activeRegistrationData = draft.activeRegistrationData;
+    }
+
+    return draft;
+  }
+
+  function clearRegistrationDraft() {
+    removeFromStorage(REG_DRAFT_KEY);
+  }
+
+  // Contribution draft persistence
+  function saveContributionDraft(stepOverride) {
+    if (!activeContributionData) return;
+    const nameInput = document.getElementById('contrib-fullname');
+    const mobileInput = document.getElementById('contrib-mobile');
+    const emailInput = document.getElementById('contrib-email');
+    const customInput = document.getElementById('contrib-custom-amount-input');
+
+    const fullName = nameInput ? nameInput.value.trim() : (activeContributionData.fullName || '');
+    const mobile = mobileInput ? mobileInput.value.trim() : (activeContributionData.mobile || '');
+    const email = emailInput ? emailInput.value.trim() : (activeContributionData.email || '');
+
+    const step2El = document.getElementById('contrib-step2-view');
+    const currentStep = stepOverride || (step2El && step2El.style.display !== 'none' ? 2 : 1);
+
+    const draft = {
+      step: currentStep,
+      timestamp: Date.now(),
+      amount: activeContributionData.amount,
+      tierName: activeContributionData.tierName,
+      isCustom: activeContributionData.isCustom,
+      formData: {
+        fullName,
+        mobile,
+        email,
+        customAmount: customInput ? customInput.value.trim() : ''
+      },
+      activeContributionData: activeContributionData
+    };
+
+    saveToStorage(CONTRIB_DRAFT_KEY, draft);
+  }
+
+  function restoreContributionDraft() {
+    const draft = getFromStorage(CONTRIB_DRAFT_KEY);
+    if (!draft) return null;
+
+    if (draft.timestamp && Date.now() - draft.timestamp > 24 * 60 * 60 * 1000) {
+      removeFromStorage(CONTRIB_DRAFT_KEY);
+      return null;
+    }
+
+    if (draft.formData) {
+      const nameInput = document.getElementById('contrib-fullname');
+      const mobileInput = document.getElementById('contrib-mobile');
+      const emailInput = document.getElementById('contrib-email');
+      const customInput = document.getElementById('contrib-custom-amount-input');
+
+      if (nameInput && draft.formData.fullName) nameInput.value = draft.formData.fullName;
+      if (mobileInput && draft.formData.mobile) mobileInput.value = draft.formData.mobile;
+      if (emailInput && draft.formData.email) emailInput.value = draft.formData.email;
+      if (customInput && draft.formData.customAmount) customInput.value = draft.formData.customAmount;
+    }
+
+    if (draft.activeContributionData) {
+      activeContributionData = draft.activeContributionData;
+    }
+
+    return draft;
+  }
+
+  function clearContributionDraft() {
+    removeFromStorage(CONTRIB_DRAFT_KEY);
+  }
+
+  function checkAndRestorePendingSession() {
+    const regDialog = document.getElementById('reg-dialog');
+    const contribDialog = document.getElementById('contrib-dialog');
+    if ((regDialog && regDialog.open) || (contribDialog && contribDialog.open)) {
+      return;
+    }
+
+    // 1. Check registration draft
+    const regDraft = getFromStorage(REG_DRAFT_KEY);
+    if (regDraft && regDraft.step === 2 && regDraft.activeRegistrationData && regDraft.activeRegistrationData.registration_id && !regDraft.activeRegistrationData.submitted_final) {
+      openRegistrationModal();
+      return;
+    }
+
+    // 2. Check contribution draft
+    const contribDraft = getFromStorage(CONTRIB_DRAFT_KEY);
+    if (contribDraft && contribDraft.step === 2 && contribDraft.activeContributionData && !contribDraft.activeContributionData.submitted_final) {
+      openContributionModal(contribDraft.amount, contribDraft.tierName, true);
+      return;
+    }
+  }
+
+  function setupRegistrationInputListeners() {
+    const fields = [
+      'reg-fullname', 'reg-mobile', 'reg-email', 'reg-institution',
+      'reg-other-institution', 'reg-course', 'reg-department',
+      'reg-district', 'reg-notes', 'reg-consent'
+    ];
+    fields.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', () => saveRegistrationDraft());
+        el.addEventListener('change', () => saveRegistrationDraft());
+      }
+    });
+  }
+
+  function setupContributionInputListeners() {
+    const fields = ['contrib-fullname', 'contrib-mobile', 'contrib-email', 'contrib-custom-amount-input'];
+    fields.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', () => saveContributionDraft());
+        el.addEventListener('change', () => saveContributionDraft());
+      }
+    });
+  }
+
   const HLF_INSTITUTIONS = [
     "Darul Huda Nedumangadu Campus",
     "Darul Huda Central Campus, Chemmad",
@@ -83,29 +422,43 @@
     }
 
     try {
+      setupRegistrationInputListeners();
+      setupContributionInputListeners();
+    } catch (error) {
+      console.error('Form draft input listeners initialization failed:', error);
+    }
+
+    try {
       loadSupabaseData();
     } catch (error) {
       console.error('Supabase dynamic data sync failed:', error);
     }
 
-    // Check for #register in URL
+    // Check for pending backgrounded session or #register in URL
+    checkAndRestorePendingSession();
+
     if (window.location.hash === '#register') {
       setTimeout(() => {
         try { openRegistrationModal(); } catch (e) { }
       }, 150);
     }
+
+    // Mobile browser lifecycle persistence hooks
+    window.addEventListener('pageshow', () => {
+      checkAndRestorePendingSession();
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        checkAndRestorePendingSession();
+      }
+    });
   }
 
   // 1. Inject Registration Modal into Document
   function injectRegistrationModal() {
     if (document.getElementById('reg-dialog')) return;
 
-    const paymentCfg = (window.HLF_CONFIG && window.HLF_CONFIG.payment) || {
-      fee: 50,
-      upiId: 'hlf2026@dhiu',
-      payeeName: 'Hadith Literature Festival DHIU',
-      qrImagePath: ''
-    };
+    const paymentCfg = getPaymentConfig();
 
     const dialog = document.createElement('dialog');
     dialog.id = 'reg-dialog';
@@ -290,24 +643,36 @@
               </div>
               <div class="upi-details">
                 <span class="upi-label">Payee Name</span>
-                <span style="font-size: 13px; font-weight: 500; color: var(--ink);">${paymentCfg.payeeName}</span>
+                <span id="reg-payee-name-text" style="font-size: 13px; font-weight: 500; color: var(--ink);">${paymentCfg.payeeName}</span>
               </div>
 
               <div class="reg-pay-actions">
-                <button type="button" class="reg-btn-sm" id="reg-copy-upi-btn">
+                <button type="button" class="reg-btn-sm" id="reg-copy-upi-btn" aria-label="Copy official UPI ID">
                   <span>📋</span> <span id="reg-copy-text">Copy UPI ID</span>
                 </button>
-                <a href="#" class="reg-btn-sm primary" id="reg-pay-intent-btn" target="_blank" rel="noopener">
+                <a href="#" class="reg-btn-sm primary" id="reg-pay-intent-btn">
                   <span>⚡</span> Pay ₹50 via UPI App
                 </a>
+              </div>
+              <div id="reg-copy-feedback" class="copy-feedback-msg" style="display: none;" role="status"></div>
+
+              <div class="reg-payment-disclaimer" id="reg-payment-disclaimer">
+                <div class="disclaimer-header">
+                  <span class="disclaimer-icon">ℹ️</span>
+                  <strong>Payment Help</strong>
+                </div>
+                <p class="disclaimer-text">
+                  If you are unable to complete your payment using the UPI payment button, or your UPI app displays a warning or payment error, you can copy our official UPI ID and pay manually from your preferred UPI app. Open Google Pay, Paytm, PhonePe, or another supported UPI app, choose the option to pay using a UPI ID, and enter the copied ID. Before paying, verify that the displayed recipient name and amount are correct. If the warning persists or the recipient details do not match, do not proceed; contact the HLF organizers for assistance.
+                </p>
               </div>
 
               <div class="reg-payment-notice">
                 <strong>How to complete payment:</strong><br>
-                1. Tap <strong>Pay ₹50 via UPI</strong> or scan the QR code using Google Pay, PhonePe, Paytm, BHIM, etc.<br>
-                2. Complete the ₹50 registration payment.<br>
-                3. Take a screenshot showing your completed payment receipt.<br>
-                4. Upload the screenshot below and complete your registration.
+                1. Tap <strong>Pay ₹50 via UPI App</strong> or scan the QR code using Google Pay, PhonePe, Paytm, BHIM, etc.<br>
+                2. Or tap <strong>Copy UPI ID</strong> to pay manually: open your UPI app, paste the UPI ID, enter <strong>₹50</strong> as the amount, and verify the recipient name before paying.<br>
+                3. Complete the ₹50 registration payment.<br>
+                4. Take a screenshot showing your completed payment receipt.<br>
+                5. Upload the screenshot below and complete your registration.
               </div>
             </div>
           </div>
@@ -422,34 +787,44 @@
       document.body.style.overflow = '';
     });
 
-    // Step 2 Back Button
+    // Step 2 Back Button (returns to Step 1 preserving all inputs)
     document.getElementById('step2-back-btn').onclick = () => {
       showStep(1);
+      saveRegistrationDraft(1);
     };
 
     // Copy Allocated ID in Step 2
-    document.getElementById('step2-copy-id-btn').onclick = async () => {
+    document.getElementById('step2-copy-id-btn').onclick = async (e) => {
+      if (e && e.preventDefault) e.preventDefault();
       if (!activeRegistrationData || !activeRegistrationData.registration_id) return;
       try {
         await navigator.clipboard.writeText(activeRegistrationData.registration_id);
         const txt = document.getElementById('step2-copy-id-text');
-        txt.textContent = 'Copied ✓';
-        setTimeout(() => { txt.textContent = 'Copy ID'; }, 2000);
-      } catch (e) { }
+        if (txt) {
+          txt.textContent = 'Copied ✓';
+          setTimeout(() => { txt.textContent = 'Copy ID'; }, 2000);
+        }
+      } catch (err) { }
     };
 
-    // Copy UPI ID Button
-    document.getElementById('reg-copy-upi-btn').onclick = async () => {
-      const upiId = (window.HLF_CONFIG && window.HLF_CONFIG.payment && window.HLF_CONFIG.payment.upiId) || 'hlf2026@dhiu';
-      try {
-        await navigator.clipboard.writeText(upiId);
-        const copyTxt = document.getElementById('reg-copy-text');
-        copyTxt.textContent = 'Copied ✓';
-        setTimeout(() => { copyTxt.textContent = 'Copy UPI ID'; }, 2000);
-      } catch (err) {
-        console.warn('Clipboard write failed:', err);
-      }
+    // Copy UPI ID Button with feedback and fallback
+    document.getElementById('reg-copy-upi-btn').onclick = async (e) => {
+      if (e && e.preventDefault) e.preventDefault();
+      if (e && e.stopPropagation) e.stopPropagation();
+      await copyUpiIdToClipboard(
+        document.getElementById('reg-copy-upi-btn'),
+        document.getElementById('reg-copy-text'),
+        document.getElementById('reg-copy-feedback')
+      );
     };
+
+    // Intent button click saves draft before external app launch
+    const regIntentBtn = document.getElementById('reg-pay-intent-btn');
+    if (regIntentBtn) {
+      regIntentBtn.onclick = () => {
+        saveRegistrationDraft(2);
+      };
+    }
 
     // Form Submissions
     document.getElementById('hlf-step1-form').onsubmit = handleStep1Submit;
@@ -779,11 +1154,7 @@
 
   // 2. Setup UPI Intent & QR Code with Registration ID
   function renderUpiPaymentControls(regId) {
-    const paymentCfg = (window.HLF_CONFIG && window.HLF_CONFIG.payment) || {
-      fee: 50,
-      upiId: 'hlf2026@dhiu',
-      payeeName: 'Hadith Literature Festival DHIU'
-    };
+    const paymentCfg = getPaymentConfig();
 
     const noteText = regId ? `HLF 2026 Registration - ${regId}` : 'HLF 2026 Registration';
     const upiQuery = `pa=${encodeURIComponent(paymentCfg.upiId)}&pn=${encodeURIComponent(paymentCfg.payeeName)}&am=${paymentCfg.fee}&cu=INR&tn=${encodeURIComponent(noteText)}`;
@@ -792,11 +1163,18 @@
     const intentBtn = document.getElementById('reg-pay-intent-btn');
     if (intentBtn) {
       intentBtn.href = upiIntentUrl;
+      intentBtn.removeAttribute('target');
+      intentBtn.removeAttribute('rel');
     }
 
     const upiText = document.getElementById('reg-upi-id-text');
     if (upiText) {
       upiText.textContent = paymentCfg.upiId;
+    }
+
+    const payeeText = document.getElementById('reg-payee-name-text');
+    if (payeeText) {
+      payeeText.textContent = paymentCfg.payeeName;
     }
 
     if (regId) {
@@ -866,6 +1244,9 @@
 
     // Lock page background scrolling
     document.body.style.overflow = 'hidden';
+
+    // Restore draft details if available
+    restoreRegistrationDraft();
 
     // Show Step 1 unless already in Step 2 with allocated ID
     if (activeRegistrationData && activeRegistrationData.registration_id && !activeRegistrationData.submitted_final) {
@@ -1024,6 +1405,7 @@
       // Switch to Step 2
       showStep(2);
       renderUpiPaymentControls(regId);
+      saveRegistrationDraft(2);
 
     } catch (err) {
       console.error('Step 1 error:', err);
@@ -1108,6 +1490,9 @@
       activeRegistrationData.payment_screenshot_url = screenshotUrl;
       activeRegistrationData.payment_status = 'pending';
       activeRegistrationData.submitted_final = true;
+
+      // Clear the temporary draft once registration is successfully submitted
+      clearRegistrationDraft();
 
       displaySuccessView(activeRegistrationData);
 
@@ -1359,12 +1744,7 @@
   function injectContributionModal() {
     if (document.getElementById('contrib-dialog')) return;
 
-    const paymentCfg = (window.HLF_CONFIG && window.HLF_CONFIG.payment) || {
-      fee: 50,
-      upiId: 'hlf2026@dhiu',
-      payeeName: 'Hadith Literature Festival DHIU',
-      qrImagePath: ''
-    };
+    const paymentCfg = getPaymentConfig();
 
     const dialog = document.createElement('dialog');
     dialog.id = 'contrib-dialog';
@@ -1510,24 +1890,36 @@
               </div>
               <div class="upi-details">
                 <span class="upi-label">Payee Name</span>
-                <span style="font-size: 13px; font-weight: 500; color: var(--ink);">${paymentCfg.payeeName}</span>
+                <span id="contrib-payee-name-text" style="font-size: 13px; font-weight: 500; color: var(--ink);">${paymentCfg.payeeName}</span>
               </div>
 
               <div class="reg-pay-actions">
-                <button type="button" class="reg-btn-sm" id="contrib-copy-upi-btn">
+                <button type="button" class="reg-btn-sm" id="contrib-copy-upi-btn" aria-label="Copy official UPI ID">
                   <span>📋</span> <span id="contrib-copy-text">Copy UPI ID</span>
                 </button>
-                <a href="#" class="reg-btn-sm primary" id="contrib-pay-intent-btn" target="_blank" rel="noopener">
+                <a href="#" class="reg-btn-sm primary" id="contrib-pay-intent-btn">
                   <span>⚡</span> <span id="contrib-intent-btn-text">Pay via UPI App</span>
                 </a>
+              </div>
+              <div id="contrib-copy-feedback" class="copy-feedback-msg" style="display: none;" role="status"></div>
+
+              <div class="reg-payment-disclaimer" id="contrib-payment-disclaimer">
+                <div class="disclaimer-header">
+                  <span class="disclaimer-icon">ℹ️</span>
+                  <strong>Payment Help</strong>
+                </div>
+                <p class="disclaimer-text">
+                  If you are unable to complete your payment using the UPI payment button, or your UPI app displays a warning or payment error, you can copy our official UPI ID and pay manually from your preferred UPI app. Open Google Pay, Paytm, PhonePe, or another supported UPI app, choose the option to pay using a UPI ID, and enter the copied ID. Before paying, verify that the displayed recipient name and amount are correct. If the warning persists or the recipient details do not match, do not proceed; contact the HLF organizers for assistance.
+                </p>
               </div>
 
               <div class="reg-payment-notice">
                 <strong>How to complete your contribution:</strong><br>
                 1. Tap <strong>Pay via UPI App</strong> or scan the QR code using Google Pay, PhonePe, Paytm, BHIM, etc.<br>
-                2. Complete your payment of <strong id="contrib-notice-amount">₹99</strong>.<br>
-                3. Take a screenshot showing your completed payment receipt.<br>
-                4. Upload the screenshot below and complete your contribution.
+                2. Or tap <strong>Copy UPI ID</strong> to pay manually: open your UPI app, paste the UPI ID, enter the exact amount (<strong id="contrib-manual-amount">₹99</strong>), and verify the recipient name before paying.<br>
+                3. Complete your payment of <strong id="contrib-notice-amount">₹99</strong>.<br>
+                4. Take a screenshot showing your completed payment receipt.<br>
+                5. Upload the screenshot below and complete your contribution.
               </div>
             </div>
           </div>
@@ -1672,16 +2064,24 @@
     dialog.addEventListener('close', () => { document.body.style.overflow = ''; });
     dialog.addEventListener('cancel', () => { document.body.style.overflow = ''; });
 
-    // Copy UPI ID button
-    document.getElementById('contrib-copy-upi-btn').onclick = async () => {
-      const upiId = (window.HLF_CONFIG && window.HLF_CONFIG.payment && window.HLF_CONFIG.payment.upiId) || 'hlf2026@dhiu';
-      try {
-        await navigator.clipboard.writeText(upiId);
-        const copyTxt = document.getElementById('contrib-copy-text');
-        copyTxt.textContent = 'Copied ✓';
-        setTimeout(() => { copyTxt.textContent = 'Copy UPI ID'; }, 2000);
-      } catch (err) { }
+    // Copy UPI ID button with feedback and fallback
+    document.getElementById('contrib-copy-upi-btn').onclick = async (e) => {
+      if (e && e.preventDefault) e.preventDefault();
+      if (e && e.stopPropagation) e.stopPropagation();
+      await copyUpiIdToClipboard(
+        document.getElementById('contrib-copy-upi-btn'),
+        document.getElementById('contrib-copy-text'),
+        document.getElementById('contrib-copy-feedback')
+      );
     };
+
+    // Intent button click saves draft before external app launch
+    const contribIntentBtn = document.getElementById('contrib-pay-intent-btn');
+    if (contribIntentBtn) {
+      contribIntentBtn.onclick = () => {
+        saveContributionDraft(2);
+      };
+    }
 
     // Form submission handlers & button clicks
     const step1Form = document.getElementById('hlf-contrib-step1-form');
@@ -1709,12 +2109,13 @@
       };
     }
 
-    // Back to Step 1 button
+    // Back to Step 1 button (preserves all entered details)
     const backBtn = document.getElementById('contrib-step2-back-btn');
     if (backBtn) {
       backBtn.onclick = (e) => {
         if (e && e.preventDefault) e.preventDefault();
         handleContributionStep2Back();
+        saveContributionDraft(1);
       };
     }
 
@@ -1824,8 +2225,10 @@
     if (summaryMobile) summaryMobile.textContent = (activeContributionData && activeContributionData.mobile) ? `+91 ${activeContributionData.mobile}` : '—';
     if (summaryTier) summaryTier.textContent = cleanTier.toUpperCase();
     if (summaryAmount) summaryAmount.textContent = hasValidAmount ? `₹${formatted}` : '₹—';
-    if (payAmount) payAmount.textContent = hasValidAmount ? `₹${formatted}.00` : '₹—';
+    if (payAmount) payAmount.textContent = hasValidAmount ? `₹${formatted}` : '₹—';
     if (noticeAmount) noticeAmount.textContent = hasValidAmount ? `₹${formatted}` : 'your contribution amount';
+    const manualAmount = document.getElementById('contrib-manual-amount');
+    if (manualAmount) manualAmount.textContent = hasValidAmount ? `₹${formatted}` : 'your contribution amount';
     if (intentBtnText) intentBtnText.textContent = hasValidAmount ? `Pay ₹${formatted} via UPI App` : 'Pay via UPI App';
     if (submitBtnText) submitBtnText.textContent = hasValidAmount ? `Submit Contribution (₹${formatted}) ✦` : 'Submit Contribution ✦';
 
@@ -1972,7 +2375,7 @@
   }
 
   // 12. Open Contribution Modal
-  function openContributionModal(amount, tierName) {
+  function openContributionModal(amount, tierName, isRestore = false) {
     const dialog = document.getElementById('contrib-dialog');
     if (!dialog) {
       injectContributionModal();
@@ -1980,10 +2383,18 @@
     const d = document.getElementById('contrib-dialog');
     if (!d) return;
 
+    // Check for saved draft details
+    const savedDraft = restoreContributionDraft();
+
     // Default to 'custom' if called without an explicit amount/tier (e.g. from nav or hero Contribute button)
     if (amount === undefined && tierName === undefined) {
-      amount = 'custom';
-      tierName = 'Custom Contribution';
+      if (savedDraft && savedDraft.amount) {
+        amount = savedDraft.amount;
+        tierName = savedDraft.tierName;
+      } else {
+        amount = 'custom';
+        tierName = 'Custom Contribution';
+      }
     }
 
     const isCustom = amount === 'custom' || (tierName && String(tierName).toLowerCase().includes('custom'));
@@ -2005,8 +2416,8 @@
         currentAmount = parseInt(amount, 10);
         if (customInput) customInput.value = String(currentAmount);
       } else {
-        currentAmount = null;
-        if (customInput) customInput.value = '';
+        currentAmount = (savedDraft && savedDraft.amount) ? savedDraft.amount : null;
+        if (customInput) customInput.value = currentAmount ? String(currentAmount) : '';
       }
       if (customWrap) customWrap.style.display = 'block';
       if (customInput) {
@@ -2023,27 +2434,34 @@
       }
     }
 
-    // Fresh session: start clean on Step 1, reset errors and stale inputs
     clearContribErrors();
-    if (nameInput) nameInput.value = '';
-    if (mobileInput) mobileInput.value = '';
-    if (emailInput) emailInput.value = '';
-    if (isCustom && !amount) {
-      if (customInput) customInput.value = '';
-    }
     resetContribScreenshot();
+
+    // Preserve any draft or existing inputs so the user never re-types needlessly
+    const restoredName = (nameInput && nameInput.value) || (savedDraft?.formData?.fullName) || '';
+    const restoredMobile = (mobileInput && mobileInput.value) || (savedDraft?.formData?.mobile) || '';
+    const restoredEmail = (emailInput && emailInput.value) || (savedDraft?.formData?.email) || '';
+
+    if (nameInput) nameInput.value = restoredName;
+    if (mobileInput) mobileInput.value = restoredMobile;
+    if (emailInput) emailInput.value = restoredEmail;
 
     activeContributionData = {
       amount: currentAmount,
       tierName: currentTier,
       isCustom: isCustom,
-      fullName: '',
-      mobile: '',
-      email: ''
+      fullName: restoredName,
+      mobile: restoredMobile,
+      email: restoredEmail
     };
 
-    updateContributionStep1UI(currentAmount, currentTier, isCustom);
-    showContribStep(1);
+    if (isRestore && savedDraft && savedDraft.step === 2 && currentAmount) {
+      updateContributionStep2UI(currentAmount, currentTier, isCustom);
+      showContribStep(2);
+    } else {
+      updateContributionStep1UI(currentAmount, currentTier, isCustom);
+      showContribStep(1);
+    }
 
     // Lock page background scrolling
     document.body.style.overflow = 'hidden';
@@ -2054,7 +2472,7 @@
       d.setAttribute('open', '');
     }
 
-    if (isCustom && customInput) {
+    if (isCustom && customInput && !isRestore) {
       setTimeout(() => customInput.focus(), 80);
     }
   }
@@ -2070,28 +2488,20 @@
       dialog.removeAttribute('open');
     }
 
-    // Clean session on close so reopening starts fresh
-    activeContributionData = null;
-    selectedContribScreenshotFile = null;
-    resetContribScreenshot();
-    clearContribErrors();
-    const nameInput = document.getElementById('contrib-fullname');
-    const mobileInput = document.getElementById('contrib-mobile');
-    const emailInput = document.getElementById('contrib-email');
-    const customInput = document.getElementById('contrib-custom-amount-input');
-    if (nameInput) nameInput.value = '';
-    if (mobileInput) mobileInput.value = '';
-    if (emailInput) emailInput.value = '';
-    if (customInput) customInput.value = '';
-    showContribStep(1);
+    // Only clean session when user has completed submission; preserve in-progress draft!
+    if (activeContributionData && activeContributionData.submitted_final) {
+      clearContributionDraft();
+      activeContributionData = null;
+      selectedContribScreenshotFile = null;
+      resetContribScreenshot();
+      clearContribErrors();
+      showContribStep(1);
+    }
   }
 
   // 13. Render Contribution UPI Intent & QR
   function renderContributionUpi(amount, tierName) {
-    const paymentCfg = (window.HLF_CONFIG && window.HLF_CONFIG.payment) || {
-      upiId: 'hlf2026@dhiu',
-      payeeName: 'Hadith Literature Festival DHIU'
-    };
+    const paymentCfg = getPaymentConfig();
 
     const hasAmount = amount !== null && amount !== undefined && !isNaN(Number(amount)) && Number(amount) >= 1;
     const upiQuery = hasAmount
@@ -2102,11 +2512,18 @@
     const intentBtn = document.getElementById('contrib-pay-intent-btn');
     if (intentBtn) {
       intentBtn.href = upiIntentUrl;
+      intentBtn.removeAttribute('target');
+      intentBtn.removeAttribute('rel');
     }
 
     const upiTxt = document.getElementById('contrib-upi-id-text');
     if (upiTxt) {
       upiTxt.textContent = paymentCfg.upiId;
+    }
+
+    const payeeTxt = document.getElementById('contrib-payee-name-text');
+    if (payeeTxt) {
+      payeeTxt.textContent = paymentCfg.payeeName;
     }
 
     const qrCanvas = document.getElementById('contrib-qr-canvas');
@@ -2196,6 +2613,9 @@
 
     // Populate Step 2 UI elements
     updateContributionStep2UI(finalAmount, activeContributionData.tierName, activeContributionData.isCustom);
+
+    // Save draft state so user can return after launching UPI app
+    saveContributionDraft(2);
 
     // Switch view to Step 2
     showContribStep(2);
@@ -2326,8 +2746,12 @@
         payment_screenshot_path: filePath,
         payment_screenshot_url: screenshotUrl,
         payment_status: 'SUBMITTED',
-        created_at: data.created_at || new Date().toISOString()
+        created_at: data.created_at || new Date().toISOString(),
+        submitted_final: true
       };
+
+      // Clear draft upon completed submission
+      clearContributionDraft();
 
       displayContributionSuccessView(activeContributionData);
 
@@ -2726,6 +3150,9 @@
           if (settingsData.upi_payee_name) window.HLF_CONFIG.payment.payeeName = settingsData.upi_payee_name;
           if (settingsData.upi_qr_image_url) window.HLF_CONFIG.payment.qrImagePath = settingsData.upi_qr_image_url;
           renderUpiPaymentControls(activeRegistrationData ? activeRegistrationData.registration_id : null);
+          if (activeContributionData && activeContributionData.amount) {
+            renderContributionUpi(activeContributionData.amount, activeContributionData.tierName || 'Supporter');
+          }
         }
       } catch (err) {
         console.warn('Could not sync festival settings:', err);

@@ -33,21 +33,46 @@ async function loadDynamicSiteImages() {
     const sb = (typeof window !== 'undefined' && window.getSupabase) ? window.getSupabase() : null;
     if (!sb) return HLF_SITE_IMAGES;
 
-    // 1. Check for active poster in Supabase posters table
-    const { data: posterData, error: posterErr } = await sb
-      .from('posters')
-      .select('image_url')
-      .eq('is_active', true)
-      .order('created_at', { ascending: false })
-      .limit(1)
+    // 1. Fetch site settings from festival_settings
+    const { data: settingsData, error: settingsErr } = await sb
+      .from('festival_settings')
+      .select('upi_qr_image_url, logo_url, favicon_url, official_poster_url')
+      .eq('id', 'general')
       .maybeSingle();
 
-    if (!posterErr && posterData?.image_url) {
-      HLF_SITE_IMAGES.officialPoster = posterData.image_url;
-      HLF_SITE_IMAGES.featuredImage = posterData.image_url;
+    if (!settingsErr && settingsData) {
+      if (settingsData.logo_url && settingsData.logo_url.trim()) {
+        HLF_SITE_IMAGES.logo = settingsData.logo_url.trim();
+      }
+      if (settingsData.favicon_url && settingsData.favicon_url.trim()) {
+        HLF_SITE_IMAGES.favicon = settingsData.favicon_url.trim();
+      }
+      if (settingsData.official_poster_url && settingsData.official_poster_url.trim()) {
+        HLF_SITE_IMAGES.officialPoster = settingsData.official_poster_url.trim();
+        HLF_SITE_IMAGES.featuredImage = settingsData.official_poster_url.trim();
+      }
+      if (settingsData.upi_qr_image_url && settingsData.upi_qr_image_url.trim()) {
+        HLF_SITE_IMAGES.qrCode = settingsData.upi_qr_image_url.trim();
+      }
     }
 
-    // 2. Check for featured image in gallery_items table
+    // 2. If official poster wasn't in festival_settings, check active poster in posters table
+    if (!HLF_SITE_IMAGES.officialPoster || HLF_SITE_IMAGES.officialPoster === DEFAULT_SITE_IMAGES.officialPoster) {
+      const { data: posterData, error: posterErr } = await sb
+        .from('posters')
+        .select('image_url')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!posterErr && posterData?.image_url && posterData.image_url.trim()) {
+        HLF_SITE_IMAGES.officialPoster = posterData.image_url.trim();
+        HLF_SITE_IMAGES.featuredImage = posterData.image_url.trim();
+      }
+    }
+
+    // 3. Check for featured image in gallery_items table
     const { data: featData, error: featErr } = await sb
       .from('gallery_items')
       .select('image_url')
@@ -57,19 +82,8 @@ async function loadDynamicSiteImages() {
       .limit(1)
       .maybeSingle();
 
-    if (!featErr && featData?.image_url) {
-      HLF_SITE_IMAGES.featuredImage = featData.image_url;
-    }
-
-    // 3. Check for settings overrides if festival_settings exists
-    const { data: settingsData } = await sb
-      .from('festival_settings')
-      .select('upi_qr_image_url')
-      .limit(1)
-      .maybeSingle();
-
-    if (settingsData?.upi_qr_image_url) {
-      HLF_SITE_IMAGES.qrCode = settingsData.upi_qr_image_url;
+    if (!featErr && featData?.image_url && featData.image_url.trim()) {
+      HLF_SITE_IMAGES.featuredImage = featData.image_url.trim();
     }
 
   } catch (err) {
@@ -84,6 +98,9 @@ if (typeof window !== 'undefined') {
   window.HLF_SITE_IMAGES = HLF_SITE_IMAGES;
   window.getAssetPath = getAssetPath;
   window.loadDynamicSiteImages = loadDynamicSiteImages;
+  try {
+    window.loadDynamicSiteImagesPromise = loadDynamicSiteImages();
+  } catch (_) {}
 }
 
 if (typeof module !== 'undefined' && module.exports) {
