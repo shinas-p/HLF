@@ -165,11 +165,34 @@ async function sleep(ms) {
   return new Promise(r => setTimeout(r, ms));
 }
 
+let spawnedServer = null;
+async function ensureServerRunning() {
+  try {
+    const res = await fetch('http://localhost:3300/');
+    if (res.ok) return;
+  } catch (e) { }
+
+  console.log('Starting local server (serve.js) on port 3300...');
+  spawnedServer = spawn('node', ['serve.js'], { cwd: __dirname, detached: false, stdio: 'ignore' });
+  for (let i = 0; i < 20; i++) {
+    await sleep(300);
+    try {
+      const res = await fetch('http://localhost:3300/');
+      if (res.ok) {
+        console.log('Local server ready on http://localhost:3300');
+        return;
+      }
+    } catch (e) { }
+  }
+}
+
 async function runBrowserTests() {
   if (!fs.existsSync(CHROME_PATH)) {
     console.log('Skipping Chrome CDP test: Chrome executable not found at path.');
     return;
   }
+
+  await ensureServerRunning();
 
   console.log('\n--- LAUNCHING HEADLESS CHROME FOR LIVE CDP RUNTIME TESTS ---');
   const chromeProc = spawn(CHROME_PATH, [
@@ -273,7 +296,7 @@ async function runBrowserTests() {
         document.getElementById('hlf-step1-form').dispatchEvent(new Event('submit', { cancelable: true }));
       `);
 
-      await sleep(1500);
+      await sleep(2500);
 
       const step2Active = await evalScript('document.getElementById("reg-step2-view").style.display !== "none"');
       assert(step2Active, 'Step 2 view not active after Step 1 submit');
@@ -418,6 +441,11 @@ async function runBrowserTests() {
     try {
       chromeProc.kill();
     } catch (e) { }
+    if (spawnedServer) {
+      try {
+        spawnedServer.kill();
+      } catch (e) { }
+    }
   }
 }
 
