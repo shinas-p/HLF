@@ -827,8 +827,19 @@
     }
 
     // Form Submissions
-    document.getElementById('hlf-step1-form').onsubmit = handleStep1Submit;
-    document.getElementById('hlf-step2-form').onsubmit = handleStep2Submit;
+    const step1Form = document.getElementById('hlf-step1-form');
+    if (step1Form) {
+      step1Form.onsubmit = handleStep1Submit;
+      step1Form.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && e.target && e.target.tagName !== 'TEXTAREA') {
+          e.preventDefault();
+        }
+      });
+    }
+    const step2Form = document.getElementById('hlf-step2-form');
+    if (step2Form) {
+      step2Form.onsubmit = handleStep2Submit;
+    }
 
     // Initialize Combobox and Upload
     setupInstitutionCombobox();

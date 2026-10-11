@@ -157,8 +157,9 @@ test('js/admin.js: Festival settings fallback configured to official 9847411637@
 // -----------------------------------------------------------------
 // 2. LIVE BROWSER / CDP AUTOMATED TESTING VIA HEADLESS CHROME
 // -----------------------------------------------------------------
+const ARTIFACT_DIR = 'C:\\Users\\Lenovo\\.gemini\\antigravity-ide\\brain\\1915e22f-7fd0-4fab-ba67-0b7104833612';
 const CHROME_PATH = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-const USER_DATA_DIR = path.resolve('C:\\Users\\Lenovo\\.gemini\\antigravity-ide\\brain\\0414d3e2-796e-41c7-a507-3fd9cc25c7a0\\scratch\\chrome_test_profile_active');
+const USER_DATA_DIR = path.join(ARTIFACT_DIR, 'chrome_test_profile_upi');
 
 async function sleep(ms) {
   return new Promise(r => setTimeout(r, ms));
@@ -175,7 +176,9 @@ async function runBrowserTests() {
     '--headless=new',
     '--remote-debugging-port=9228',
     `--user-data-dir=${USER_DATA_DIR}`,
-    'about:blank'
+    '--no-first-run',
+    '--no-default-browser-check',
+    'http://localhost:3300/'
   ], { detached: false });
 
   try {
@@ -194,19 +197,14 @@ async function runBrowserTests() {
       throw new Error('Could not connect to Chrome DevTools port 9228');
     }
 
-    const pageTab = tabs.find(t => t.type === 'page') || tabs[0];
+    const pageTab = tabs.find(t => t.type === 'page' && t.url.includes('localhost:3300')) || tabs[0];
     const ws = new globalThis.WebSocket(pageTab.webSocketDebuggerUrl);
 
     let id = 1;
     const pending = new Map();
-    let loadResolve = null;
 
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      if (data.method === 'Page.loadEventFired' && loadResolve) {
-        loadResolve();
-        loadResolve = null;
-      }
       if (data.id && pending.has(data.id)) {
         pending.get(data.id)(data);
         pending.delete(data.id);
@@ -226,13 +224,12 @@ async function runBrowserTests() {
       });
     }
 
-    async function navigateTo(url) {
-      const loadPromise = new Promise(resolve => { loadResolve = resolve; });
-      await send('Page.enable');
-      await send('Page.navigate', { url });
-      await loadPromise;
-      await sleep(1000);
-    }
+    await send('Page.enable');
+    await send('DOM.enable');
+    await send('CSS.enable');
+    await send('Runtime.enable');
+    await send('Page.navigate', { url: 'http://localhost:3300/' });
+    await sleep(2500);
 
     async function evalScript(expr) {
       const res = await send('Runtime.evaluate', {
@@ -246,9 +243,6 @@ async function runBrowserTests() {
       }
       return res.result && res.result.result ? res.result.result.value : undefined;
     }
-
-    // Navigate to local website
-    await navigateTo('http://localhost:3300/');
 
     await asyncTest('Browser: Page loads successfully and window.HLF_CONFIG is populated', async () => {
       const title = await evalScript('document.title');
@@ -317,10 +311,8 @@ async function runBrowserTests() {
 
     await asyncTest('Browser: State preservation restores Registration Step 2 after page reload', async () => {
       // Reload page to simulate mobile browser discarding backgrounded tab or user return
-      const loadPromise = new Promise(resolve => { loadResolve = resolve; });
       await send('Page.reload');
-      await loadPromise;
-      await sleep(1500);
+      await sleep(2500);
 
       const restoredState = await evalScript(`
         const dialogOpen = document.getElementById('reg-dialog')?.open === true;
@@ -393,10 +385,8 @@ async function runBrowserTests() {
     });
 
     await asyncTest('Browser: Contribution draft preserves state across reload and Back button', async () => {
-      const loadPromise = new Promise(resolve => { loadResolve = resolve; });
       await send('Page.reload');
-      await loadPromise;
-      await sleep(1500);
+      await sleep(2500);
 
       const restoredState = await evalScript(`
         const dialogOpen = document.getElementById('contrib-dialog')?.open === true;
@@ -427,7 +417,7 @@ async function runBrowserTests() {
   } finally {
     try {
       chromeProc.kill();
-    } catch (e) {}
+    } catch (e) { }
   }
 }
 
