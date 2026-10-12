@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
   <link rel="icon" type="image/png" href="../assets/images/logo/favicon.png">
@@ -28,6 +29,7 @@
       --on: #fff;
       box-sizing: border-box;
     }
+
     @media (prefers-color-scheme: dark) {
       :root:not([data-theme="light"]) {
         --bg: #06130f;
@@ -46,6 +48,7 @@
         --on: #06130f;
       }
     }
+
     :root[data-theme="dark"] {
       --bg: #06130f;
       --bg2: #0b211b;
@@ -62,7 +65,13 @@
       --grn: #8bd45a;
       --on: #06130f;
     }
-    *, *:before, *:after { box-sizing: inherit; }
+
+    *,
+    *:before,
+    *:after {
+      box-sizing: inherit;
+    }
+
     body {
       margin: 0;
       background: var(--bg);
@@ -71,15 +80,25 @@
       min-height: 100vh;
       display: flex;
     }
-    a { color: inherit; text-decoration: none; }
-    button { font: inherit; cursor: pointer; color: inherit; }
-    
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button {
+      font: inherit;
+      cursor: pointer;
+      color: inherit;
+    }
+
     /* Layout */
     .admin-layout {
       display: flex;
       width: 100%;
       min-height: 100vh;
     }
+
     .sidebar {
       width: 260px;
       background: var(--card);
@@ -94,6 +113,7 @@
       z-index: 20;
       transition: 0.3s;
     }
+
     .main-content {
       flex: 1;
       padding: clamp(20px, 3vw, 36px);
@@ -109,12 +129,17 @@
       align-items: center;
       gap: 12px;
     }
+
     .sidebar-brand {
       font-size: 18px;
       font-weight: 700;
       letter-spacing: -0.03em;
     }
-    .sidebar-brand span { color: var(--red); }
+
+    .sidebar-brand span {
+      color: var(--red);
+    }
+
     .sidebar-tag {
       font-size: 10px;
       letter-spacing: 0.15em;
@@ -131,6 +156,7 @@
       flex-direction: column;
       gap: 6px;
     }
+
     .nav-item button {
       width: 100%;
       display: flex;
@@ -146,11 +172,13 @@
       text-align: left;
       transition: 0.2s;
     }
+
     .nav-item button:hover {
       background: var(--card);
       color: var(--ink);
       border-color: var(--line);
     }
+
     .nav-item.active button {
       background: linear-gradient(120deg, var(--red), var(--amb));
       color: #fff;
@@ -158,6 +186,7 @@
       border-color: transparent;
       box-shadow: 0 4px 15px -4px var(--red);
     }
+
     .nav-footer {
       margin-top: auto;
       padding: 16px;
@@ -178,12 +207,14 @@
       padding-bottom: 18px;
       border-bottom: 1px solid var(--line);
     }
+
     .topbar-title {
       font-size: clamp(1.6rem, 3vw, 2.2rem);
       font-weight: 700;
       letter-spacing: -0.04em;
       margin: 0;
     }
+
     .topbar-actions {
       display: flex;
       align-items: center;
@@ -203,28 +234,40 @@
       background: var(--card);
       transition: 0.25s;
     }
-    .btn:hover { transform: translateY(-2px); border-color: var(--teal); }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      border-color: var(--teal);
+    }
+
     .btn.primary {
       background: linear-gradient(120deg, var(--red), var(--amb));
       color: #fff;
       border: 0;
       box-shadow: 0 8px 25px -8px var(--red);
     }
+
     .btn.secondary {
       background: var(--teal);
       color: #fff;
       border: 0;
     }
+
     .btn.danger {
       background: rgba(208, 2, 27, 0.15);
       color: var(--red);
       border-color: var(--red);
     }
+
     .btn.danger:hover {
       background: var(--red);
       color: #fff;
     }
-    .btn:disabled { opacity: 0.5; pointer-events: none; }
+
+    .btn:disabled {
+      opacity: 0.5;
+      pointer-events: none;
+    }
 
     /* Dashboard Cards */
     .stats-grid {
@@ -233,6 +276,7 @@
       gap: 16px;
       margin-bottom: 28px;
     }
+
     .stat-card {
       padding: 22px;
       border-radius: 18px;
@@ -242,12 +286,14 @@
       position: relative;
       overflow: hidden;
     }
+
     .stat-card .label {
       font-size: 11px;
       letter-spacing: 0.15em;
       text-transform: uppercase;
       color: var(--mute);
     }
+
     .stat-card .value {
       font-size: clamp(2rem, 3.5vw, 2.6rem);
       font-weight: 700;
@@ -255,7 +301,11 @@
       margin: 8px 0 4px;
       line-height: 1;
     }
-    .stat-card .sub { font-size: 12px; color: var(--mute); }
+
+    .stat-card .sub {
+      font-size: 12px;
+      color: var(--mute);
+    }
 
     /* Glass Panels */
     .panel {
@@ -266,6 +316,7 @@
       padding: 24px;
       margin-bottom: 28px;
     }
+
     .panel-header {
       display: flex;
       justify-content: space-between;
@@ -276,6 +327,7 @@
       padding-bottom: 14px;
       border-bottom: 1px solid var(--line);
     }
+
     .panel-title {
       font-size: 1.2rem;
       font-weight: 700;
@@ -290,6 +342,7 @@
       align-items: center;
       margin-bottom: 20px;
     }
+
     .search-input {
       flex: 1;
       min-width: 240px;
@@ -301,7 +354,11 @@
       font: inherit;
       outline: none;
     }
-    .search-input:focus { border-color: var(--teal); }
+
+    .search-input:focus {
+      border-color: var(--teal);
+    }
+
     .filter-select {
       padding: 10px 16px;
       border-radius: 99px;
@@ -320,6 +377,7 @@
       border: 1px solid var(--line);
       background: var(--card);
     }
+
     table.data-table {
       width: 100%;
       border-collapse: collapse;
@@ -327,6 +385,7 @@
       font-size: 13px;
       min-width: 800px;
     }
+
     table.data-table th {
       padding: 14px 16px;
       background: rgba(0, 0, 0, 0.04);
@@ -337,15 +396,17 @@
       text-transform: uppercase;
       border-bottom: 1px solid var(--line);
     }
+
     table.data-table td {
       padding: 14px 16px;
       border-bottom: 1px solid var(--line);
       vertical-align: middle;
     }
+
     table.data-table tr:hover td {
       background: rgba(18, 144, 122, 0.05);
     }
-    
+
     /* Status Badges */
     .badge {
       display: inline-flex;
@@ -358,12 +419,42 @@
       letter-spacing: 0.05em;
       text-transform: uppercase;
     }
-    .badge.pending { background: rgba(192, 122, 0, 0.15); color: var(--amb); border: 1px solid var(--amb); }
-    .badge.verified { background: rgba(95, 168, 58, 0.15); color: var(--grn); border: 1px solid var(--grn); }
-    .badge.rejected { background: rgba(208, 2, 27, 0.15); color: var(--red); border: 1px solid var(--red); }
-    .badge.submitted { background: rgba(47, 93, 147, 0.15); color: var(--blue); border: 1px solid var(--blue); }
-    .badge.confirmed { background: rgba(18, 144, 122, 0.15); color: var(--teal); border: 1px solid var(--teal); }
-    .badge.cancelled { background: rgba(100, 100, 100, 0.15); color: var(--mute); border: 1px solid var(--line); }
+
+    .badge.pending {
+      background: rgba(192, 122, 0, 0.15);
+      color: var(--amb);
+      border: 1px solid var(--amb);
+    }
+
+    .badge.verified {
+      background: rgba(95, 168, 58, 0.15);
+      color: var(--grn);
+      border: 1px solid var(--grn);
+    }
+
+    .badge.rejected {
+      background: rgba(208, 2, 27, 0.15);
+      color: var(--red);
+      border: 1px solid var(--red);
+    }
+
+    .badge.submitted {
+      background: rgba(47, 93, 147, 0.15);
+      color: var(--blue);
+      border: 1px solid var(--blue);
+    }
+
+    .badge.confirmed {
+      background: rgba(18, 144, 122, 0.15);
+      color: var(--teal);
+      border: 1px solid var(--teal);
+    }
+
+    .badge.cancelled {
+      background: rgba(100, 100, 100, 0.15);
+      color: var(--mute);
+      border: 1px solid var(--line);
+    }
 
     /* Modals */
     dialog.admin-modal {
@@ -377,10 +468,12 @@
       overflow-y: auto;
       box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.7);
     }
+
     dialog.admin-modal::backdrop {
       background: rgba(0, 0, 0, 0.75);
       backdrop-filter: blur(6px);
     }
+
     .modal-hdr {
       display: flex;
       justify-content: space-between;
@@ -389,7 +482,12 @@
       padding-bottom: 12px;
       border-bottom: 1px solid var(--line);
     }
-    .modal-hdr h3 { margin: 0; font-size: 1.4rem; }
+
+    .modal-hdr h3 {
+      margin: 0;
+      font-size: 1.4rem;
+    }
+
     .modal-close {
       background: none;
       border: 0;
@@ -404,12 +502,14 @@
       flex-direction: column;
       gap: 6px;
     }
+
     .form-group label {
       font-size: 12px;
       font-weight: 600;
       letter-spacing: 0.05em;
       color: var(--mute);
     }
+
     .form-group input,
     .form-group select,
     .form-group textarea {
@@ -421,6 +521,7 @@
       font: inherit;
       outline: none;
     }
+
     .form-group input:focus,
     .form-group textarea:focus {
       border-color: var(--teal);
@@ -436,6 +537,7 @@
       place-items: center;
       padding: 20px;
     }
+
     .auth-card {
       width: min(440px, 100%);
       padding: 36px 30px;
@@ -445,8 +547,17 @@
       box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.5);
       text-align: center;
     }
-    .auth-card h2 { margin: 12px 0 6px; font-size: 2rem; }
-    .auth-card p { color: var(--mute); font-size: 13px; margin: 0 0 24px; }
+
+    .auth-card h2 {
+      margin: 12px 0 6px;
+      font-size: 2rem;
+    }
+
+    .auth-card p {
+      color: var(--mute);
+      font-size: 13px;
+      margin: 0 0 24px;
+    }
 
     /* Toast Notification */
     .toast {
@@ -464,19 +575,42 @@
       display: none;
       animation: slideUp 0.3s ease;
     }
+
     @keyframes slideUp {
-      from { transform: translateY(20px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
+      from {
+        transform: translateY(20px);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
     }
 
     @media (max-width: 900px) {
-      .admin-layout { flex-direction: column; }
-      .sidebar { width: 100%; height: auto; position: relative; }
-      .nav-list { flex-direction: row; flex-wrap: wrap; }
-      .nav-item button { padding: 8px 12px; }
+      .admin-layout {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+      }
+
+      .nav-list {
+        flex-direction: row;
+        flex-wrap: wrap;
+      }
+
+      .nav-item button {
+        padding: 8px 12px;
+      }
     }
   </style>
 </head>
+
 <body>
 
   <!-- AUTH SCREEN (Shown if not logged in or unauthorized) -->
@@ -497,13 +631,15 @@
           <input type="password" id="admin-pass" placeholder="••••••••" required autocomplete="current-password">
         </div>
         <div id="auth-error" style="color: var(--red); font-size: 12px; margin-bottom: 14px; display: none;"></div>
-        <button type="submit" id="login-btn" class="btn primary" style="width: 100%; justify-content: center; padding: 14px;">
+        <button type="submit" id="login-btn" class="btn primary"
+          style="width: 100%; justify-content: center; padding: 14px;">
           Sign In to Admin Portal
         </button>
       </form>
 
       <!-- First-Time Admin Setup Helper (Claims super_admin if admin_users is empty) -->
-      <div id="first-admin-setup-box" style="display: none; margin-top: 24px; padding-top: 20px; border-top: 1px dashed var(--line); text-align: left;">
+      <div id="first-admin-setup-box"
+        style="display: none; margin-top: 24px; padding-top: 20px; border-top: 1px dashed var(--line); text-align: left;">
         <span class="badge pending" style="margin-bottom: 8px;">Initial Setup</span>
         <h4 style="margin: 4px 0 8px;">Claim First Admin Account</h4>
         <p style="font-size: 12px; margin-bottom: 14px; color: var(--mute);">
@@ -633,7 +769,9 @@
                 </tr>
               </thead>
               <tbody id="recent-registrations-tbody">
-                <tr><td colspan="7" style="text-align: center; color: var(--mute);">Loading recent entries...</td></tr>
+                <tr>
+                  <td colspan="7" style="text-align: center; color: var(--mute);">Loading recent entries...</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -659,7 +797,9 @@
                 </tr>
               </thead>
               <tbody id="recent-contributions-tbody">
-                <tr><td colspan="8" style="text-align: center; color: var(--mute);">Loading recent contributions...</td></tr>
+                <tr>
+                  <td colspan="8" style="text-align: center; color: var(--mute);">Loading recent contributions...</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -672,19 +812,26 @@
           <div class="panel-header">
             <div>
               <h2 class="panel-title">Delegate Registrations</h2>
-              <p style="margin: 4px 0 0; color: var(--mute); font-size: 13px;">Review participant entries, verify UPI transactions, and export data.</p>
+              <p style="margin: 4px 0 0; color: var(--mute); font-size: 13px;">Review participant entries, verify UPI
+                transactions, and export data.</p>
             </div>
             <button type="button" class="btn primary" id="export-csv-btn">📥 Export to CSV</button>
           </div>
 
           <!-- Filters -->
           <div class="filters-bar">
-            <input type="text" id="reg-search-input" class="search-input" placeholder="🔍 Search by ID, Name, Mobile, UTR, College...">
+            <input type="text" id="reg-search-input" class="search-input"
+              placeholder="🔍 Search by ID, Name, Mobile, UTR, College...">
             <select id="reg-payment-filter" class="filter-select">
               <option value="all">Payment: All</option>
               <option value="pending">Pending</option>
               <option value="verified">Verified</option>
               <option value="rejected">Rejected</option>
+            </select>
+            <select id="reg-method-filter" class="filter-select">
+              <option value="all">Method: All</option>
+              <option value="upi">UPI Online</option>
+              <option value="cash">Cash (Organizer)</option>
             </select>
             <select id="reg-status-filter" class="filter-select">
               <option value="all">Status: All</option>
@@ -708,7 +855,7 @@
                   <th>Name</th>
                   <th>Mobile</th>
                   <th>Institution</th>
-                  <th>Payment Proof</th>
+                  <th>Payment Method / Proof</th>
                   <th>Payment</th>
                   <th>Status</th>
                   <th>Date</th>
@@ -716,11 +863,14 @@
                 </tr>
               </thead>
               <tbody id="registrations-tbody">
-                <tr><td colspan="9" style="text-align: center; color: var(--mute);">Loading registrations...</td></tr>
+                <tr>
+                  <td colspan="9" style="text-align: center; color: var(--mute);">Loading registrations...</td>
+                </tr>
               </tbody>
             </table>
           </div>
-          <div style="margin-top: 14px; font-size: 12px; color: var(--mute);" id="reg-count-info">Showing 0 registrations</div>
+          <div style="margin-top: 14px; font-size: 12px; color: var(--mute);" id="reg-count-info">Showing 0
+            registrations</div>
         </div>
       </div>
 
@@ -770,22 +920,30 @@
           <div class="panel-header">
             <div>
               <h2 class="panel-title">Contribution Settings &amp; Support Target</h2>
-              <p style="margin: 4px 0 0; color: var(--mute); font-size: 13px;">Configure the festival contribution target and track verified community support in real-time.</p>
+              <p style="margin: 4px 0 0; color: var(--mute); font-size: 13px;">Configure the festival contribution
+                target and track verified community support in real-time.</p>
             </div>
             <span class="badge confirmed" id="admin-target-status-badge">Target Active</span>
           </div>
 
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; align-items: start; margin-top: 14px;">
+          <div
+            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; align-items: start; margin-top: 14px;">
             <!-- Editable Target Form -->
-            <form id="contrib-target-form" style="background: var(--bg); border: 1px solid var(--line); border-radius: 16px; padding: 20px;">
+            <form id="contrib-target-form"
+              style="background: var(--bg); border: 1px solid var(--line); border-radius: 16px; padding: 20px;">
               <div class="form-group" style="margin-bottom: 12px;">
                 <label for="admin-target-amount" style="font-weight: 600; color: var(--ink);">Target Amount (₹)</label>
                 <div style="position: relative; margin-top: 6px;">
-                  <span style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-weight: bold; color: var(--teal); font-size: 16px;">₹</span>
-                  <input type="number" id="admin-target-amount" min="1" step="1" required placeholder="50000" style="padding-left: 32px; font-size: 16px; font-weight: bold; width: 100%;">
+                  <span
+                    style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-weight: bold; color: var(--teal); font-size: 16px;">₹</span>
+                  <input type="number" id="admin-target-amount" min="1" step="1" required placeholder="50000"
+                    style="padding-left: 32px; font-size: 16px; font-weight: bold; width: 100%;">
                 </div>
-                <div id="target-formatted-preview" style="font-size: 12px; color: var(--teal); margin-top: 6px; font-weight: 600;">Formatted: ₹50,000</div>
-                <div id="target-validation-msg" style="color: var(--red); font-size: 12px; margin-top: 6px; display: none;"></div>
+                <div id="target-formatted-preview"
+                  style="font-size: 12px; color: var(--teal); margin-top: 6px; font-weight: 600;">Formatted: ₹50,000
+                </div>
+                <div id="target-validation-msg"
+                  style="color: var(--red); font-size: 12px; margin-top: 6px; display: none;"></div>
               </div>
               <button type="submit" class="btn primary" id="save-target-btn" style="margin-top: 8px;">
                 💾 Save Target
@@ -795,19 +953,25 @@
             <!-- Calculated Read-Only Stats & Progress -->
             <div style="background: var(--bg); border: 1px solid var(--line); border-radius: 16px; padding: 20px;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
-                <span style="font-size: 12px; color: var(--mute); text-transform: uppercase; font-weight: 600;">Current Raised</span>
+                <span style="font-size: 12px; color: var(--mute); text-transform: uppercase; font-weight: 600;">Current
+                  Raised</span>
                 <strong id="admin-target-raised" style="font-size: 20px; color: var(--teal);">₹0</strong>
               </div>
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <span style="font-size: 12px; color: var(--mute); text-transform: uppercase; font-weight: 600;">Progress</span>
+                <span
+                  style="font-size: 12px; color: var(--mute); text-transform: uppercase; font-weight: 600;">Progress</span>
                 <strong id="admin-target-pct" style="font-size: 16px; color: var(--yel);">0%</strong>
               </div>
               <!-- Progress Bar Track -->
-              <div style="width: 100%; height: 12px; background: rgba(0,0,0,0.15); border-radius: 99px; overflow: hidden; border: 1px solid var(--line); margin-top: 6px;">
-                <div id="admin-target-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--teal), var(--yel)); border-radius: 99px; transition: width 0.4s ease;"></div>
+              <div
+                style="width: 100%; height: 12px; background: rgba(0,0,0,0.15); border-radius: 99px; overflow: hidden; border: 1px solid var(--line); margin-top: 6px;">
+                <div id="admin-target-bar"
+                  style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--teal), var(--yel)); border-radius: 99px; transition: width 0.4s ease;">
+                </div>
               </div>
               <div style="margin-top: 14px; font-size: 11px; color: var(--mute); line-height: 1.4;">
-                * Automatically calculated from verified contribution records. Target is stored persistently in Supabase (festival_settings).
+                * Automatically calculated from verified contribution records. Target is stored persistently in Supabase
+                (festival_settings).
               </div>
             </div>
           </div>
@@ -817,14 +981,16 @@
           <div class="panel-header">
             <div>
               <h2 class="panel-title">Contributions & Donations</h2>
-              <p style="margin: 4px 0 0; color: var(--mute); font-size: 13px;">Manage patron donations, verify UPI transaction IDs/UTRs, and track festival funds.</p>
+              <p style="margin: 4px 0 0; color: var(--mute); font-size: 13px;">Manage patron donations, verify UPI
+                transaction IDs/UTRs, and track festival funds.</p>
             </div>
             <button type="button" class="btn primary" id="export-contrib-csv-btn">📥 Export to CSV</button>
           </div>
 
           <!-- Filters -->
           <div class="filters-bar">
-            <input type="text" id="contrib-search-input" class="search-input" placeholder="🔍 Search by ID, Name, Mobile, Transaction ID...">
+            <input type="text" id="contrib-search-input" class="search-input"
+              placeholder="🔍 Search by ID, Name, Mobile, Transaction ID...">
             <select id="contrib-payment-filter" class="filter-select">
               <option value="all">Payment: All</option>
               <option value="PENDING">Pending</option>
@@ -866,11 +1032,14 @@
                 </tr>
               </thead>
               <tbody id="contributions-tbody">
-                <tr><td colspan="10" style="text-align: center; color: var(--mute);">Loading contributions...</td></tr>
+                <tr>
+                  <td colspan="10" style="text-align: center; color: var(--mute);">Loading contributions...</td>
+                </tr>
               </tbody>
             </table>
           </div>
-          <div style="margin-top: 14px; font-size: 12px; color: var(--mute);" id="contrib-count-info">Showing 0 contributions</div>
+          <div style="margin-top: 14px; font-size: 12px; color: var(--mute);" id="contrib-count-info">Showing 0
+            contributions</div>
         </div>
       </div>
 
@@ -895,7 +1064,8 @@
           </div>
           <div class="stat-card" style="border-top: 4px solid var(--red);">
             <div class="label">Featured / Landing Page</div>
-            <div class="value" id="stat-gallery-featured" style="font-size: 1.2rem; line-height: 1.3; color: var(--red); word-break: break-word;">None</div>
+            <div class="value" id="stat-gallery-featured"
+              style="font-size: 1.2rem; line-height: 1.3; color: var(--red); word-break: break-word;">None</div>
             <div class="sub">Active on homepage hero</div>
           </div>
         </div>
@@ -905,33 +1075,41 @@
             <div>
               <h2 class="panel-title">Gallery Management</h2>
               <p style="margin: 4px 0 0; color: var(--mute); font-size: 13px;">
-                Upload, categorize and curate festival moments. Mark an image as <strong>Featured</strong> to showcase it automatically on the homepage hero.
+                Upload, categorize and curate festival moments. Mark an image as <strong>Featured</strong> to showcase
+                it automatically on the homepage hero.
               </p>
             </div>
-            <button type="button" class="btn primary" onclick="document.getElementById('gallery-upload-section').scrollIntoView({behavior: 'smooth'})">
+            <button type="button" class="btn primary"
+              onclick="document.getElementById('gallery-upload-section').scrollIntoView({behavior: 'smooth'})">
               + Upload Image
             </button>
           </div>
 
           <!-- Upload Box -->
-          <div id="gallery-upload-section" style="border: 2px dashed var(--line); border-radius: 18px; padding: 24px; background: var(--card); margin-bottom: 28px;">
+          <div id="gallery-upload-section"
+            style="border: 2px dashed var(--line); border-radius: 18px; padding: 24px; background: var(--card); margin-bottom: 28px;">
             <h3 style="margin-top: 0; display: flex; align-items: center; gap: 8px;">
               <span>📸</span> Upload New Gallery Image
             </h3>
-            
+
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px;">
               <!-- File drop & preview -->
-              <div style="text-align: center; border: 1px dashed var(--line); border-radius: 14px; padding: 18px; background: var(--bg);">
+              <div
+                style="text-align: center; border: 1px dashed var(--line); border-radius: 14px; padding: 18px; background: var(--bg);">
                 <input type="file" id="gallery-file-input" accept="image/*" style="display: none;">
-                <button type="button" class="btn" onclick="document.getElementById('gallery-file-input').click()" style="margin: 8px 0;">
+                <button type="button" class="btn" onclick="document.getElementById('gallery-file-input').click()"
+                  style="margin: 8px 0;">
                   📁 Browse Image File
                 </button>
-                <p style="font-size: 11px; color: var(--mute); margin: 6px 0 12px;">Supports JPEG, PNG, WebP up to 10MB</p>
+                <p style="font-size: 11px; color: var(--mute); margin: 6px 0 12px;">Supports JPEG, PNG, WebP up to 10MB
+                </p>
 
                 <!-- Live Preview -->
                 <div id="gallery-preview-box" style="display: none; margin-top: 10px;">
-                  <img id="gallery-preview-img" src="" alt="Preview" style="max-height: 200px; max-width: 100%; border-radius: 12px; object-fit: contain; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
-                  <div style="font-size: 11px; color: var(--mute); margin-top: 6px;" id="gallery-preview-filename"></div>
+                  <img id="gallery-preview-img" src="" alt="Preview"
+                    style="max-height: 200px; max-width: 100%; border-radius: 12px; object-fit: contain; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
+                  <div style="font-size: 11px; color: var(--mute); margin-top: 6px;" id="gallery-preview-filename">
+                  </div>
                 </div>
               </div>
 
@@ -943,8 +1121,10 @@
                 </div>
 
                 <div class="form-group">
-                  <label for="gallery-desc-input">Short Description / Caption <span style="color:var(--mute); font-weight: normal;">(Optional)</span></label>
-                  <input type="text" id="gallery-desc-input" placeholder="e.g. Delegates gathered at Al-Bukhari Auditorium">
+                  <label for="gallery-desc-input">Short Description / Caption <span
+                      style="color:var(--mute); font-weight: normal;">(Optional)</span></label>
+                  <input type="text" id="gallery-desc-input"
+                    placeholder="e.g. Delegates gathered at Al-Bukhari Auditorium">
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
@@ -970,13 +1150,15 @@
                     <span>Published (visible publicly)</span>
                   </label>
 
-                  <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; color: var(--red); font-weight: 600;">
+                  <label
+                    style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; color: var(--red); font-weight: 600;">
                     <input type="checkbox" id="gallery-featured-cb">
                     <span>★ Set as Featured / Landing Page Visual</span>
                   </label>
                 </div>
 
-                <button type="button" class="btn primary" id="upload-gallery-btn" style="width: 100%; justify-content: center; padding: 12px;">
+                <button type="button" class="btn primary" id="upload-gallery-btn"
+                  style="width: 100%; justify-content: center; padding: 12px;">
                   <span>🚀 Upload & Save to Gallery</span>
                 </button>
               </div>
@@ -985,8 +1167,9 @@
 
           <!-- Library Filter Bar -->
           <div class="filters-bar" style="margin-bottom: 18px;">
-            <input type="text" id="gallery-search-input" class="search-input" placeholder="🔍 Search by title or description...">
-            
+            <input type="text" id="gallery-search-input" class="search-input"
+              placeholder="🔍 Search by title or description...">
+
             <select id="gallery-filter-cat" class="filter-select">
               <option value="all">All Categories</option>
               <option value="Events">Events</option>
@@ -1018,11 +1201,14 @@
                 </tr>
               </thead>
               <tbody id="gallery-library-tbody">
-                <tr><td colspan="7" style="text-align: center; color: var(--mute);">Loading gallery items...</td></tr>
+                <tr>
+                  <td colspan="7" style="text-align: center; color: var(--mute);">Loading gallery items...</td>
+                </tr>
               </tbody>
             </table>
           </div>
-          <div style="margin-top: 14px; font-size: 12px; color: var(--mute);" id="gallery-count-info">Showing 0 images</div>
+          <div style="margin-top: 14px; font-size: 12px; color: var(--mute);" id="gallery-count-info">Showing 0 images
+          </div>
         </div>
       </div>
 
@@ -1032,24 +1218,29 @@
           <div class="panel-header">
             <div>
               <h2 class="panel-title">HLF Poster Management</h2>
-              <p style="margin: 4px 0 0; color: var(--mute); font-size: 13px;">Upload and activate posters displayed in the Hero section and festival diary.</p>
+              <p style="margin: 4px 0 0; color: var(--mute); font-size: 13px;">Upload and activate posters displayed in
+                the Hero section and festival diary.</p>
             </div>
           </div>
 
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px;">
             <!-- Upload Box -->
-            <div style="border: 2px dashed var(--line); border-radius: 18px; padding: 24px; text-align: center; background: var(--card);">
+            <div
+              style="border: 2px dashed var(--line); border-radius: 18px; padding: 24px; text-align: center; background: var(--card);">
               <h3 style="margin-top: 0;">Upload New Poster</h3>
-              <p style="font-size: 12px; color: var(--mute);">Drag & drop or select image (JPEG, PNG, WebP up to 10MB)</p>
-              
+              <p style="font-size: 12px; color: var(--mute);">Drag & drop or select image (JPEG, PNG, WebP up to 10MB)
+              </p>
+
               <input type="file" id="poster-file-input" accept="image/*" style="display: none;">
-              <button type="button" class="btn" onclick="document.getElementById('poster-file-input').click()" style="margin: 10px 0;">
+              <button type="button" class="btn" onclick="document.getElementById('poster-file-input').click()"
+                style="margin: 10px 0;">
                 📁 Browse Image
               </button>
-              
+
               <!-- Image Preview -->
               <div id="poster-preview-box" style="display: none; margin: 14px 0;">
-                <img id="poster-preview-img" src="" alt="Preview" style="max-height: 220px; border-radius: 12px; object-fit: contain; width: 100%;">
+                <img id="poster-preview-img" src="" alt="Preview"
+                  style="max-height: 220px; border-radius: 12px; object-fit: contain; width: 100%;">
               </div>
 
               <div class="form-group" style="text-align: left; margin-top: 14px;">
@@ -1062,12 +1253,14 @@
                 <input type="text" id="poster-desc-input" placeholder="e.g. Main festival release poster">
               </div>
 
-              <label style="display: flex; align-items: center; gap: 8px; margin: 14px 0; font-size: 13px; cursor: pointer;">
+              <label
+                style="display: flex; align-items: center; gap: 8px; margin: 14px 0; font-size: 13px; cursor: pointer;">
                 <input type="checkbox" id="poster-set-active-cb" checked>
                 <span>Set as Active Poster immediately</span>
               </label>
 
-              <button type="button" class="btn primary" id="upload-poster-btn" style="width: 100%; justify-content: center;">
+              <button type="button" class="btn primary" id="upload-poster-btn"
+                style="width: 100%; justify-content: center;">
                 🚀 Upload Poster
               </button>
             </div>
@@ -1083,7 +1276,7 @@
         </div>
       </div>
 
-      
+
       <!-- TAB: SITE IMAGES / BRANDING -->
       <div class="tab-pane" id="pane-branding" style="display: none;">
         <div class="panel">
@@ -1099,74 +1292,97 @@
 
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
             <!-- 1. HLF Logo -->
-            <div style="border: 1px solid var(--line); border-radius: 16px; padding: 20px; background: var(--card); display: flex; flex-direction: column;">
+            <div
+              style="border: 1px solid var(--line); border-radius: 16px; padding: 20px; background: var(--card); display: flex; flex-direction: column;">
               <h3 style="margin: 0 0 8px; font-size: 16px; display: flex; align-items: center; gap: 8px;">
                 <span>✨</span> HLF Logo
               </h3>
-              <p style="font-size: 12px; color: var(--mute); margin: 0 0 14px;">Main header, footer and badge identity.</p>
-              
-              <div style="background: rgba(0,0,0,0.15); border: 1px dashed var(--line); border-radius: 12px; padding: 16px; text-align: center; margin-bottom: 14px; min-height: 120px; display: flex; align-items: center; justify-content: center;">
-                <img id="brand-logo-preview" src="" alt="HLF Logo" style="max-height: 80px; max-width: 100%; object-fit: contain;">
+              <p style="font-size: 12px; color: var(--mute); margin: 0 0 14px;">Main header, footer and badge identity.
+              </p>
+
+              <div
+                style="background: rgba(0,0,0,0.15); border: 1px dashed var(--line); border-radius: 12px; padding: 16px; text-align: center; margin-bottom: 14px; min-height: 120px; display: flex; align-items: center; justify-content: center;">
+                <img id="brand-logo-preview" src="" alt="HLF Logo"
+                  style="max-height: 80px; max-width: 100%; object-fit: contain;">
               </div>
 
               <input type="file" id="brand-logo-file" accept="image/*" style="display: none;">
               <div style="display: flex; gap: 10px; margin-top: auto;">
-                <button type="button" class="btn btn-sm" onclick="document.getElementById('brand-logo-file').click()" style="flex: 1; justify-content: center;">📁 Browse</button>
-                <button type="button" class="btn btn-sm secondary" id="save-logo-btn" style="flex: 1; justify-content: center;">Upload</button>
+                <button type="button" class="btn btn-sm" onclick="document.getElementById('brand-logo-file').click()"
+                  style="flex: 1; justify-content: center;">📁 Browse</button>
+                <button type="button" class="btn btn-sm secondary" id="save-logo-btn"
+                  style="flex: 1; justify-content: center;">Upload</button>
               </div>
             </div>
 
             <!-- 2. Favicon -->
-            <div style="border: 1px solid var(--line); border-radius: 16px; padding: 20px; background: var(--card); display: flex; flex-direction: column;">
+            <div
+              style="border: 1px solid var(--line); border-radius: 16px; padding: 20px; background: var(--card); display: flex; flex-direction: column;">
               <h3 style="margin: 0 0 8px; font-size: 16px; display: flex; align-items: center; gap: 8px;">
                 <span>🌐</span> Browser Favicon
               </h3>
               <p style="font-size: 12px; color: var(--mute); margin: 0 0 14px;">Browser tab icon & bookmark emblem.</p>
-              
-              <div style="background: rgba(0,0,0,0.15); border: 1px dashed var(--line); border-radius: 12px; padding: 16px; text-align: center; margin-bottom: 14px; min-height: 120px; display: flex; align-items: center; justify-content: center;">
-                <img id="brand-favicon-preview" src="" alt="Favicon" style="max-height: 48px; max-width: 48px; object-fit: contain; border-radius: 8px;">
+
+              <div
+                style="background: rgba(0,0,0,0.15); border: 1px dashed var(--line); border-radius: 12px; padding: 16px; text-align: center; margin-bottom: 14px; min-height: 120px; display: flex; align-items: center; justify-content: center;">
+                <img id="brand-favicon-preview" src="" alt="Favicon"
+                  style="max-height: 48px; max-width: 48px; object-fit: contain; border-radius: 8px;">
               </div>
 
               <input type="file" id="brand-favicon-file" accept="image/*" style="display: none;">
               <div style="display: flex; gap: 10px; margin-top: auto;">
-                <button type="button" class="btn btn-sm" onclick="document.getElementById('brand-favicon-file').click()" style="flex: 1; justify-content: center;">📁 Browse</button>
-                <button type="button" class="btn btn-sm secondary" id="save-favicon-btn" style="flex: 1; justify-content: center;">Upload</button>
+                <button type="button" class="btn btn-sm" onclick="document.getElementById('brand-favicon-file').click()"
+                  style="flex: 1; justify-content: center;">📁 Browse</button>
+                <button type="button" class="btn btn-sm secondary" id="save-favicon-btn"
+                  style="flex: 1; justify-content: center;">Upload</button>
               </div>
             </div>
 
             <!-- 3. Official Poster -->
-            <div style="border: 1px solid var(--line); border-radius: 16px; padding: 20px; background: var(--card); display: flex; flex-direction: column;">
+            <div
+              style="border: 1px solid var(--line); border-radius: 16px; padding: 20px; background: var(--card); display: flex; flex-direction: column;">
               <h3 style="margin: 0 0 8px; font-size: 16px; display: flex; align-items: center; gap: 8px;">
                 <span>🖼️</span> Official Festival Poster
               </h3>
-              <p style="font-size: 12px; color: var(--mute); margin: 0 0 14px;">Main event poster & promotional background.</p>
-              
-              <div style="background: rgba(0,0,0,0.15); border: 1px dashed var(--line); border-radius: 12px; padding: 10px; text-align: center; margin-bottom: 14px; min-height: 120px; display: flex; align-items: center; justify-content: center;">
-                <img id="brand-poster-preview" src="" alt="Festival Poster" style="max-height: 140px; max-width: 100%; object-fit: contain; border-radius: 6px;">
+              <p style="font-size: 12px; color: var(--mute); margin: 0 0 14px;">Main event poster & promotional
+                background.</p>
+
+              <div
+                style="background: rgba(0,0,0,0.15); border: 1px dashed var(--line); border-radius: 12px; padding: 10px; text-align: center; margin-bottom: 14px; min-height: 120px; display: flex; align-items: center; justify-content: center;">
+                <img id="brand-poster-preview" src="" alt="Festival Poster"
+                  style="max-height: 140px; max-width: 100%; object-fit: contain; border-radius: 6px;">
               </div>
 
               <input type="file" id="brand-poster-file" accept="image/*" style="display: none;">
               <div style="display: flex; gap: 10px; margin-top: auto;">
-                <button type="button" class="btn btn-sm" onclick="document.getElementById('brand-poster-file').click()" style="flex: 1; justify-content: center;">📁 Browse</button>
-                <button type="button" class="btn btn-sm secondary" id="save-poster-btn" style="flex: 1; justify-content: center;">Upload</button>
+                <button type="button" class="btn btn-sm" onclick="document.getElementById('brand-poster-file').click()"
+                  style="flex: 1; justify-content: center;">📁 Browse</button>
+                <button type="button" class="btn btn-sm secondary" id="save-poster-btn"
+                  style="flex: 1; justify-content: center;">Upload</button>
               </div>
             </div>
 
             <!-- 4. Featured Hero Visual -->
-            <div style="border: 1px solid var(--line); border-radius: 16px; padding: 20px; background: var(--card); display: flex; flex-direction: column;">
+            <div
+              style="border: 1px solid var(--line); border-radius: 16px; padding: 20px; background: var(--card); display: flex; flex-direction: column;">
               <h3 style="margin: 0 0 8px; font-size: 16px; display: flex; align-items: center; gap: 8px;">
                 <span>⭐</span> Landing Page Featured Image
               </h3>
-              <p style="font-size: 12px; color: var(--mute); margin: 0 0 14px;">Showcased automatically on festival landing page.</p>
-              
-              <div style="background: rgba(0,0,0,0.15); border: 1px dashed var(--line); border-radius: 12px; padding: 10px; text-align: center; margin-bottom: 14px; min-height: 120px; display: flex; align-items: center; justify-content: center;">
-                <img id="brand-hero-preview" src="" alt="Featured Visual" style="max-height: 140px; max-width: 100%; object-fit: contain; border-radius: 6px;">
+              <p style="font-size: 12px; color: var(--mute); margin: 0 0 14px;">Showcased automatically on festival
+                landing page.</p>
+
+              <div
+                style="background: rgba(0,0,0,0.15); border: 1px dashed var(--line); border-radius: 12px; padding: 10px; text-align: center; margin-bottom: 14px; min-height: 120px; display: flex; align-items: center; justify-content: center;">
+                <img id="brand-hero-preview" src="" alt="Featured Visual"
+                  style="max-height: 140px; max-width: 100%; object-fit: contain; border-radius: 6px;">
               </div>
 
               <input type="file" id="brand-hero-file" accept="image/*" style="display: none;">
               <div style="display: flex; gap: 10px; margin-top: auto;">
-                <button type="button" class="btn btn-sm" onclick="document.getElementById('brand-hero-file').click()" style="flex: 1; justify-content: center;">📁 Browse</button>
-                <button type="button" class="btn btn-sm secondary" id="save-hero-btn" style="flex: 1; justify-content: center;">Upload</button>
+                <button type="button" class="btn btn-sm" onclick="document.getElementById('brand-hero-file').click()"
+                  style="flex: 1; justify-content: center;">📁 Browse</button>
+                <button type="button" class="btn btn-sm secondary" id="save-hero-btn"
+                  style="flex: 1; justify-content: center;">Upload</button>
               </div>
             </div>
           </div>
@@ -1179,7 +1395,8 @@
           <div class="panel-header">
             <div>
               <h2 class="panel-title">Event Updates / Journal</h2>
-              <p style="margin: 4px 0 0; color: var(--mute); font-size: 13px;">Manage festival announcements and news displayed in the Journal section.</p>
+              <p style="margin: 4px 0 0; color: var(--mute); font-size: 13px;">Manage festival announcements and news
+                displayed in the Journal section.</p>
             </div>
             <button type="button" class="btn primary" id="open-new-update-btn">+ New Update</button>
           </div>
@@ -1209,7 +1426,8 @@
           <div class="panel-header">
             <div>
               <h2 class="panel-title">Announcements</h2>
-              <p style="margin: 4px 0 0; color: var(--mute); font-size: 13px;">Festival alert notifications, badges and ticker items.</p>
+              <p style="margin: 4px 0 0; color: var(--mute); font-size: 13px;">Festival alert notifications, badges and
+                ticker items.</p>
             </div>
             <button type="button" class="btn primary" id="open-new-announcement-btn">+ New Announcement</button>
           </div>
@@ -1240,11 +1458,14 @@
           <div class="panel-header">
             <div>
               <h2 class="panel-title">Festival Days</h2>
-              <p style="margin: 4px 0 0; color: var(--mute); font-size: 13px;">Manage festival dates, order, and publishing status.</p>
+              <p style="margin: 4px 0 0; color: var(--mute); font-size: 13px;">Manage festival dates, order, and
+                publishing status.</p>
             </div>
-            <button type="button" class="btn" id="open-new-day-btn" style="border-color: var(--teal); color: var(--teal);">+ Add Day</button>
+            <button type="button" class="btn" id="open-new-day-btn"
+              style="border-color: var(--teal); color: var(--teal);">+ Add Day</button>
           </div>
-          <div id="programme-days-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px;">
+          <div id="programme-days-container"
+            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px;">
             <!-- Rendered by renderProgrammeDays() -->
           </div>
         </div>
@@ -1254,12 +1475,18 @@
           <div class="panel-header">
             <div>
               <h2 class="panel-title">Programme / Schedule Sessions</h2>
-              <p style="margin: 4px 0 0; color: var(--mute); font-size: 13px;">Organize sessions, subjects, timings, and participant roles.</p>
+              <p style="margin: 4px 0 0; color: var(--mute); font-size: 13px;">Organize sessions, subjects, timings, and
+                participant roles.</p>
             </div>
             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-              <div class="view-toggle" style="display: flex; background: var(--bg); border: 1px solid var(--line); border-radius: 99px; padding: 2px;">
-                <button type="button" id="prog-view-cards-btn" class="btn btn-sm" style="border-radius: 99px; background: var(--card); border: 0; padding: 6px 12px; font-size: 12px;">Cards View</button>
-                <button type="button" id="prog-view-table-btn" class="btn btn-sm" style="border-radius: 99px; background: transparent; border: 0; padding: 6px 12px; font-size: 12px; color: var(--mute);">Table View</button>
+              <div class="view-toggle"
+                style="display: flex; background: var(--bg); border: 1px solid var(--line); border-radius: 99px; padding: 2px;">
+                <button type="button" id="prog-view-cards-btn" class="btn btn-sm"
+                  style="border-radius: 99px; background: var(--card); border: 0; padding: 6px 12px; font-size: 12px;">Cards
+                  View</button>
+                <button type="button" id="prog-view-table-btn" class="btn btn-sm"
+                  style="border-radius: 99px; background: transparent; border: 0; padding: 6px 12px; font-size: 12px; color: var(--mute);">Table
+                  View</button>
               </div>
               <button type="button" class="btn primary" id="open-new-session-btn">+ Add Session</button>
             </div>
@@ -1272,7 +1499,8 @@
               <option value="2">Day 02 (19 October)</option>
               <option value="3">Day 03 (20 October)</option>
             </select>
-            <input type="search" id="prog-search-input" class="search-input" placeholder="Search sessions, topics, participants...">
+            <input type="search" id="prog-search-input" class="search-input"
+              placeholder="Search sessions, topics, participants...">
           </div>
 
           <!-- CARDS VIEW CONTAINER -->
@@ -1352,7 +1580,8 @@
             Authorize new team members to access this management dashboard.
           </p>
           <form id="add-admin-form" style="display: flex; gap: 12px; flex-wrap: wrap;">
-            <input type="email" id="new-admin-email" class="search-input" placeholder="colleague@dhiu.in" required style="min-width: 280px;">
+            <input type="email" id="new-admin-email" class="search-input" placeholder="colleague@dhiu.in" required
+              style="min-width: 280px;">
             <button type="submit" class="btn secondary">Authorize Admin</button>
           </form>
           <div id="admin-users-list" style="margin-top: 18px; font-size: 13px;"></div>
@@ -1375,10 +1604,75 @@
       <!-- Content populated by JS -->
     </div>
 
-    <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--line); display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end;">
-      <button type="button" class="btn secondary" id="modal-btn-verify">✓ Verify Payment</button>
-      <button type="button" class="btn danger" id="modal-btn-reject">✕ Reject Payment</button>
+    <div
+      style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--line); display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; align-items: center;">
       <button type="button" class="btn danger" id="modal-btn-delete" style="margin-right: auto;">🗑️ Delete</button>
+      <button type="button" class="btn" id="modal-btn-whatsapp" style="border-color: #25D366; color: #128C7E;">💬 WhatsApp</button>
+      <button type="button" class="btn primary" id="modal-btn-record-cash" style="display: none;">💵 Record Cash</button>
+      <button type="button" class="btn secondary" id="modal-btn-verify">✓ Verify Payment</button>
+      <button type="button" class="btn danger" id="modal-btn-reject">✕ Reject</button>
+    </div>
+  </dialog>
+
+  <!-- RECORD CASH PAYMENT MODAL -->
+  <dialog class="admin-modal" id="record-cash-modal">
+    <div class="modal-hdr">
+      <div>
+        <span class="badge" style="background: rgba(18,144,122,0.15); color: var(--teal); font-weight: 600;">Organizer Handover</span>
+        <h3 style="margin-top: 4px;">Record Cash Payment</h3>
+      </div>
+      <button type="button" class="modal-close" onclick="document.getElementById('record-cash-modal').close()">×</button>
+    </div>
+
+    <div style="font-size: 13px;">
+      <div style="background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+          <span style="color: var(--mute);">Registration ID:</span>
+          <strong id="rc-reg-id" style="font-family: 'Fira Code', monospace; color: var(--red);">HLF26-XXXX</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+          <span style="color: var(--mute);">Delegate Name:</span>
+          <strong id="rc-delegate-name">—</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--mute);">Mobile:</span>
+          <span id="rc-delegate-mobile">—</span>
+        </div>
+      </div>
+
+      <form id="record-cash-form">
+        <div style="margin-bottom: 14px;">
+          <label style="display: block; font-weight: 600; margin-bottom: 4px;">Cash Amount Received (₹) <span style="color: var(--red);">*</span></label>
+          <input type="number" id="rc-amount" value="50" min="1" step="1" required style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-size: 14px; font-weight: 700;">
+        </div>
+
+        <div style="margin-bottom: 14px;">
+          <label style="display: block; font-weight: 600; margin-bottom: 4px;">Date & Time Collected <span style="color: var(--red);">*</span></label>
+          <input type="datetime-local" id="rc-datetime" required style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-size: 13px;">
+        </div>
+
+        <div style="margin-bottom: 14px;">
+          <label style="display: block; font-weight: 600; margin-bottom: 4px;">Receiving Organizer / Admin</label>
+          <input type="text" id="rc-admin-display" readonly style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: rgba(0,0,0,0.04); color: var(--mute); font-size: 13px;">
+        </div>
+
+        <div style="margin-bottom: 14px;">
+          <label style="display: block; font-weight: 600; margin-bottom: 4px;">Receipt / Counter Reference (Optional)</label>
+          <input type="text" id="rc-receipt-ref" placeholder="e.g. Counter A / Book #3 / Receipt 102" style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-size: 13px;">
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-weight: 600; margin-bottom: 4px;">Notes / Remarks (Optional)</label>
+          <textarea id="rc-notes" rows="2" placeholder="Any additional notes about this cash collection..." style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-size: 13px;"></textarea>
+        </div>
+
+        <div id="rc-error-banner" style="display: none; background: rgba(230,57,70,0.1); border: 1px solid var(--red); color: var(--red); padding: 10px; border-radius: 8px; margin-bottom: 14px; font-size: 12px;"></div>
+
+        <div style="display: flex; gap: 10px; justify-content: flex-end; padding-top: 14px; border-top: 1px solid var(--line);">
+          <button type="button" class="btn" onclick="document.getElementById('record-cash-modal').close()">Cancel</button>
+          <button type="submit" id="rc-submit-btn" class="btn primary">💵 Confirm & Save Cash Received</button>
+        </div>
+      </form>
     </div>
   </dialog>
 
@@ -1389,17 +1683,20 @@
         <span class="badge" id="modal-contrib-status-badge">Status</span>
         <h3 id="modal-contrib-id" style="margin-top: 4px;">HLFC-XXXX</h3>
       </div>
-      <button type="button" class="modal-close" onclick="document.getElementById('contrib-detail-modal').close()">×</button>
+      <button type="button" class="modal-close"
+        onclick="document.getElementById('contrib-detail-modal').close()">×</button>
     </div>
 
     <div id="modal-contrib-body" style="font-size: 13px;">
       <!-- Content populated by JS -->
     </div>
 
-    <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--line); display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end;">
+    <div
+      style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--line); display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end;">
       <button type="button" class="btn secondary" id="modal-contrib-btn-verify">✓ Verify Payment</button>
       <button type="button" class="btn danger" id="modal-contrib-btn-reject">✕ Reject Payment</button>
-      <button type="button" class="btn danger" id="modal-contrib-btn-delete" style="margin-right: auto;">🗑️ Delete</button>
+      <button type="button" class="btn danger" id="modal-contrib-btn-delete" style="margin-right: auto;">🗑️
+        Delete</button>
     </div>
   </dialog>
 
@@ -1407,10 +1704,12 @@
   <dialog class="admin-modal" id="contrib-delete-modal">
     <div class="modal-hdr">
       <h3 style="color: var(--red);">Delete Contribution Record</h3>
-      <button type="button" class="modal-close" onclick="document.getElementById('contrib-delete-modal').close()">×</button>
+      <button type="button" class="modal-close"
+        onclick="document.getElementById('contrib-delete-modal').close()">×</button>
     </div>
     <div style="padding: 10px 0 20px;">
-      <p style="margin: 0 0 12px; font-size: 14px;">Are you sure you want to permanently delete this contribution record?</p>
+      <p style="margin: 0 0 12px; font-size: 14px;">Are you sure you want to permanently delete this contribution
+        record?</p>
       <div style="padding: 14px; background: var(--bg); border-radius: 12px; border: 1px solid var(--line);">
         <div><strong id="delete-contrib-id" style="font-size: 15px; color: var(--teal);">HLFC-XXXX</strong></div>
         <div id="delete-contrib-name" style="margin-top: 4px;">—</div>
@@ -1421,10 +1720,12 @@
       </p>
     </div>
     <div style="display: flex; gap: 10px;">
-      <button type="button" class="btn" onclick="document.getElementById('contrib-delete-modal').close()" style="flex: 1; justify-content: center;">
+      <button type="button" class="btn" onclick="document.getElementById('contrib-delete-modal').close()"
+        style="flex: 1; justify-content: center;">
         Cancel
       </button>
-      <button type="button" class="btn danger" id="confirm-contrib-delete-btn" style="flex: 1; justify-content: center;">
+      <button type="button" class="btn danger" id="confirm-contrib-delete-btn"
+        style="flex: 1; justify-content: center;">
         Yes, Delete Contribution
       </button>
     </div>
@@ -1465,7 +1766,8 @@
   <dialog class="admin-modal" id="announcement-modal">
     <div class="modal-hdr">
       <h3 id="announcement-modal-title">New Announcement</h3>
-      <button type="button" class="modal-close" onclick="document.getElementById('announcement-modal').close()">×</button>
+      <button type="button" class="modal-close"
+        onclick="document.getElementById('announcement-modal').close()">×</button>
     </div>
     <form id="announcement-form">
       <input type="hidden" id="edit-announcement-id">
@@ -1535,11 +1837,13 @@
       </div>
       <div class="form-group">
         <label>Session Title <span style="color:var(--red);">*</span></label>
-        <input type="text" id="edit-session-title" placeholder="e.g. SESSION 01 or Kaviyarangu or Mehfil-e-Ishq" required>
+        <input type="text" id="edit-session-title" placeholder="e.g. SESSION 01 or Kaviyarangu or Mehfil-e-Ishq"
+          required>
       </div>
       <div class="form-group">
         <label>Subject / Topic (Discussion Topic or Academic Paper)</label>
-        <textarea id="edit-session-subject" rows="2" placeholder="e.g. The Prophet ﷺ as Teacher, Legislator, and Source of Knowledge"></textarea>
+        <textarea id="edit-session-subject" rows="2"
+          placeholder="e.g. The Prophet ﷺ as Teacher, Legislator, and Source of Knowledge"></textarea>
       </div>
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
         <div class="form-group">
@@ -1571,10 +1875,13 @@
       </div>
 
       <!-- STRUCTURED PARTICIPANT MANAGEMENT -->
-      <div style="border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 16px; background: rgba(0,0,0,0.03);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 6px;">
+      <div
+        style="border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 16px; background: rgba(0,0,0,0.03);">
+        <div
+          style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 6px;">
           <label style="font-weight: 700; color: var(--ink); margin: 0;">Session Participants & Roles</label>
-          <span style="font-size: 11px; color: var(--mute);">Roles: Panelist, Guest, Speaker, Led By, Storytelling...</span>
+          <span style="font-size: 11px; color: var(--mute);">Roles: Panelist, Guest, Speaker, Led By,
+            Storytelling...</span>
         </div>
 
         <div id="modal-participants-list" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;">
@@ -1585,7 +1892,8 @@
         <div style="display: grid; grid-template-columns: 1.5fr 1.2fr auto; gap: 8px; align-items: end;">
           <div class="form-group" style="margin: 0;">
             <label style="font-size: 11px;">Participant Name</label>
-            <input type="text" id="modal-new-part-name" list="all-people-datalist" placeholder="Name (e.g. Dr. Salahuddin Hudawi)">
+            <input type="text" id="modal-new-part-name" list="all-people-datalist"
+              placeholder="Name (e.g. Dr. Salahuddin Hudawi)">
           </div>
           <div class="form-group" style="margin: 0;">
             <label style="font-size: 11px;">Role</label>
@@ -1599,17 +1907,20 @@
               <option value="Performer">Performer</option>
             </select>
           </div>
-          <button type="button" class="btn" id="modal-add-part-btn" style="padding: 10px 14px; font-size: 12px; border-color: var(--teal); color: var(--teal);">+ Add</button>
+          <button type="button" class="btn" id="modal-add-part-btn"
+            style="padding: 10px 14px; font-size: 12px; border-color: var(--teal); color: var(--teal);">+ Add</button>
         </div>
       </div>
 
       <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 18px;">
         <input type="checkbox" id="edit-session-published" checked style="width: 18px; height: 18px;">
-        <label for="edit-session-published" style="font-size: 13px; cursor: pointer; user-select: none;">Published (visible on public website)</label>
+        <label for="edit-session-published" style="font-size: 13px; cursor: pointer; user-select: none;">Published
+          (visible on public website)</label>
       </div>
 
       <div style="display: flex; gap: 10px;">
-        <button type="button" class="btn" onclick="document.getElementById('session-modal').close()" style="flex: 1; justify-content: center;">Cancel</button>
+        <button type="button" class="btn" onclick="document.getElementById('session-modal').close()"
+          style="flex: 1; justify-content: center;">Cancel</button>
         <button type="submit" class="btn primary" style="flex: 2; justify-content: center;">Save Session</button>
       </div>
     </form>
@@ -1644,7 +1955,8 @@
         <label for="edit-day-published" style="font-size: 13px; cursor: pointer;">Published (visible publicly)</label>
       </div>
       <div style="display: flex; gap: 10px; margin-top: 14px;">
-        <button type="button" class="btn" onclick="document.getElementById('day-modal').close()" style="flex: 1; justify-content: center;">Cancel</button>
+        <button type="button" class="btn" onclick="document.getElementById('day-modal').close()"
+          style="flex: 1; justify-content: center;">Cancel</button>
         <button type="submit" class="btn primary" style="flex: 2; justify-content: center;">Save Day</button>
       </div>
     </form>
@@ -1657,13 +1969,15 @@
   <dialog class="admin-modal" id="gallery-edit-modal">
     <div class="modal-hdr">
       <h3>Edit Gallery Item</h3>
-      <button type="button" class="modal-close" onclick="document.getElementById('gallery-edit-modal').close()">×</button>
+      <button type="button" class="modal-close"
+        onclick="document.getElementById('gallery-edit-modal').close()">×</button>
     </div>
     <form id="gallery-edit-form">
       <input type="hidden" id="edit-gallery-id">
-      
+
       <div style="text-align: center; margin-bottom: 16px;">
-        <img id="edit-gallery-preview" src="" alt="Thumbnail" style="max-height: 140px; border-radius: 12px; object-fit: contain;">
+        <img id="edit-gallery-preview" src="" alt="Thumbnail"
+          style="max-height: 140px; border-radius: 12px; object-fit: contain;">
       </div>
 
       <div class="form-group">
@@ -1699,14 +2013,16 @@
           <span>Published (visible publicly)</span>
         </label>
 
-        <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; color: var(--red); font-weight: 600;">
+        <label
+          style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; color: var(--red); font-weight: 600;">
           <input type="checkbox" id="edit-gallery-featured">
           <span>★ Featured on Landing Page</span>
         </label>
       </div>
 
       <div style="display: flex; gap: 10px; margin-top: 14px;">
-        <button type="button" class="btn" onclick="document.getElementById('gallery-edit-modal').close()" style="flex: 1; justify-content: center;">
+        <button type="button" class="btn" onclick="document.getElementById('gallery-edit-modal').close()"
+          style="flex: 1; justify-content: center;">
           Cancel
         </button>
         <button type="submit" class="btn primary" style="flex: 2; justify-content: center;">
@@ -1720,12 +2036,15 @@
   <dialog class="admin-modal" id="gallery-delete-modal">
     <div class="modal-hdr">
       <h3 style="color: var(--red);">Delete Gallery Image</h3>
-      <button type="button" class="modal-close" onclick="document.getElementById('gallery-delete-modal').close()">×</button>
+      <button type="button" class="modal-close"
+        onclick="document.getElementById('gallery-delete-modal').close()">×</button>
     </div>
     <div style="padding: 10px 0 20px;">
       <p style="margin: 0 0 12px; font-size: 14px;">Are you sure you want to permanently delete this gallery image?</p>
-      <div style="display: flex; align-items: center; gap: 14px; padding: 12px; background: var(--bg); border-radius: 12px; border: 1px solid var(--line);">
-        <img id="delete-gallery-preview" src="" alt="Delete thumbnail" style="width: 60px; height: 60px; border-radius: 8px; object-fit: cover;">
+      <div
+        style="display: flex; align-items: center; gap: 14px; padding: 12px; background: var(--bg); border-radius: 12px; border: 1px solid var(--line);">
+        <img id="delete-gallery-preview" src="" alt="Delete thumbnail"
+          style="width: 60px; height: 60px; border-radius: 8px; object-fit: cover;">
         <div>
           <strong id="delete-gallery-title" style="display: block; font-size: 14px;">—</strong>
           <span id="delete-gallery-cat" style="font-size: 11px; color: var(--mute);">—</span>
@@ -1736,10 +2055,12 @@
       </p>
     </div>
     <div style="display: flex; gap: 10px;">
-      <button type="button" class="btn" onclick="document.getElementById('gallery-delete-modal').close()" style="flex: 1; justify-content: center;">
+      <button type="button" class="btn" onclick="document.getElementById('gallery-delete-modal').close()"
+        style="flex: 1; justify-content: center;">
         Cancel
       </button>
-      <button type="button" class="btn danger" id="confirm-gallery-delete-btn" style="flex: 1; justify-content: center;">
+      <button type="button" class="btn danger" id="confirm-gallery-delete-btn"
+        style="flex: 1; justify-content: center;">
         Yes, Delete Image
       </button>
     </div>
@@ -1750,4 +2071,5 @@
 
   <script src="../js/admin.js"></script>
 </body>
+
 </html>

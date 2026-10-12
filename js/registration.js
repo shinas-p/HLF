@@ -10,6 +10,7 @@
   let activeContributionData = null;
   let selectedScreenshotFile = null;
   let selectedContribScreenshotFile = null;
+  let selectedPaymentMethod = 'upi';
 
   const REG_DRAFT_KEY = 'hlf_registration_draft_v1';
   const CONTRIB_DRAFT_KEY = 'hlf_contribution_draft_v1';
@@ -161,6 +162,7 @@
     const draft = {
       step: currentStep,
       timestamp: Date.now(),
+      selectedPaymentMethod: selectedPaymentMethod || 'upi',
       formData: {
         fullName,
         mobile,
@@ -186,6 +188,10 @@
     if (draft.timestamp && Date.now() - draft.timestamp > 24 * 60 * 60 * 1000) {
       removeFromStorage(REG_DRAFT_KEY);
       return null;
+    }
+
+    if (draft.selectedPaymentMethod) {
+      selectedPaymentMethod = draft.selectedPaymentMethod;
     }
 
     const { formData } = draft;
@@ -580,17 +586,17 @@
 
             <!-- Submit Button Step 1 -->
             <button type="submit" id="reg-step1-btn" class="btn p" style="width: 100%; justify-content: center; font-size: 1.05rem; padding: 16px;">
-              <span>Proceed to ₹50 UPI Payment →</span>
+              <span>Proceed to ₹50 Payment →</span>
             </button>
           </form>
         </div>
 
-        <!-- STEP 2: UPI PAYMENT SECTION -->
+        <!-- STEP 2: PAYMENT SECTION -->
         <div id="reg-step2-view" style="display: none;">
           <div class="reg-dialog-header">
-            <p class="tag"><b>[STEP 2/2]</b> ✦ UPI PAYMENT</p>
-            <h2 class="reg-title">Complete ₹50 Payment</h2>
-            <p class="reg-subtitle">Scan QR or pay via any UPI app to confirm your delegate registration</p>
+            <p class="tag"><b>[STEP 2/2]</b> ✦ PAYMENT SELECTION</p>
+            <h2 class="reg-title">Complete ₹50 Registration Fee</h2>
+            <p class="reg-subtitle">Choose your payment method: Pay online via UPI or pay cash to an authorized organizer</p>
           </div>
 
           <!-- Step Indicator -->
@@ -602,7 +608,7 @@
             <span class="reg-step-arrow">→</span>
             <div class="reg-step-pill active">
               <span class="step-dot">2</span>
-              <span>₹50 UPI Payment</span>
+              <span>₹50 Payment</span>
             </div>
             <span class="reg-step-arrow">→</span>
             <div class="reg-step-pill">
@@ -611,7 +617,17 @@
             </div>
           </div>
 
-          <!-- Allocated Reg ID Card -->
+          <!-- Payment Method Switcher (UPI vs Cash) -->
+          <div class="reg-pay-method-switcher" role="tablist">
+            <button type="button" class="reg-method-tab active" id="tab-method-upi" role="tab" aria-selected="true">
+              <span>📱</span> Pay Online via UPI
+            </button>
+            <button type="button" class="reg-method-tab" id="tab-method-cash" role="tab" aria-selected="false">
+              <span>💵</span> Pay Cash to Organizer
+            </button>
+          </div>
+
+          <!-- Allocated Reg ID Card (Shared) -->
           <div class="reg-allocated-box">
             <div class="alloc-left">
               <span class="alloc-label">Allocated Registration ID</span>
@@ -622,108 +638,164 @@
             </button>
           </div>
 
-          <!-- UPI Payment Card -->
-          <div class="reg-pay-card">
-            <div class="reg-qr-wrap">
-              <div class="reg-qr-box" id="reg-qr-container">
-                <div id="reg-qr-canvas"></div>
-                ${paymentCfg.qrImagePath ? `<img id="reg-qr-img" src="${paymentCfg.qrImagePath}" alt="HLF UPI QR" style="display:none;" onerror="this.style.display='none'; document.getElementById('reg-qr-canvas').style.display='block';">` : ''}
+          <!-- METHOD A: UPI PAYMENT PANEL -->
+          <div id="reg-upi-panel">
+            <!-- UPI Payment Card -->
+            <div class="reg-pay-card">
+              <div class="reg-qr-wrap">
+                <div class="reg-qr-box" id="reg-qr-container">
+                  <div id="reg-qr-canvas"></div>
+                  ${paymentCfg.qrImagePath ? `<img id="reg-qr-img" src="${paymentCfg.qrImagePath}" alt="HLF UPI QR" style="display:none;" onerror="this.style.display='none'; document.getElementById('reg-qr-canvas').style.display='block';">` : ''}
+                </div>
+                <span style="font-size: 11px; color: var(--mute);">Scan with any UPI App</span>
               </div>
-              <span style="font-size: 11px; color: var(--mute);">Scan with any UPI App</span>
+
+              <div class="reg-pay-info">
+                <div class="upi-details">
+                  <span class="upi-label">Registration Fee</span>
+                  <span style="font-size: 1.4rem; font-weight: 700; color: var(--red);">₹50.00</span>
+                </div>
+                <div class="upi-details">
+                  <span class="upi-label">UPI ID</span>
+                  <span class="upi-val" id="reg-upi-id-text">${paymentCfg.upiId}</span>
+                </div>
+                <div class="upi-details">
+                  <span class="upi-label">Payee Name</span>
+                  <span id="reg-payee-name-text" style="font-size: 13px; font-weight: 500; color: var(--ink);">${paymentCfg.payeeName}</span>
+                </div>
+
+                <div class="reg-pay-actions">
+                  <button type="button" class="reg-btn-sm" id="reg-copy-upi-btn" aria-label="Copy official UPI ID">
+                    <span>📋</span> <span id="reg-copy-text">Copy UPI ID</span>
+                  </button>
+                  <a href="#" class="reg-btn-sm primary" id="reg-pay-intent-btn">
+                    <span>⚡</span> Pay ₹50 via UPI App
+                  </a>
+                </div>
+                <div id="reg-copy-feedback" class="copy-feedback-msg" style="display: none;" role="status"></div>
+
+                <div class="reg-payment-disclaimer" id="reg-payment-disclaimer">
+                  <div class="disclaimer-header">
+                    <span class="disclaimer-icon">ℹ️</span>
+                    <strong>Payment Help</strong>
+                  </div>
+                  <p class="disclaimer-text">
+                    If you are unable to complete your payment using the UPI payment button, or your UPI app displays a warning or payment error, you can copy our official UPI ID and pay manually from your preferred UPI app. Open Google Pay, Paytm, PhonePe, or another supported UPI app, choose the option to pay using a UPI ID, and enter the copied ID. Before paying, verify that the displayed recipient name and amount are correct. If the warning persists or the recipient details do not match, do not proceed; contact the HLF organizers for assistance.
+                  </p>
+                </div>
+
+                <div class="reg-payment-notice">
+                  <strong>How to complete payment:</strong><br>
+                  1. Tap <strong>Pay ₹50 via UPI App</strong> or scan the QR code using Google Pay, PhonePe, Paytm, BHIM, etc.<br>
+                  2. Or tap <strong>Copy UPI ID</strong> to pay manually: open your UPI app, paste the UPI ID, enter <strong>₹50</strong> as the amount, and verify the recipient name before paying.<br>
+                  3. Complete the ₹50 registration payment.<br>
+                  4. Take a screenshot showing your completed payment receipt.<br>
+                  5. Upload the screenshot below and complete your registration.
+                </div>
+              </div>
             </div>
 
-            <div class="reg-pay-info">
-              <div class="upi-details">
-                <span class="upi-label">Registration Fee</span>
-                <span style="font-size: 1.4rem; font-weight: 700; color: var(--red);">₹50.00</span>
-              </div>
-              <div class="upi-details">
-                <span class="upi-label">UPI ID</span>
-                <span class="upi-val" id="reg-upi-id-text">${paymentCfg.upiId}</span>
-              </div>
-              <div class="upi-details">
-                <span class="upi-label">Payee Name</span>
-                <span id="reg-payee-name-text" style="font-size: 13px; font-weight: 500; color: var(--ink);">${paymentCfg.payeeName}</span>
-              </div>
-
-              <div class="reg-pay-actions">
-                <button type="button" class="reg-btn-sm" id="reg-copy-upi-btn" aria-label="Copy official UPI ID">
-                  <span>📋</span> <span id="reg-copy-text">Copy UPI ID</span>
-                </button>
-                <a href="#" class="reg-btn-sm primary" id="reg-pay-intent-btn">
-                  <span>⚡</span> Pay ₹50 via UPI App
-                </a>
-              </div>
-              <div id="reg-copy-feedback" class="copy-feedback-msg" style="display: none;" role="status"></div>
-
-              <div class="reg-payment-disclaimer" id="reg-payment-disclaimer">
-                <div class="disclaimer-header">
-                  <span class="disclaimer-icon">ℹ️</span>
-                  <strong>Payment Help</strong>
-                </div>
-                <p class="disclaimer-text">
-                  If you are unable to complete your payment using the UPI payment button, or your UPI app displays a warning or payment error, you can copy our official UPI ID and pay manually from your preferred UPI app. Open Google Pay, Paytm, PhonePe, or another supported UPI app, choose the option to pay using a UPI ID, and enter the copied ID. Before paying, verify that the displayed recipient name and amount are correct. If the warning persists or the recipient details do not match, do not proceed; contact the HLF organizers for assistance.
-                </p>
-              </div>
-
-              <div class="reg-payment-notice">
-                <strong>How to complete payment:</strong><br>
-                1. Tap <strong>Pay ₹50 via UPI App</strong> or scan the QR code using Google Pay, PhonePe, Paytm, BHIM, etc.<br>
-                2. Or tap <strong>Copy UPI ID</strong> to pay manually: open your UPI app, paste the UPI ID, enter <strong>₹50</strong> as the amount, and verify the recipient name before paying.<br>
-                3. Complete the ₹50 registration payment.<br>
-                4. Take a screenshot showing your completed payment receipt.<br>
-                5. Upload the screenshot below and complete your registration.
-              </div>
-            </div>
-          </div>
-
-          <form id="hlf-step2-form" novalidate>
-            <!-- Payment Transaction Screenshot Upload -->
-            <div class="reg-field" style="margin-bottom: 18px;">
-              <label class="reg-label">Payment Transaction Screenshot <span class="req">*</span></label>
-              <p style="font-size: 11px; color: var(--mute); margin: 0 0 10px;">Upload a screenshot showing your ₹50 UPI payment transaction.</p>
-              
-              <div class="reg-screenshot-zone" id="reg-screenshot-zone">
-                <input type="file" id="reg-screenshot-file" accept="image/jpeg,image/png,image/webp" style="display: none;">
-                <div id="reg-screenshot-prompt">
-                  <div style="font-size: 32px; margin-bottom: 6px;">📸</div>
-                  <div style="font-size: 13px; font-weight: 600; color: var(--teal);">Click or drag & drop payment screenshot</div>
-                  <div style="font-size: 11px; color: var(--mute); margin-top: 4px;">Supports JPG, PNG, WEBP (Max 5 MB)</div>
-                </div>
+            <form id="hlf-step2-form" novalidate>
+              <!-- Payment Transaction Screenshot Upload -->
+              <div class="reg-field" style="margin-bottom: 18px;">
+                <label class="reg-label">Payment Transaction Screenshot <span class="req">*</span></label>
+                <p style="font-size: 11px; color: var(--mute); margin: 0 0 10px;">Upload a screenshot showing your ₹50 UPI payment transaction.</p>
                 
-                <div id="reg-screenshot-preview" style="display: none;" class="reg-screenshot-preview">
-                  <img id="reg-screenshot-preview-img" src="" alt="Payment Screenshot" class="reg-screenshot-thumb">
-                  <div class="reg-screenshot-meta">
-                    <div id="reg-screenshot-filename" class="name">—</div>
-                    <div id="reg-screenshot-filesize" class="size">—</div>
-                    <div style="display: flex; gap: 8px; margin-top: 6px;">
-                      <button type="button" class="reg-btn-sm" id="reg-screenshot-change-btn">Change</button>
-                      <button type="button" class="reg-btn-sm danger" id="reg-screenshot-remove-btn">Remove</button>
+                <div class="reg-screenshot-zone" id="reg-screenshot-zone">
+                  <input type="file" id="reg-screenshot-file" accept="image/jpeg,image/png,image/webp" style="display: none;">
+                  <div id="reg-screenshot-prompt">
+                    <div style="font-size: 32px; margin-bottom: 6px;">📸</div>
+                    <div style="font-size: 13px; font-weight: 600; color: var(--teal);">Click or drag & drop payment screenshot</div>
+                    <div style="font-size: 11px; color: var(--mute); margin-top: 4px;">Supports JPG, PNG, WEBP (Max 5 MB)</div>
+                  </div>
+                  
+                  <div id="reg-screenshot-preview" style="display: none;" class="reg-screenshot-preview">
+                    <img id="reg-screenshot-preview-img" src="" alt="Payment Screenshot" class="reg-screenshot-thumb">
+                    <div class="reg-screenshot-meta">
+                      <div id="reg-screenshot-filename" class="name">—</div>
+                      <div id="reg-screenshot-filesize" class="size">—</div>
+                      <div style="display: flex; gap: 8px; margin-top: 6px;">
+                        <button type="button" class="reg-btn-sm" id="reg-screenshot-change-btn">Change</button>
+                        <button type="button" class="reg-btn-sm danger" id="reg-screenshot-remove-btn">Remove</button>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <!-- Error Banner Step 2 -->
-            <div id="reg-error-banner-2" class="reg-error-msg" role="alert"></div>
+              <!-- Error Banner Step 2 -->
+              <div id="reg-error-banner-2" class="reg-error-msg" role="alert"></div>
 
-            <div class="reg-nav-actions">
-              <button type="button" class="btn" id="step2-back-btn" style="flex: 0 0 auto;">
-                ← Back
-              </button>
-              <button type="submit" id="reg-step2-btn" class="btn p">
-                <span>Confirm Payment & Complete Registration ✦</span>
-              </button>
+              <div class="reg-nav-actions">
+                <button type="button" class="btn" id="step2-back-btn" style="flex: 0 0 auto;">
+                  ← Back
+                </button>
+                <button type="submit" id="reg-step2-btn" class="btn p">
+                  <span>Confirm Payment & Complete Registration ✦</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- METHOD B: CASH PAYMENT PANEL -->
+          <div id="reg-cash-panel" style="display: none;">
+            <div class="reg-cash-card">
+              <div class="reg-cash-header">
+                <div class="reg-cash-icon">💵</div>
+                <div>
+                  <h3 class="reg-cash-title">Pay Cash to an Organizer</h3>
+                  <p class="reg-cash-subtitle">Official offline payment option for delegates</p>
+                </div>
+              </div>
+
+              <div class="reg-cash-instruction">
+                <strong>Important Instruction:</strong>
+                Pay the ₹50 registration fee directly to an authorized HLF organizer. Your cash payment must be recorded and verified by the HLF team before your registration is confirmed.
+              </div>
+
+              <div class="upi-details" style="margin-bottom: 14px; background: rgba(0,0,0,0.03); padding: 12px 14px; border-radius: 10px;">
+                <span class="upi-label">Registration Fee</span>
+                <span style="font-size: 1.3rem; font-weight: 700; color: var(--teal);">₹50.00 (Cash)</span>
+              </div>
+
+              <ul class="reg-cash-steps">
+                <li>
+                  <span class="step-num">1</span>
+                  <span>Keep your Registration ID (shown above) ready to present to an authorized HLF organizer or committee member.</span>
+                </li>
+                <li>
+                  <span class="step-num">2</span>
+                  <span>Hand over ₹50 cash in person to the organizer at the venue or registration desk.</span>
+                </li>
+                <li>
+                  <span class="step-num">3</span>
+                  <span>The organizer will record your cash payment in the HLF Admin Portal, confirming your delegate registration.</span>
+                </li>
+              </ul>
+
+              <div class="reg-cash-notice-box">
+                ℹ️ No payment screenshot is needed for cash payments. Click the button below to submit your registration under the cash option.
+              </div>
+
+              <div id="reg-cash-error-banner" class="reg-error-msg" role="alert" style="display: none; margin-bottom: 14px;"></div>
+
+              <div class="reg-nav-actions">
+                <button type="button" class="btn" id="step2-cash-back-btn" style="flex: 0 0 auto;">
+                  ← Back
+                </button>
+                <button type="button" id="reg-cash-submit-btn" class="btn p" style="flex: 1;">
+                  <span>Submit Registration (Pay Cash by Hand) ✦</span>
+                </button>
+              </div>
             </div>
-          </form>
+          </div>
         </div>
 
         <!-- STEP 3: CONFIRMATION SUCCESS VIEW -->
         <div id="reg-success-view" class="reg-success-view">
           <div class="reg-success-icon">🎉</div>
           <h2 class="reg-success-title">Registration Submitted</h2>
-          <p class="reg-success-sub">Your delegate registration for HLF 2026 has been received.</p>
+          <p class="reg-success-sub" id="success-reg-sub">Your delegate registration for HLF 2026 has been received.</p>
 
           <div class="reg-id-card">
             <span class="id-label">OFFICIAL REGISTRATION ID</span>
@@ -740,12 +812,12 @@
             <tr><td>Participant Name:</td><td id="success-name">—</td></tr>
             <tr><td>Institution:</td><td id="success-inst">—</td></tr>
             <tr><td>Mobile Number:</td><td id="success-mobile">—</td></tr>
-            <tr><td>Registration Fee:</td><td><strong>₹50</strong></td></tr>
-            <tr><td>Payment Status:</td><td><span class="reg-status-pill pending">Pending Verification</span></td></tr>
+            <tr><td>Registration Fee:</td><td id="success-fee-val"><strong>₹50</strong></td></tr>
+            <tr><td>Payment Status:</td><td id="success-pay-status-val"><span class="reg-status-pill pending">Pending Verification</span></td></tr>
             <tr><td>Submission Date/Time:</td><td id="success-date">—</td></tr>
           </table>
 
-          <div class="reg-instructions-box">
+          <div class="reg-instructions-box" id="success-instructions-box">
             <strong>Important Instructions:</strong><br>
             • Please save or screenshot your Registration ID.<br>
             • Your UPI payment will be manually verified by the HLF registration committee.<br>
@@ -824,6 +896,25 @@
       regIntentBtn.onclick = () => {
         saveRegistrationDraft(2);
       };
+    }
+
+    // Payment Method Switcher Tabs (UPI vs Cash)
+    const tabUpi = document.getElementById('tab-method-upi');
+    if (tabUpi) tabUpi.onclick = () => selectPaymentMethod('upi');
+    const tabCash = document.getElementById('tab-method-cash');
+    if (tabCash) tabCash.onclick = () => selectPaymentMethod('cash');
+
+    const cashBackBtn = document.getElementById('step2-cash-back-btn');
+    if (cashBackBtn) {
+      cashBackBtn.onclick = () => {
+        showStep(1);
+        saveRegistrationDraft(1);
+      };
+    }
+
+    const cashSubmitBtn = document.getElementById('reg-cash-submit-btn');
+    if (cashSubmitBtn) {
+      cashSubmitBtn.onclick = handleCashSubmit;
     }
 
     // Form Submissions
@@ -1152,15 +1243,48 @@
     if (s2) s2.style.display = stepNum === 2 ? 'block' : 'none';
     if (s3) s3.style.display = stepNum === 3 ? 'block' : 'none';
 
+    if (stepNum === 2) {
+      selectPaymentMethod(selectedPaymentMethod || 'upi');
+    }
+
     // Clear error banners
     const err1 = document.getElementById('reg-error-banner-1');
     const err2 = document.getElementById('reg-error-banner-2');
+    const errCash = document.getElementById('reg-cash-error-banner');
     if (err1) { err1.style.display = 'none'; err1.textContent = ''; }
     if (err2) { err2.style.display = 'none'; err2.textContent = ''; }
+    if (errCash) { errCash.style.display = 'none'; errCash.textContent = ''; }
 
     // Scroll inner container to top
     const inner = document.querySelector('.reg-dialog-inner');
     if (inner) inner.scrollTop = 0;
+  }
+
+  // Toggle between UPI and Cash payment methods in Step 2
+  function selectPaymentMethod(method) {
+    selectedPaymentMethod = method;
+    const tabUpi = document.getElementById('tab-method-upi');
+    const tabCash = document.getElementById('tab-method-cash');
+    const panelUpi = document.getElementById('reg-upi-panel');
+    const panelCash = document.getElementById('reg-cash-panel');
+
+    if (method === 'cash') {
+      if (tabUpi) { tabUpi.classList.remove('active'); tabUpi.setAttribute('aria-selected', 'false'); }
+      if (tabCash) { tabCash.classList.add('active'); tabCash.setAttribute('aria-selected', 'true'); }
+      if (panelUpi) panelUpi.style.display = 'none';
+      if (panelCash) panelCash.style.display = 'block';
+    } else {
+      if (tabUpi) { tabUpi.classList.add('active'); tabUpi.setAttribute('aria-selected', 'true'); }
+      if (tabCash) { tabCash.classList.remove('active'); tabCash.setAttribute('aria-selected', 'false'); }
+      if (panelUpi) panelUpi.style.display = 'block';
+      if (panelCash) panelCash.style.display = 'none';
+    }
+
+    try {
+      saveRegistrationDraft();
+    } catch (e) {
+      console.warn('Error saving draft on payment method switch:', e);
+    }
   }
 
   // 2. Setup UPI Intent & QR Code with Registration ID
@@ -1257,7 +1381,10 @@
     document.body.style.overflow = 'hidden';
 
     // Restore draft details if available
-    restoreRegistrationDraft();
+    const restored = restoreRegistrationDraft();
+    if (!restored) {
+      selectedPaymentMethod = 'upi';
+    }
 
     // Show Step 1 unless already in Step 2 with allocated ID
     if (activeRegistrationData && activeRegistrationData.registration_id && !activeRegistrationData.submitted_final) {
@@ -1497,6 +1624,7 @@
       }
 
       // Success
+      activeRegistrationData.payment_method = 'upi';
       activeRegistrationData.payment_screenshot_path = filePath;
       activeRegistrationData.payment_screenshot_url = screenshotUrl;
       activeRegistrationData.payment_status = 'pending';
@@ -1513,6 +1641,77 @@
     } finally {
       submitBtn.disabled = false;
       submitBtn.innerHTML = origBtnHtml;
+    }
+  }
+
+  // 7b. Handle Cash Payment Submission: Call confirm_registration_cash RPC
+  async function handleCashSubmit(e) {
+    if (e && e.preventDefault) e.preventDefault();
+
+    const errBanner = document.getElementById('reg-cash-error-banner');
+    if (errBanner) {
+      errBanner.style.display = 'none';
+      errBanner.textContent = '';
+    }
+
+    if (!activeRegistrationData || !activeRegistrationData.registration_id) {
+      showCashError('Registration session expired. Please return to Step 1 and try again.');
+      return;
+    }
+
+    const submitBtn = document.getElementById('reg-cash-submit-btn');
+    const origBtnHtml = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `<span class="reg-spinner"></span> Submitting Cash Registration...`;
+
+    try {
+      const sb = window.getSupabase ? window.getSupabase() : null;
+      if (!sb) {
+        throw new Error('Supabase client could not be initialized. Please check network connection.');
+      }
+
+      const regId = activeRegistrationData.registration_id;
+
+      // Submit cash choice via Supabase confirm_registration_cash RPC
+      const { data, error } = await sb.rpc('confirm_registration_cash', {
+        p_registration_id: regId
+      });
+
+      if (error) {
+        console.error('Cash registration RPC error:', error);
+        throw new Error('Cash registration update failed: ' + (error.message || 'Submission failed'));
+      }
+
+      if (!data || !data.success) {
+        throw new Error('Unexpected response from registration service.');
+      }
+
+      // Success
+      activeRegistrationData.payment_method = 'cash';
+      activeRegistrationData.payment_status = 'pending';
+      activeRegistrationData.registration_status = 'submitted';
+      activeRegistrationData.submitted_final = true;
+
+      // Clear the temporary draft once registration is successfully submitted
+      clearRegistrationDraft();
+
+      displaySuccessView(activeRegistrationData);
+
+    } catch (err) {
+      console.error('Cash submission error:', err);
+      showCashError(err.message || 'An error occurred while submitting your cash registration. Please try again.');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = origBtnHtml;
+    }
+  }
+
+  function showCashError(msg) {
+    const errBanner = document.getElementById('reg-cash-error-banner');
+    if (errBanner) {
+      errBanner.textContent = msg;
+      errBanner.style.display = 'block';
+      errBanner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   }
 
@@ -1536,6 +1735,51 @@
 
     const formattedDate = formatAcknowledgementDate(data.created_at);
     document.getElementById('success-date').textContent = formattedDate;
+
+    const isCash = (data.payment_method || '').toLowerCase() === 'cash';
+    const statusPill = document.getElementById('success-reg-status');
+    if (statusPill) {
+      statusPill.textContent = isCash ? 'Awaiting Cash Collection' : 'Pending Verification';
+    }
+
+    const subTitle = document.getElementById('success-reg-sub');
+    if (subTitle) {
+      subTitle.textContent = isCash
+        ? 'Your delegate registration has been recorded for cash handover.'
+        : 'Your delegate registration for HLF 2026 has been received.';
+    }
+
+    const feeEl = document.getElementById('success-fee-val');
+    if (feeEl) {
+      feeEl.innerHTML = isCash ? '<strong>₹50 (Cash to Organizer)</strong>' : '<strong>₹50 (UPI Online)</strong>';
+    }
+
+    const payStatusEl = document.getElementById('success-pay-status-val');
+    if (payStatusEl) {
+      payStatusEl.innerHTML = isCash
+        ? '<span class="reg-status-pill pending">Awaiting Cash Collection</span>'
+        : '<span class="reg-status-pill pending">Pending Verification</span>';
+    }
+
+    const instBox = document.getElementById('success-instructions-box');
+    if (instBox) {
+      if (isCash) {
+        instBox.innerHTML = `
+          <strong>Important Cash Payment Instructions:</strong><br>
+          • Please save or screenshot your Registration ID (<strong>${data.registration_id}</strong>).<br>
+          • <strong>Pay the ₹50 registration fee directly to an authorized HLF organizer</strong>.<br>
+          • Your cash payment must be recorded and verified by the HLF team before your registration is confirmed.<br>
+          • Present this Registration ID at the HLF reception counter on 18 October 2026 at Darul Huda Islamic University, Chemmad to collect your official delegate badge and festival kit.
+        `;
+      } else {
+        instBox.innerHTML = `
+          <strong>Important Instructions:</strong><br>
+          • Please save or screenshot your Registration ID.<br>
+          • Your UPI payment will be manually verified by the HLF registration committee.<br>
+          • Present this Registration ID at the HLF reception counter on 18 October 2026 at Darul Huda Islamic University, Chemmad to collect your official delegate badge and festival kit.
+        `;
+      }
+    }
 
     // Scroll to top of dialog
     const inner = document.querySelector('.reg-dialog-inner');
@@ -1671,7 +1915,7 @@
           <div class="reg-id-box">
             <small style="text-transform: uppercase; letter-spacing: 1px; color: #4b625b;">Registration Identification Number</small>
             <div class="reg-id-val">${d.registration_id}</div>
-            <small style="color: #c07a00; font-weight: 700;">PAYMENT STATUS: PENDING MANUAL VERIFICATION</small>
+            <small style="color: #c07a00; font-weight: 700;">PAYMENT STATUS: ${d.payment_method === 'cash' ? 'AWAITING CASH COLLECTION BY ORGANIZER' : 'PENDING MANUAL VERIFICATION'}</small>
           </div>
 
           <table>
@@ -1679,12 +1923,17 @@
             <tr><td class="label">Institution:</td><td>${d.institution}</td></tr>
             <tr><td class="label">Mobile Number:</td><td>${d.mobile}</td></tr>
             <tr><td class="label">Registration Fee:</td><td><strong>₹${d.registration_fee || 50}</strong></td></tr>
-            <tr><td class="label">Payment Status:</td><td><strong style="color: #c07a00;">PENDING VERIFICATION</strong></td></tr>
+            <tr><td class="label">Payment Method:</td><td><strong>${d.payment_method === 'cash' ? '💵 Cash to Organizer' : '📱 Online UPI'}</strong></td></tr>
+            <tr><td class="label">Payment Status:</td><td><strong style="color: #c07a00;">${d.payment_method === 'cash' ? 'AWAITING CASH COLLECTION' : 'PENDING VERIFICATION'}</strong></td></tr>
             <tr><td class="label">Submission Date & Time:</td><td>${printDate}</td></tr>
           </table>
 
           <div class="notice">
             <strong>Important Instructions:</strong><br>
+            ${d.payment_method === 'cash' 
+              ? '• <strong>Pay ₹50 directly to an authorized HLF organizer</strong> with your Registration ID.<br>• Your registration will be confirmed once the organizer records your cash payment.<br>'
+              : '• Your UPI payment will be manually verified by the HLF registration committee.<br>'
+            }
             • Please present this slip along with a valid ID at the registration desk.<br>
             • Registration badge & festival kit will be handed over upon entry at DHIU Chemmad.<br>
             • For inquiries, contact: hadithliteraturefestival@gmail.com | +91 73065 54055

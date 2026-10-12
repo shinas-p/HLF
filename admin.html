@@ -828,6 +828,11 @@
               <option value="verified">Verified</option>
               <option value="rejected">Rejected</option>
             </select>
+            <select id="reg-method-filter" class="filter-select">
+              <option value="all">Method: All</option>
+              <option value="upi">UPI Online</option>
+              <option value="cash">Cash (Organizer)</option>
+            </select>
             <select id="reg-status-filter" class="filter-select">
               <option value="all">Status: All</option>
               <option value="submitted">Submitted</option>
@@ -850,7 +855,7 @@
                   <th>Name</th>
                   <th>Mobile</th>
                   <th>Institution</th>
-                  <th>Payment Proof</th>
+                  <th>Payment Method / Proof</th>
                   <th>Payment</th>
                   <th>Status</th>
                   <th>Date</th>
@@ -1576,10 +1581,74 @@
     </div>
 
     <div
-      style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--line); display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end;">
-      <button type="button" class="btn secondary" id="modal-btn-verify">✓ Verify Payment</button>
-      <button type="button" class="btn danger" id="modal-btn-reject">✕ Reject Payment</button>
+      style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--line); display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; align-items: center;">
       <button type="button" class="btn danger" id="modal-btn-delete" style="margin-right: auto;">🗑️ Delete</button>
+      <button type="button" class="btn" id="modal-btn-whatsapp" style="border-color: #25D366; color: #128C7E;">💬 WhatsApp</button>
+      <button type="button" class="btn primary" id="modal-btn-record-cash" style="display: none;">💵 Record Cash</button>
+      <button type="button" class="btn secondary" id="modal-btn-verify">✓ Verify Payment</button>
+      <button type="button" class="btn danger" id="modal-btn-reject">✕ Reject</button>
+    </div>
+  </dialog>
+
+  <!-- RECORD CASH PAYMENT MODAL -->
+  <dialog class="admin-modal" id="record-cash-modal">
+    <div class="modal-hdr">
+      <div>
+        <span class="badge" style="background: rgba(18,144,122,0.15); color: var(--teal); font-weight: 600;">Organizer Handover</span>
+        <h3 style="margin-top: 4px;">Record Cash Payment</h3>
+      </div>
+      <button type="button" class="modal-close" onclick="document.getElementById('record-cash-modal').close()">×</button>
+    </div>
+
+    <div style="font-size: 13px;">
+      <div style="background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+          <span style="color: var(--mute);">Registration ID:</span>
+          <strong id="rc-reg-id" style="font-family: 'Fira Code', monospace; color: var(--red);">HLF26-XXXX</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+          <span style="color: var(--mute);">Delegate Name:</span>
+          <strong id="rc-delegate-name">—</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--mute);">Mobile:</span>
+          <span id="rc-delegate-mobile">—</span>
+        </div>
+      </div>
+
+      <form id="record-cash-form">
+        <div style="margin-bottom: 14px;">
+          <label style="display: block; font-weight: 600; margin-bottom: 4px;">Cash Amount Received (₹) <span style="color: var(--red);">*</span></label>
+          <input type="number" id="rc-amount" value="50" min="1" step="1" required style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-size: 14px; font-weight: 700;">
+        </div>
+
+        <div style="margin-bottom: 14px;">
+          <label style="display: block; font-weight: 600; margin-bottom: 4px;">Date & Time Collected <span style="color: var(--red);">*</span></label>
+          <input type="datetime-local" id="rc-datetime" required style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-size: 13px;">
+        </div>
+
+        <div style="margin-bottom: 14px;">
+          <label style="display: block; font-weight: 600; margin-bottom: 4px;">Receiving Organizer / Admin</label>
+          <input type="text" id="rc-admin-display" readonly style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: rgba(0,0,0,0.04); color: var(--mute); font-size: 13px;">
+        </div>
+
+        <div style="margin-bottom: 14px;">
+          <label style="display: block; font-weight: 600; margin-bottom: 4px;">Receipt / Counter Reference (Optional)</label>
+          <input type="text" id="rc-receipt-ref" placeholder="e.g. Counter A / Book #3 / Receipt 102" style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-size: 13px;">
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-weight: 600; margin-bottom: 4px;">Notes / Remarks (Optional)</label>
+          <textarea id="rc-notes" rows="2" placeholder="Any additional notes about this cash collection..." style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-size: 13px;"></textarea>
+        </div>
+
+        <div id="rc-error-banner" style="display: none; background: rgba(230,57,70,0.1); border: 1px solid var(--red); color: var(--red); padding: 10px; border-radius: 8px; margin-bottom: 14px; font-size: 12px;"></div>
+
+        <div style="display: flex; gap: 10px; justify-content: flex-end; padding-top: 14px; border-top: 1px solid var(--line);">
+          <button type="button" class="btn" onclick="document.getElementById('record-cash-modal').close()">Cancel</button>
+          <button type="submit" id="rc-submit-btn" class="btn primary">💵 Confirm & Save Cash Received</button>
+        </div>
+      </form>
     </div>
   </dialog>
 

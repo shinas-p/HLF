@@ -310,13 +310,22 @@
 
     tbody.innerHTML = recent.map(r => {
       const pStatus = (r.payment_status || 'pending').toLowerCase();
+      const pMethod = (r.payment_method || 'upi').toLowerCase();
       const dateStr = new Date(r.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+      let proofLabel = '';
+      if (pMethod === 'cash') {
+        proofLabel = `<span class="badge" style="background: rgba(18,144,122,0.15); color: var(--teal); font-size: 11px;">💵 Cash</span>`;
+      } else if (r.payment_screenshot_path) {
+        proofLabel = `<span class="badge" style="background: rgba(18,144,122,0.15); color: var(--teal); font-size: 11px;">📸 Proof</span>`;
+      } else {
+        proofLabel = `<code>${escapeHtml(r.transaction_id || '—')}</code>`;
+      }
       return `
         <tr>
           <td><strong>${r.registration_id}</strong></td>
           <td>${escapeHtml(r.full_name)}</td>
           <td>${escapeHtml(r.institution)}</td>
-          <td>${r.payment_screenshot_path ? `<span class="badge" style="background: rgba(18,144,122,0.15); color: var(--teal); font-size: 11px;">📸 Proof</span>` : `<code>${escapeHtml(r.transaction_id || '—')}</code>`}</td>
+          <td>${proofLabel}</td>
           <td><span class="badge ${pStatus}">${pStatus}</span></td>
           <td>${dateStr}</td>
           <td><button class="btn btn-sm" onclick="openRegistrationDetails('${r.id}')">View</button></td>
@@ -329,6 +338,8 @@
     const tbody = document.getElementById('registrations-tbody');
     const searchTerm = (document.getElementById('reg-search-input').value || '').toLowerCase().trim();
     const payFilter = document.getElementById('reg-payment-filter').value;
+    const methodFilterEl = document.getElementById('reg-method-filter');
+    const methodFilter = methodFilterEl ? methodFilterEl.value : 'all';
     const statusFilter = document.getElementById('reg-status-filter').value;
     const dateFilter = document.getElementById('reg-date-filter').value;
 
@@ -343,6 +354,9 @@
           (r.mobile && r.mobile.includes(searchTerm)) ||
           (r.institution && r.institution.toLowerCase().includes(searchTerm)) ||
           (r.transaction_id && r.transaction_id.toLowerCase().includes(searchTerm)) ||
+          (r.payment_method && r.payment_method.toLowerCase().includes(searchTerm)) ||
+          (r.cash_received_by && r.cash_received_by.toLowerCase().includes(searchTerm)) ||
+          (r.cash_receipt_no && r.cash_receipt_no.toLowerCase().includes(searchTerm)) ||
           (r.payment_screenshot_path && r.payment_screenshot_path.toLowerCase().includes(searchTerm));
         if (!matches) return false;
       }
@@ -350,6 +364,12 @@
       // Payment filter
       if (payFilter !== 'all') {
         if ((r.payment_status || 'pending').toLowerCase() !== payFilter) return false;
+      }
+
+      // Method filter
+      if (methodFilter !== 'all') {
+        const rMethod = (r.payment_method || 'upi').toLowerCase();
+        if (rMethod !== methodFilter) return false;
       }
 
       // Status filter
@@ -377,9 +397,27 @@
     tbody.innerHTML = filtered.map(r => {
       const pStatus = (r.payment_status || 'pending').toLowerCase();
       const rStatus = (r.registration_status || 'submitted').toLowerCase();
+      const pMethod = (r.payment_method || 'upi').toLowerCase();
       const dateStr = new Date(r.created_at).toLocaleString('en-IN', {
         day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
       });
+
+      let methodProofHtml = '';
+      if (pMethod === 'cash') {
+        if (pStatus === 'verified') {
+          methodProofHtml = `<span class="badge" style="background: rgba(18,144,122,0.15); color: var(--teal); font-size: 11px; font-weight: 600;">💵 Cash (Collected)</span>`;
+        } else {
+          methodProofHtml = `<span class="badge" style="background: rgba(230,57,70,0.1); color: var(--red); font-size: 11px; font-weight: 600;">💵 Cash (Pending)</span>`;
+        }
+      } else {
+        if (r.payment_screenshot_path) {
+          methodProofHtml = `<button type="button" class="btn btn-sm" style="font-size: 11px; padding: 3px 8px; border-color: var(--teal); color: var(--teal);" onclick="openRegistrationDetails('${r.id}')">📸 Proof</button>`;
+        } else if (r.transaction_id) {
+          methodProofHtml = `<code>${escapeHtml(r.transaction_id)}</code>`;
+        } else {
+          methodProofHtml = `<span style="font-size: 11px; color: var(--mute);">📱 UPI (Pending)</span>`;
+        }
+      }
 
       return `
         <tr>
@@ -387,15 +425,22 @@
           <td>${escapeHtml(r.full_name)}</td>
           <td>${escapeHtml(r.mobile)}</td>
           <td>${escapeHtml(r.institution)}</td>
-          <td>${r.payment_screenshot_path ? `<button type="button" class="btn btn-sm" style="font-size: 11px; padding: 3px 8px; border-color: var(--teal); color: var(--teal);" onclick="openRegistrationDetails('${r.id}')">📸 Screenshot</button>` : `<code>${escapeHtml(r.transaction_id || '—')}</code>`}</td>
+          <td>${methodProofHtml}</td>
           <td><span class="badge ${pStatus}">${pStatus}</span></td>
           <td><span class="badge ${rStatus}">${rStatus}</span></td>
           <td style="font-size: 11px; color: var(--mute);">${dateStr}</td>
           <td>
-            <div style="display: flex; gap: 6px;">
+            <div style="display: flex; gap: 6px; align-items: center;">
               <button type="button" class="btn btn-sm" title="View Profile" onclick="openRegistrationDetails('${r.id}')">👁️</button>
-              ${pStatus !== 'verified' ? `<button type="button" class="btn btn-sm secondary" title="Verify Payment" onclick="confirmVerifyPayment('${r.id}')">✓</button>` : ''}
-              ${pStatus !== 'rejected' ? `<button type="button" class="btn btn-sm danger" title="Reject Payment" onclick="confirmRejectPayment('${r.id}')">✕</button>` : ''}
+              ${pMethod === 'cash' && pStatus !== 'verified' ? `
+                <button type="button" class="btn btn-sm primary" title="Record Cash Received" style="padding: 3px 8px; font-size: 11px; white-space: nowrap;" onclick="openRecordCashModal('${r.id}')">💵 Record Cash</button>
+              ` : ''}
+              ${pMethod !== 'cash' && pStatus !== 'verified' ? `
+                <button type="button" class="btn btn-sm secondary" title="Verify Payment" onclick="confirmVerifyPayment('${r.id}')">✓</button>
+              ` : ''}
+              ${pStatus !== 'rejected' ? `
+                <button type="button" class="btn btn-sm danger" title="Reject Payment" onclick="confirmRejectPayment('${r.id}')">✕</button>
+              ` : ''}
             </div>
           </td>
         </tr>
@@ -406,6 +451,8 @@
   // Setup Registrations Search and Filter Listeners
   document.getElementById('reg-search-input').oninput = renderRegistrationsTable;
   document.getElementById('reg-payment-filter').onchange = renderRegistrationsTable;
+  const regMethodFilter = document.getElementById('reg-method-filter');
+  if (regMethodFilter) regMethodFilter.onchange = renderRegistrationsTable;
   document.getElementById('reg-status-filter').onchange = renderRegistrationsTable;
   document.getElementById('reg-date-filter').onchange = renderRegistrationsTable;
 
@@ -427,8 +474,14 @@
       'Course',
       'Department',
       'District',
+      'Payment Method',
       'Payment Screenshot Path',
       'Legacy Transaction ID',
+      'Cash Received By',
+      'Cash Received At',
+      'Cash Amount',
+      'Cash Receipt No',
+      'Cash Notes',
       'Payment Status',
       'Registration Status',
       'Created At'
@@ -443,8 +496,14 @@
       r.course || '',
       r.department || '',
       r.district || '',
+      r.payment_method || 'upi',
       r.payment_screenshot_path || '',
       r.transaction_id || '',
+      r.cash_received_by || '',
+      r.cash_received_at || '',
+      r.cash_amount || '',
+      r.cash_receipt_no || '',
+      r.cash_notes || '',
       r.payment_status || 'pending',
       r.registration_status || 'submitted',
       r.created_at || ''
@@ -485,6 +544,7 @@
 
     document.getElementById('modal-reg-id').textContent = reg.registration_id;
     const pStatus = (reg.payment_status || 'pending').toLowerCase();
+    const pMethod = (reg.payment_method || 'upi').toLowerCase();
     const statusBadge = document.getElementById('modal-reg-status-badge');
     statusBadge.className = `badge ${pStatus}`;
     statusBadge.textContent = pStatus;
@@ -560,6 +620,10 @@
       <div style="border-top: 1px dashed var(--line); padding-top: 14px; margin-top: 14px;">
         <span style="color: var(--mute); font-size: 11px; text-transform: uppercase;">Payment Details</span>
         <div style="display: flex; justify-content: space-between; margin-top: 6px;">
+          <span>Payment Method:</span>
+          <strong>${pMethod === 'cash' ? '💵 Cash to Organizer' : '📱 Online via UPI'}</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-top: 6px;">
           <span>Registration Fee:</span>
           <strong>₹${reg.registration_fee || 50}</strong>
         </div>
@@ -575,31 +639,101 @@
         ` : ''}
       </div>
 
-      <div style="margin-top: 16px; border-top: 1px dashed var(--line); padding-top: 14px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <span style="color: var(--mute); font-size: 11px; text-transform: uppercase; font-weight: 700;">Payment Screenshot Proof</span>
-          ${screenshotUrl ? `<a href="${screenshotUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-sm" style="text-decoration: none; font-size: 11px; padding: 3px 10px;">🔍 Open Full Size ↗</a>` : ''}
-        </div>
-        ${screenshotUrl ? `
-          <div style="text-align: center; background: rgba(0,0,0,0.4); border: 1px solid var(--line); border-radius: 12px; padding: 10px;">
-            <a href="${screenshotUrl}" target="_blank" rel="noopener noreferrer" title="Click to view full image in new tab">
-              <img src="${screenshotUrl}" alt="Proof for ${reg.registration_id}" style="max-height: 280px; max-width: 100%; border-radius: 8px; object-fit: contain; cursor: zoom-in; display: block; margin: 0 auto; box-shadow: 0 4px 16px rgba(0,0,0,0.3);" />
-            </a>
-            <div style="font-size: 11px; color: var(--mute); margin-top: 8px;">
-              Path: <code>${escapeHtml(reg.payment_screenshot_path || 'uploaded')}</code> · Click image to expand
+      ${pMethod === 'cash' ? `
+        ${reg.cash_received_by ? `
+          <div style="margin-top: 14px; background: rgba(18,144,122,0.08); border: 1px solid rgba(18,144,122,0.3); border-radius: 10px; padding: 12px;">
+            <div style="font-weight: 700; color: var(--teal); font-size: 12px; margin-bottom: 8px;">💵 Cash Payment Audit Trail</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px;">
+              <div><span style="color: var(--mute);">Received By:</span> <strong>${escapeHtml(reg.cash_received_by)}</strong></div>
+              <div><span style="color: var(--mute);">Amount:</span> <strong>₹${reg.cash_amount || 50}</strong></div>
+              <div><span style="color: var(--mute);">Received At:</span> <span>${reg.cash_received_at ? new Date(reg.cash_received_at).toLocaleString('en-IN') : '—'}</span></div>
+              <div><span style="color: var(--mute);">Receipt / Ref:</span> <span>${escapeHtml(reg.cash_receipt_no || '—')}</span></div>
             </div>
+            ${reg.cash_notes ? `<div style="margin-top: 8px; font-size: 12px; border-top: 1px dashed rgba(18,144,122,0.2); padding-top: 6px;"><span style="color: var(--mute);">Notes:</span> ${escapeHtml(reg.cash_notes)}</div>` : ''}
           </div>
         ` : `
-          <div style="padding: 18px; text-align: center; background: rgba(0,0,0,0.03); border: 1px dashed var(--line); border-radius: 10px; color: var(--mute); font-size: 13px;">
-            📷 No payment screenshot available.
+          <div style="margin-top: 14px; background: rgba(230,57,70,0.06); border: 1px dashed rgba(230,57,70,0.3); border-radius: 10px; padding: 12px;">
+            <div style="font-weight: 700; color: var(--red); font-size: 12px; margin-bottom: 4px;">⚠️ Cash Payment Awaiting Collection</div>
+            <p style="margin: 0; font-size: 12px; color: var(--ink);">This delegate selected cash payment. Hand over ₹50 directly and click <strong>Record Cash</strong> below to confirm their registration.</p>
           </div>
         `}
-      </div>
+      ` : ''}
+
+      ${pMethod !== 'cash' || screenshotUrl ? `
+        <div style="margin-top: 16px; border-top: 1px dashed var(--line); padding-top: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="color: var(--mute); font-size: 11px; text-transform: uppercase; font-weight: 700;">Payment Screenshot Proof</span>
+            ${screenshotUrl ? `<a href="${screenshotUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-sm" style="text-decoration: none; font-size: 11px; padding: 3px 10px;">🔍 Open Full Size ↗</a>` : ''}
+          </div>
+          ${screenshotUrl ? `
+            <div style="text-align: center; background: rgba(0,0,0,0.4); border: 1px solid var(--line); border-radius: 12px; padding: 10px;">
+              <a href="${screenshotUrl}" target="_blank" rel="noopener noreferrer" title="Click to view full image in new tab">
+                <img src="${screenshotUrl}" alt="Proof for ${reg.registration_id}" style="max-height: 280px; max-width: 100%; border-radius: 8px; object-fit: contain; cursor: zoom-in; display: block; margin: 0 auto; box-shadow: 0 4px 16px rgba(0,0,0,0.3);" />
+              </a>
+              <div style="font-size: 11px; color: var(--mute); margin-top: 8px;">
+                Path: <code>${escapeHtml(reg.payment_screenshot_path || 'uploaded')}</code> · Click image to expand
+              </div>
+            </div>
+          ` : `
+            <div style="padding: 18px; text-align: center; background: rgba(0,0,0,0.03); border: 1px dashed var(--line); border-radius: 10px; color: var(--mute); font-size: 13px;">
+              📷 No payment screenshot available.
+            </div>
+          `}
+        </div>
+      ` : ''}
     `;
 
-    document.getElementById('modal-btn-verify').onclick = () => confirmVerifyPayment(reg.id);
-    document.getElementById('modal-btn-reject').onclick = () => confirmRejectPayment(reg.id);
-    document.getElementById('modal-btn-delete').onclick = () => confirmDeleteRegistration(reg.id);
+    // Configure action buttons in details modal
+    const recordCashBtn = document.getElementById('modal-btn-record-cash');
+    const verifyBtn = document.getElementById('modal-btn-verify');
+    const rejectBtn = document.getElementById('modal-btn-reject');
+    const deleteBtn = document.getElementById('modal-btn-delete');
+    const whatsappBtn = document.getElementById('modal-btn-whatsapp');
+
+    if (recordCashBtn) {
+      if (pStatus !== 'verified') {
+        recordCashBtn.style.display = 'inline-block';
+        recordCashBtn.onclick = () => {
+          modal.close();
+          openRecordCashModal(reg.id);
+        };
+      } else {
+        recordCashBtn.style.display = 'none';
+      }
+    }
+
+    if (verifyBtn) {
+      if (pStatus !== 'verified') {
+        verifyBtn.style.display = 'inline-block';
+        if (pMethod === 'cash') {
+          verifyBtn.textContent = '💵 Record Cash';
+          verifyBtn.className = 'btn primary';
+          verifyBtn.onclick = () => {
+            modal.close();
+            openRecordCashModal(reg.id);
+          };
+        } else {
+          verifyBtn.textContent = '✓ Verify Payment';
+          verifyBtn.className = 'btn secondary';
+          verifyBtn.onclick = () => confirmVerifyPayment(reg.id);
+        }
+      } else {
+        verifyBtn.style.display = 'none';
+      }
+    }
+
+    if (rejectBtn) {
+      rejectBtn.style.display = pStatus !== 'rejected' ? 'inline-block' : 'none';
+      rejectBtn.onclick = () => confirmRejectPayment(reg.id);
+    }
+
+    if (deleteBtn) {
+      deleteBtn.onclick = () => confirmDeleteRegistration(reg.id);
+    }
+
+    if (whatsappBtn) {
+      whatsappBtn.onclick = () => openWhatsAppForRegistration(reg);
+    }
 
     modal.showModal();
   }
@@ -677,6 +811,159 @@
     }
   }
   window.confirmDeleteRegistration = confirmDeleteRegistration;
+
+  // -------------------------------------------------------------
+  // RECORD CASH PAYMENT MODAL & WORKFLOW
+  // -------------------------------------------------------------
+  function openRecordCashModal(id) {
+    const reg = allRegistrations.find(r => r.id === id);
+    if (!reg) return;
+
+    const modal = document.getElementById('record-cash-modal');
+    if (!modal) return;
+
+    document.getElementById('rc-reg-id').textContent = reg.registration_id;
+    document.getElementById('rc-delegate-name').textContent = reg.full_name || '—';
+    document.getElementById('rc-delegate-mobile').textContent = reg.mobile || '—';
+    document.getElementById('rc-amount').value = reg.registration_fee || 50;
+
+    // Default datetime-local to current local time formatted as YYYY-MM-DDTHH:mm
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    const localDatetime = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    document.getElementById('rc-datetime').value = localDatetime;
+
+    const adminEmail = (currentUser && currentUser.email) ? currentUser.email : 'Authorized Admin';
+    document.getElementById('rc-admin-display').value = adminEmail;
+    document.getElementById('rc-receipt-ref').value = '';
+    document.getElementById('rc-notes').value = '';
+
+    const errBanner = document.getElementById('rc-error-banner');
+    if (errBanner) {
+      errBanner.style.display = 'none';
+      errBanner.textContent = '';
+    }
+
+    const form = document.getElementById('record-cash-form');
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      await handleRecordCashSubmit(reg);
+    };
+
+    modal.showModal();
+  }
+  window.openRecordCashModal = openRecordCashModal;
+
+  async function handleRecordCashSubmit(reg) {
+    const submitBtn = document.getElementById('rc-submit-btn');
+    const errBanner = document.getElementById('rc-error-banner');
+    if (errBanner) {
+      errBanner.style.display = 'none';
+      errBanner.textContent = '';
+    }
+
+    const amount = Number(document.getElementById('rc-amount').value) || 50;
+    const datetimeVal = document.getElementById('rc-datetime').value;
+    const receiptNo = document.getElementById('rc-receipt-ref').value.trim();
+    const notes = document.getElementById('rc-notes').value.trim();
+
+    if (amount <= 0) {
+      if (errBanner) {
+        errBanner.textContent = 'Please enter a valid amount (₹50).';
+        errBanner.style.display = 'block';
+      }
+      return;
+    }
+
+    const receivedAtISO = datetimeVal ? new Date(datetimeVal).toISOString() : new Date().toISOString();
+
+    if (!confirm(`Confirm receiving ₹${amount} cash from ${reg.full_name} (${reg.registration_id})?\n\nThis will confirm the registration and write to the audit trail.`)) {
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Recording cash...';
+
+    const sb = window.getSupabase ? window.getSupabase() : null;
+    if (!sb) {
+      if (errBanner) {
+        errBanner.textContent = 'Supabase client is not available.';
+        errBanner.style.display = 'block';
+      }
+      submitBtn.disabled = false;
+      submitBtn.textContent = '💵 Confirm & Save Cash Received';
+      return;
+    }
+
+    try {
+      const { data, error } = await sb.rpc('record_cash_payment', {
+        p_registration_id: reg.registration_id,
+        p_amount: amount,
+        p_receipt_no: receiptNo || null,
+        p_notes: notes || null,
+        p_received_at: receivedAtISO
+      });
+
+      if (error) throw error;
+
+      showToast(`✓ Cash payment of ₹${amount} recorded for ${reg.registration_id}!`);
+      document.getElementById('record-cash-modal').close();
+      const detailModal = document.getElementById('reg-detail-modal');
+      if (detailModal && detailModal.open) {
+        detailModal.close();
+      }
+      await loadRegistrations();
+    } catch (err) {
+      console.error('Failed to record cash payment:', err);
+      if (errBanner) {
+        errBanner.textContent = err.message || 'Error recording cash payment. Please check your admin privileges.';
+        errBanner.style.display = 'block';
+      } else {
+        alert('Error recording cash payment: ' + err.message);
+      }
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = '💵 Confirm & Save Cash Received';
+    }
+  }
+
+  // -------------------------------------------------------------
+  // PAYMENT-METHOD-AWARE WHATSAPP NOTIFICATIONS
+  // -------------------------------------------------------------
+  function openWhatsAppForRegistration(reg) {
+    if (!reg || !reg.mobile) {
+      showToast('No mobile number available for this delegate.');
+      return;
+    }
+
+    let cleanMobile = reg.mobile.replace(/\D/g, '');
+    if (cleanMobile.length === 10) {
+      cleanMobile = '91' + cleanMobile;
+    }
+
+    const pStatus = (reg.payment_status || 'pending').toLowerCase();
+    const pMethod = (reg.payment_method || 'upi').toLowerCase();
+    const fee = reg.registration_fee || 50;
+
+    let msg = '';
+    if (pMethod === 'cash') {
+      if (pStatus === 'verified') {
+        msg = `Assalamu Alaikum ${reg.full_name},\n\nYour registration for Hadith Literature Festival (HLF 2026) has been CONFIRMED!\n\n📋 Registration ID: ${reg.registration_id}\n💵 Payment: ₹${reg.cash_amount || fee} Cash Received\n📅 Dates: 30, 31 January & 1 February 2026\n📍 Venue: DHIU, Chemmad, Kerala\n\nWe look forward to welcoming you!\n\n— Hadith Literature Festival 2026 Team`;
+      } else {
+        msg = `Assalamu Alaikum ${reg.full_name},\n\nRegarding your HLF 2026 Delegate Registration (${reg.registration_id}):\n\nYour registration has been submitted. Please pay the ₹${fee} registration fee directly in cash to an authorized HLF organizer to confirm your registration.\n\nThank you!\n— Hadith Literature Festival 2026 Team`;
+      }
+    } else {
+      if (pStatus === 'verified') {
+        msg = `Assalamu Alaikum ${reg.full_name},\n\nYour registration for Hadith Literature Festival (HLF 2026) has been CONFIRMED!\n\n📋 Registration ID: ${reg.registration_id}\n📱 Payment: ₹${fee} (UPI Verified)\n📅 Dates: 30, 31 January & 1 February 2026\n📍 Venue: DHIU, Chemmad, Kerala\n\nWe look forward to welcoming you!\n\n— Hadith Literature Festival 2026 Team`;
+      } else {
+        msg = `Assalamu Alaikum ${reg.full_name},\n\nRegarding your HLF 2026 Delegate Registration (${reg.registration_id}):\n\nPlease complete your ₹${fee} registration fee via UPI and upload the screenshot proof to confirm your registration.\n\nUPI ID: festivalhadith@okaxis\n\nThank you!\n— Hadith Literature Festival 2026 Team`;
+      }
+    }
+
+    const url = `https://wa.me/${cleanMobile}?text=${encodeURIComponent(msg)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+  window.openWhatsAppForRegistration = openWhatsAppForRegistration;
 
   // -------------------------------------------------------------
   // CONTRIBUTIONS MANAGEMENT
