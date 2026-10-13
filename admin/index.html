@@ -680,6 +680,7 @@
       <ul class="nav-list">
         <li class="nav-item active"><button data-tab="dashboard"><span>📊</span> Dashboard</button></li>
         <li class="nav-item"><button data-tab="registrations"><span>📝</span> Registrations</button></li>
+        <li class="nav-item"><button data-tab="quiz"><span>🏆</span> Quiz Registrations</button></li>
         <li class="nav-item"><button data-tab="contributions"><span>💰</span> Contributions</button></li>
         <li class="nav-item"><button data-tab="gallery"><span>🎨</span> Gallery</button></li>
         <li class="nav-item"><button data-tab="posters"><span>🖼️</span> Posters</button></li>
@@ -747,6 +748,11 @@
             <div class="label">Verified Revenue</div>
             <div class="value" id="stat-revenue" style="color: var(--yel);">₹0</div>
             <div class="sub">₹50 per verified delegate</div>
+          </div>
+          <div class="stat-card" style="border-top: 4px solid var(--amb);">
+            <div class="label">Quiz Competitors</div>
+            <div class="value" id="stat-quiz-total" style="color: var(--amb);">0</div>
+            <div class="sub">Hadith Live Quiz entries</div>
           </div>
         </div>
 
@@ -871,6 +877,61 @@
           </div>
           <div style="margin-top: 14px; font-size: 12px; color: var(--mute);" id="reg-count-info">Showing 0
             registrations</div>
+        </div>
+      </div>
+
+      <!-- TAB: QUIZ REGISTRATIONS MANAGEMENT -->
+      <div class="tab-pane" id="pane-quiz" style="display: none;">
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">🏆 Quiz Competition Registrations</h2>
+              <p style="margin: 4px 0 0; color: var(--mute); font-size: 13px;">Manage Hadith Live Quiz Programme participants (20 Oct 2026, 2:00 PM at Darul Hikma).</p>
+            </div>
+            <button type="button" class="btn primary" id="export-quiz-csv-btn">📥 Export to CSV</button>
+          </div>
+
+          <!-- Filters -->
+          <div class="filters-bar">
+            <input type="text" id="quiz-search-input" class="search-input"
+              placeholder="🔍 Search by Quiz Ref, Name, Mobile, College, District...">
+            <select id="quiz-status-filter" class="filter-select">
+              <option value="all">Status: All</option>
+              <option value="registered">Registered</option>
+              <option value="shortlisted">Shortlisted</option>
+              <option value="attended">Attended</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+            <select id="quiz-date-filter" class="filter-select">
+              <option value="all">Date: All</option>
+              <option value="today">Today</option>
+              <option value="week">Last 7 Days</option>
+            </select>
+          </div>
+
+          <!-- Quiz Registrations Table -->
+          <div class="table-container">
+            <table class="data-table" id="quiz-table">
+              <thead>
+                <tr>
+                  <th>Quiz Ref</th>
+                  <th>Name</th>
+                  <th>Mobile</th>
+                  <th>Institution</th>
+                  <th>District</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="quiz-tbody">
+                <tr>
+                  <td colspan="8" style="text-align: center; color: var(--mute);">Loading quiz registrations...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="margin-top: 14px; font-size: 12px; color: var(--mute);" id="quiz-count-info">Showing 0 registrations</div>
         </div>
       </div>
 
@@ -1673,6 +1734,37 @@
           <button type="submit" id="rc-submit-btn" class="btn primary">💵 Confirm & Save Cash Received</button>
         </div>
       </form>
+    </div>
+  </dialog>
+
+  <!-- QUIZ REGISTRATION DETAILS MODAL -->
+  <dialog class="admin-modal" id="quiz-detail-modal">
+    <div class="modal-hdr">
+      <div>
+        <span class="badge" id="modal-quiz-status-badge">Status</span>
+        <h3 id="modal-quiz-id" style="margin-top: 4px;">HLF26-QUIZ-XXXX</h3>
+      </div>
+      <button type="button" class="modal-close" onclick="document.getElementById('quiz-detail-modal').close()">×</button>
+    </div>
+
+    <div id="modal-quiz-body" style="font-size: 13px;">
+      <!-- Content populated by JS -->
+    </div>
+
+    <div
+      style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--line); display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; align-items: center;">
+      <button type="button" class="btn danger" id="modal-quiz-btn-delete" style="margin-right: auto;">🗑️ Delete</button>
+      <button type="button" class="btn" id="modal-quiz-btn-whatsapp" style="border-color: #25D366; color: #128C7E;">💬 WhatsApp</button>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <label for="modal-quiz-status-select" style="font-size: 12px; font-weight: 600; color: var(--mute);">Status:</label>
+        <select id="modal-quiz-status-select" class="filter-select" style="padding: 8px 12px; font-size: 12px;">
+          <option value="registered">Registered</option>
+          <option value="shortlisted">Shortlisted</option>
+          <option value="attended">Attended</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+        <button type="button" class="btn primary" id="modal-quiz-save-status-btn">Save</button>
+      </div>
     </div>
   </dialog>
 

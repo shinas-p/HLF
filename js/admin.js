@@ -16,6 +16,8 @@
   let selectedContribution = null;
   let contribToDelete = null;
   let currentContributionTarget = 50000;
+  let allQuizRegistrations = [];
+  let selectedQuizRegistration = null;
 
   document.addEventListener('DOMContentLoaded', initAdmin);
 
@@ -24,6 +26,7 @@
     setupNavigation();
     setupAuthListeners();
     setupContributionTargetForm();
+    setupQuizListeners();
     checkInitialAdminStatus();
   }
 
@@ -32,14 +35,14 @@
     try {
       const saved = localStorage.getItem('hlf-theme') || (matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light');
       document.documentElement.dataset.theme = saved;
-    } catch (e) {}
+    } catch (e) { }
 
     const toggleBtn = document.getElementById('theme-toggle-btn');
     if (toggleBtn) {
       toggleBtn.onclick = () => {
         const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
         document.documentElement.dataset.theme = next;
-        try { localStorage.setItem('hlf-theme', next); } catch (e) {}
+        try { localStorage.setItem('hlf-theme', next); } catch (e) { }
       };
     }
   }
@@ -73,6 +76,7 @@
     const headings = {
       dashboard: 'Dashboard Overview',
       registrations: 'Registration Management',
+      quiz: 'Quiz Competition Management',
       contributions: 'Contributions & Donations Management',
       gallery: 'Gallery Management',
       posters: 'Poster Management',
@@ -249,6 +253,7 @@
   async function loadAllAdminData() {
     await Promise.all([
       loadRegistrations(),
+      loadQuizRegistrations(),
       loadContributions(),
       loadGallery(),
       loadPosters(),
@@ -964,6 +969,370 @@
     window.open(url, '_blank', 'noopener,noreferrer');
   }
   window.openWhatsAppForRegistration = openWhatsAppForRegistration;
+
+  // -------------------------------------------------------------
+  // QUIZ COMPETITION MANAGEMENT
+  // -------------------------------------------------------------
+  function setupQuizListeners() {
+    const searchInput = document.getElementById('quiz-search-input');
+    if (searchInput) searchInput.oninput = renderQuizTable;
+
+    const statusFilter = document.getElementById('quiz-status-filter');
+    if (statusFilter) statusFilter.onchange = renderQuizTable;
+
+    const dateFilter = document.getElementById('quiz-date-filter');
+    if (dateFilter) dateFilter.onchange = renderQuizTable;
+
+    const exportBtn = document.getElementById('export-quiz-csv-btn');
+    if (exportBtn) exportBtn.onclick = exportQuizCSV;
+
+    const saveStatusBtn = document.getElementById('modal-quiz-save-status-btn');
+    if (saveStatusBtn) saveStatusBtn.onclick = saveQuizStatus;
+
+    const deleteBtn = document.getElementById('modal-quiz-btn-delete');
+    if (deleteBtn) deleteBtn.onclick = confirmDeleteQuizRegistration;
+  }
+
+  async function loadQuizRegistrations() {
+    const sb = window.getSupabase ? window.getSupabase() : null;
+    if (!sb) return;
+
+    try {
+      const { data, error } = await sb
+        .from('quiz_registrations')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      allQuizRegistrations = data || [];
+
+      const statQuiz = document.getElementById('stat-quiz-total');
+      if (statQuiz) statQuiz.textContent = allQuizRegistrations.length;
+
+      renderQuizTable();
+    } catch (err) {
+      console.error('Failed to load quiz registrations:', err);
+    }
+  }
+
+  function renderQuizTable() {
+    const tbody = document.getElementById('quiz-tbody');
+    if (!tbody) return;
+
+    const searchInput = document.getElementById('quiz-search-input');
+    const searchTerm = (searchInput ? searchInput.value : '').toLowerCase().trim();
+    const statusFilter = document.getElementById('quiz-status-filter') ? document.getElementById('quiz-status-filter').value : 'all';
+    const dateFilter = document.getElementById('quiz-date-filter') ? document.getElementById('quiz-date-filter').value : 'all';
+
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const sevenDaysAgo = new Date(Date.now() - 7 * 864e5).toISOString();
+
+    const filtered = allQuizRegistrations.filter(q => {
+      if (searchTerm) {
+        const matches = (q.quiz_ref && q.quiz_ref.toLowerCase().includes(searchTerm)) ||
+          (q.full_name && q.full_name.toLowerCase().includes(searchTerm)) ||
+          (q.mobile && q.mobile.includes(searchTerm)) ||
+          (q.email && q.email.toLowerCase().includes(searchTerm)) ||
+          (q.institution && q.institution.toLowerCase().includes(searchTerm)) ||
+          (q.district && q.district.toLowerCase().includes(searchTerm)) ||
+          (q.course && q.course.toLowerCase().includes(searchTerm)) ||
+          (q.department && q.department.toLowerCase().includes(searchTerm)) ||
+          (q.team_name && q.team_name.toLowerCase().includes(searchTerm));
+        if (!matches) return false;
+      }
+
+      if (statusFilter !== 'all') {
+        if ((q.status || 'registered').toLowerCase() !== statusFilter) return false;
+      }
+
+      if (dateFilter === 'today') {
+        if (!q.created_at || q.created_at.slice(0, 10) !== todayStr) return false;
+      } else if (dateFilter === 'week') {
+        if (!q.created_at || q.created_at < sevenDaysAgo) return false;
+      }
+
+      return true;
+    });
+
+    const countInfo = document.getElementById('quiz-count-info');
+    if (countInfo) {
+      countInfo.textContent = `Showing ${filtered.length} of ${allQuizRegistrations.length} registrations`;
+    }
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--mute); padding: 30px;">No matching quiz registrations found.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = filtered.map(q => {
+      const status = (q.status || 'registered').toLowerCase();
+      const dateStr = new Date(q.created_at).toLocaleDateString('en-IN', {
+        day: '2-digit', month: 'short', year: 'numeric'
+      });
+
+      let statusBadgeClass = 'pending';
+      if (status === 'shortlisted') statusBadgeClass = 'amber';
+      else if (status === 'attended') statusBadgeClass = 'verified';
+      else if (status === 'cancelled') statusBadgeClass = 'rejected';
+      else if (status === 'registered') statusBadgeClass = 'confirmed';
+
+      return `
+        <tr>
+          <td><strong style="color: var(--teal); font-family: 'Fira Code', monospace;">${escapeHtml(q.quiz_ref || '—')}</strong></td>
+          <td><strong>${escapeHtml(q.full_name || '—')}</strong></td>
+          <td><a href="tel:${escapeHtml(q.mobile || '')}" style="text-decoration: underline;">${escapeHtml(q.mobile || '—')}</a></td>
+          <td>${escapeHtml(q.institution || '—')}${q.course ? ` <span style="font-size: 11px; color: var(--mute);">(${escapeHtml(q.course)})</span>` : ''}</td>
+          <td>${escapeHtml(q.district || '—')}</td>
+          <td><span class="badge ${statusBadgeClass}">${status}</span></td>
+          <td style="font-size: 11px; color: var(--mute);">${dateStr}</td>
+          <td>
+            <button type="button" class="btn btn-sm" onclick="openQuizDetails('${q.id}')">View</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+  window.renderQuizTable = renderQuizTable;
+
+  function openQuizDetails(id) {
+    const q = allQuizRegistrations.find(item => item.id === id);
+    if (!q) return;
+
+    selectedQuizRegistration = q;
+    const modal = document.getElementById('quiz-detail-modal');
+    if (!modal) return;
+
+    document.getElementById('modal-quiz-id').textContent = q.quiz_ref || 'HLF26-QUIZ';
+    const statusBadge = document.getElementById('modal-quiz-status-badge');
+    const status = (q.status || 'registered').toLowerCase();
+    statusBadge.textContent = status;
+    statusBadge.className = `badge ${status === 'attended' ? 'verified' : (status === 'cancelled' ? 'rejected' : 'pending')}`;
+
+    const dateStr = new Date(q.created_at).toLocaleString('en-IN', {
+      day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+
+    const statusSelect = document.getElementById('modal-quiz-status-select');
+    if (statusSelect) statusSelect.value = status;
+
+    const body = document.getElementById('modal-quiz-body');
+    body.innerHTML = `
+      <div style="background: rgba(18,144,122,0.08); border: 1px solid rgba(18,144,122,0.2); border-radius: 12px; padding: 12px; margin-bottom: 16px;">
+        <div style="font-size: 12px; font-weight: 700; color: var(--teal);">🏆 HADITH LIVE QUIZ PROGRAMME</div>
+        <div style="font-size: 11px; color: var(--mute); margin-top: 2px;">Day 3 — 20 October 2026, 2:00 PM – 5:00 PM · Darul Hikma, Chemmad</div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+        <div>
+          <span style="color: var(--mute); font-size: 11px; text-transform: uppercase;">Participant Name</span>
+          <div style="font-size: 16px; font-weight: bold; margin-top: 2px;">${escapeHtml(q.full_name || '—')}</div>
+        </div>
+        <div>
+          <span style="color: var(--mute); font-size: 11px; text-transform: uppercase;">Mobile Number</span>
+          <div style="font-size: 15px; margin-top: 2px;"><a href="tel:${escapeHtml(q.mobile || '')}" style="text-decoration: underline;">${escapeHtml(q.mobile || '—')}</a></div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+        <div>
+          <span style="color: var(--mute); font-size: 11px; text-transform: uppercase;">Email Address</span>
+          <div>${escapeHtml(q.email || 'None provided')}</div>
+        </div>
+        <div>
+          <span style="color: var(--mute); font-size: 11px; text-transform: uppercase;">District</span>
+          <div>${escapeHtml(q.district || '—')}</div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+        <div>
+          <span style="color: var(--mute); font-size: 11px; text-transform: uppercase;">College / Institution</span>
+          <div style="font-weight: 600;">${escapeHtml(q.institution || '—')}</div>
+        </div>
+        <div>
+          <span style="color: var(--mute); font-size: 11px; text-transform: uppercase;">Course / Department</span>
+          <div>${escapeHtml([q.course, q.department].filter(Boolean).join(' · ') || '—')}</div>
+        </div>
+      </div>
+
+      ${(q.team_name || q.partner_name || q.partner_mobile) ? `
+        <div style="border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 16px; background: rgba(0,0,0,0.02);">
+          <span style="color: var(--mute); font-size: 11px; text-transform: uppercase; font-weight: 700;">Team Details</span>
+          <div style="font-size: 13px; margin-top: 4px;">
+            ${q.team_name ? `<div>Team: <strong>${escapeHtml(q.team_name)}</strong></div>` : ''}
+            ${q.partner_name ? `<div>Partner: ${escapeHtml(q.partner_name)} ${q.partner_mobile ? `(${escapeHtml(q.partner_mobile)})` : ''}</div>` : ''}
+          </div>
+        </div>
+      ` : ''}
+
+      ${q.notes ? `
+        <div style="margin-bottom: 16px;">
+          <span style="color: var(--mute); font-size: 11px; text-transform: uppercase;">Participant Notes</span>
+          <div style="background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px; font-size: 12px; margin-top: 4px;">${escapeHtml(q.notes)}</div>
+        </div>
+      ` : ''}
+
+      <div style="font-size: 11px; color: var(--mute); margin-top: 10px;">
+        Registered on: ${dateStr}
+      </div>
+    `;
+
+    const whatsappBtn = document.getElementById('modal-quiz-btn-whatsapp');
+    if (whatsappBtn) {
+      whatsappBtn.onclick = () => openWhatsAppForQuiz(q);
+    }
+
+    modal.showModal();
+  }
+  window.openQuizDetails = openQuizDetails;
+
+  async function saveQuizStatus() {
+    if (!selectedQuizRegistration) return;
+    const select = document.getElementById('modal-quiz-status-select');
+    if (!select) return;
+
+    const newStatus = select.value;
+    const saveBtn = document.getElementById('modal-quiz-save-status-btn');
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+    }
+
+    const sb = window.getSupabase ? window.getSupabase() : null;
+    if (!sb) return;
+
+    try {
+      const { error: rpcErr } = await sb.rpc('update_quiz_registration_status', {
+        p_reg_id: selectedQuizRegistration.id,
+        p_new_status: newStatus
+      });
+
+      if (rpcErr) {
+        const { error: directErr } = await sb
+          .from('quiz_registrations')
+          .update({ status: newStatus, updated_at: new Date().toISOString() })
+          .eq('id', selectedQuizRegistration.id);
+        if (directErr) throw directErr;
+      }
+
+      selectedQuizRegistration.status = newStatus;
+      const badge = document.getElementById('modal-quiz-status-badge');
+      if (badge) {
+        badge.textContent = newStatus;
+        badge.className = `badge ${newStatus === 'attended' ? 'verified' : (newStatus === 'cancelled' ? 'rejected' : 'pending')}`;
+      }
+
+      showToast(`Status updated to "${newStatus}" for ${selectedQuizRegistration.quiz_ref}`);
+      await loadQuizRegistrations();
+    } catch (err) {
+      console.error('Failed to update quiz status:', err);
+      alert('Error updating status: ' + err.message);
+    } finally {
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save';
+      }
+    }
+  }
+
+  async function confirmDeleteQuizRegistration() {
+    if (!selectedQuizRegistration) return;
+    const q = selectedQuizRegistration;
+
+    if (!confirm(`WARNING: Are you sure you want to permanently delete quiz registration ${q.quiz_ref} (${q.full_name})?\n\nThis cannot be undone.`)) {
+      return;
+    }
+
+    const sb = window.getSupabase ? window.getSupabase() : null;
+    if (!sb) return;
+
+    try {
+      const { error } = await sb.from('quiz_registrations').delete().eq('id', q.id);
+      if (error) throw error;
+
+      showToast(`Quiz registration ${q.quiz_ref} deleted.`);
+      const modal = document.getElementById('quiz-detail-modal');
+      if (modal && modal.open) modal.close();
+      await loadQuizRegistrations();
+    } catch (err) {
+      console.error('Failed to delete quiz registration:', err);
+      alert('Deletion error: ' + err.message);
+    }
+  }
+
+  function openWhatsAppForQuiz(q) {
+    if (!q || !q.mobile) {
+      showToast('No mobile number available for this participant.');
+      return;
+    }
+
+    let cleanMobile = q.mobile.replace(/\D/g, '');
+    if (cleanMobile.length === 10) {
+      cleanMobile = '91' + cleanMobile;
+    }
+
+    const msg = `Assalamu Alaikum ${q.full_name || 'Participant'},\n\nYour registration for the Hadith Live Quiz Programme (HLF 2026) has been confirmed!\n\n🏆 Quiz Reference: ${q.quiz_ref || 'HLF26-QUIZ'}\n📅 Date: Day 3 — 20 October 2026, 2:00 PM – 5:00 PM\n📍 Venue: Darul Hikma, DHIU, Chemmad, Kerala\n\nPlease arrive 15 minutes before the scheduled time.\n\n— Hadith Literature Festival 2026 Team`;
+
+    const url = `https://wa.me/${cleanMobile}?text=${encodeURIComponent(msg)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+  window.openWhatsAppForQuiz = openWhatsAppForQuiz;
+
+  function exportQuizCSV() {
+    if (allQuizRegistrations.length === 0) {
+      showToast('No quiz registrations to export.');
+      return;
+    }
+
+    const headers = [
+      'Quiz Ref',
+      'Full Name',
+      'Mobile',
+      'Email',
+      'Institution',
+      'Course',
+      'Department',
+      'District',
+      'Status',
+      'Team Name',
+      'Partner Name',
+      'Partner Mobile',
+      'Notes',
+      'Created At'
+    ];
+
+    const rows = allQuizRegistrations.map(q => [
+      q.quiz_ref || '',
+      q.full_name || '',
+      q.mobile || '',
+      q.email || '',
+      q.institution || '',
+      q.course || '',
+      q.department || '',
+      q.district || '',
+      q.status || 'registered',
+      q.team_name || '',
+      q.partner_name || '',
+      q.partner_mobile || '',
+      q.notes || '',
+      q.created_at || ''
+    ]);
+
+    const csvContent = [
+      headers.map(escapeCsv).join(','),
+      ...rows.map(row => row.map(escapeCsv).join(','))
+    ].join('\r\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `hlf_2026_quiz_registrations_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Exported quiz registrations to CSV successfully!');
+  }
 
   // -------------------------------------------------------------
   // CONTRIBUTIONS MANAGEMENT
@@ -1903,7 +2272,7 @@
         if (itemToDelete.storage_path) {
           try {
             await sb.storage.from('hlf-gallery').remove([itemToDelete.storage_path]);
-          } catch (e) {}
+          } catch (e) { }
         }
 
         showToast(`Deleted "${itemToDelete.title}" from Gallery.`);
@@ -2333,9 +2702,9 @@
       dayFilter.innerHTML = `
         <option value="all">All Days (${allProgramme.length} sessions)</option>
         ${allProgrammeDays.map(d => {
-          const count = allProgramme.filter(p => p.day_number === d.day_number || p.day_id === d.id).length;
-          return `<option value="${d.day_number}">Day 0${d.day_number} (${escapeHtml(d.date)} · ${count} sessions)</option>`;
-        }).join('')}
+        const count = allProgramme.filter(p => p.day_number === d.day_number || p.day_id === d.id).length;
+        return `<option value="${d.day_number}">Day 0${d.day_number} (${escapeHtml(d.date)} · ${count} sessions)</option>`;
+      }).join('')}
       `;
       if (currentVal) dayFilter.value = currentVal;
     }
@@ -2531,28 +2900,28 @@
 
           <div style="display: flex; flex-direction: column; gap: 12px;">
             ${sessions.map(s => {
-              const timeStr = `${s.start_time || ''}${s.end_time ? ' – ' + s.end_time : ''}`;
-              const parts = Array.isArray(s.participants) ? s.participants : [];
-              const isPub = s.is_published !== false;
+        const timeStr = `${s.start_time || ''}${s.end_time ? ' – ' + s.end_time : ''}`;
+        const parts = Array.isArray(s.participants) ? s.participants : [];
+        const isPub = s.is_published !== false;
 
-              // Participant badges
-              let partsHtml = '';
-              if (parts.length > 0) {
-                const roleMap = {};
-                parts.forEach(p => {
-                  const r = p.role || 'Participant';
-                  if (!roleMap[r]) roleMap[r] = [];
-                  roleMap[r].push(p.name);
-                });
-                partsHtml = Object.keys(roleMap).map(role => `
+        // Participant badges
+        let partsHtml = '';
+        if (parts.length > 0) {
+          const roleMap = {};
+          parts.forEach(p => {
+            const r = p.role || 'Participant';
+            if (!roleMap[r]) roleMap[r] = [];
+            roleMap[r].push(p.name);
+          });
+          partsHtml = Object.keys(roleMap).map(role => `
                   <div style="font-size: 12px; display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;">
                     <span style="font-weight: 700; color: var(--amb); min-width: fit-content;">${escapeHtml(role)}:</span>
                     <span style="color: var(--ink);">${roleMap[role].map(n => `<span style="display: inline-block; padding: 1px 8px; background: rgba(0,0,0,0.05); border: 1px solid var(--line); border-radius: 99px; margin: 2px;">${escapeHtml(n)}</span>`).join('')}</span>
                   </div>
                 `).join('');
-              }
+        }
 
-              return `
+        return `
                 <div style="border: 1px solid var(--line); border-radius: 14px; padding: 16px; background: var(--bg); display: flex; flex-direction: column; gap: 8px;">
                   <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                     <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
@@ -2584,7 +2953,7 @@
                   </div>
                 </div>
               `;
-            }).join('')}
+      }).join('')}
           </div>
         </div>
       `;
@@ -2682,7 +3051,7 @@
   function openNewSession(dayNumber = 1) {
     document.getElementById('session-modal-title').textContent = 'Add Programme Session';
     document.getElementById('edit-session-id').value = '';
-    
+
     const daySelect = document.getElementById('edit-session-day');
     if (daySelect) {
       daySelect.value = String(dayNumber);
@@ -3221,7 +3590,7 @@
           p_logo_path: path
         });
         if (!rpcErr) saved = true;
-      } catch (_) {}
+      } catch (_) { }
 
       if (!saved) {
         const { error: dbErr } = await sb.from('festival_settings').update({
@@ -3260,7 +3629,7 @@
           p_favicon_path: path
         });
         if (!rpcErr) saved = true;
-      } catch (_) {}
+      } catch (_) { }
 
       if (!saved) {
         const { error: dbErr } = await sb.from('festival_settings').update({
@@ -3299,7 +3668,7 @@
           p_official_poster_path: path
         });
         if (!rpcErr) saved = true;
-      } catch (_) {}
+      } catch (_) { }
 
       if (!saved) {
         await sb.from('festival_settings').update({
