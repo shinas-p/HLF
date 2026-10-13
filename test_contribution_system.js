@@ -49,13 +49,14 @@ test('index.html: TOP CONTRIBUTORS card exists with correct heading and subtitle
   assert(indexHtml.includes('id="contrib-leaderboard-list"'), 'Leaderboard list container missing');
 });
 
-test('index.html: HLF 2026 SUPPORT TARGET card exists with figures and progress bar', () => {
-  assert(indexHtml.includes('id="contrib-target-card"'), 'Target card ID missing');
-  assert(indexHtml.includes('HLF 2026 SUPPORT TARGET'), 'SUPPORT TARGET title missing');
-  assert(indexHtml.includes('id="contrib-raised-amount"'), 'Raised amount element missing');
-  assert(indexHtml.includes('id="contrib-goal-amount"'), 'Goal amount element missing');
-  assert(indexHtml.includes('id="contrib-progress-fill"'), 'Progress bar element missing');
-  assert(indexHtml.includes('id="contrib-target-pct"'), 'Percentage element missing');
+test('index.html: HLF 2026 SUPPORT TARGET card is completely removed from index.html', () => {
+  assert(!indexHtml.includes('id="contrib-target-card"'), 'Target card ID still found in index.html');
+  assert(!indexHtml.includes('HLF 2026 SUPPORT TARGET'), 'SUPPORT TARGET title still found in index.html');
+  assert(!indexHtml.includes('id="contrib-raised-amount"'), 'Raised amount element still found in index.html');
+  assert(!indexHtml.includes('id="contrib-goal-amount"'), 'Goal amount element still found in index.html');
+  assert(!indexHtml.includes('id="contrib-progress-fill"'), 'Progress bar element still found in index.html');
+  assert(!indexHtml.includes('id="contrib-target-pct"'), 'Percentage element still found in index.html');
+  assert(!indexHtml.includes('Funding Scale'), 'Funding Scale text still found in index.html');
 });
 
 test('index.html: 05 Custom Contribution card exists with Choose Amount button', () => {
@@ -66,11 +67,10 @@ test('index.html: 05 Custom Contribution card exists with Choose Amount button',
   assert(indexHtml.includes('Choose Amount ✦'), 'Choose Amount button text missing');
 });
 
-test('index.html: loadPublicContributionData function and fallback logic exist', () => {
+test('index.html: loadPublicContributionData function loads leaderboard and target renderer is removed', () => {
   assert(indexHtml.includes('async function loadPublicContributionData()'), 'loadPublicContributionData missing');
-  assert(indexHtml.includes('const DEFAULT_TARGET = 50000'), 'Default target 50000 fallback missing');
   assert(indexHtml.includes("get_public_contribution_data"), 'RPC call missing');
-  assert(indexHtml.includes("renderSupportTargetUI"), 'renderSupportTargetUI missing');
+  assert(!indexHtml.includes("renderSupportTargetUI"), 'renderSupportTargetUI still present in index.html');
   assert(indexHtml.includes("renderTopContributorsUI"), 'renderTopContributorsUI missing');
 });
 
@@ -101,13 +101,13 @@ test('css/registration.css: Grid layouts (.tiers-4 and .contrib-community-grid)'
   assert(regCss.includes('.tiers-4 {'), '.tiers-4 style missing');
   assert(regCss.includes('grid-template-columns: repeat(4, 1fr)'), '4 columns missing');
   assert(regCss.includes('.contrib-community-grid {'), '.contrib-community-grid missing');
-  assert(regCss.includes('grid-template-columns: 1fr 1fr'), '2-column community grid missing');
+  assert(regCss.includes('grid-template-columns: 1fr;'), '1-column community grid missing');
 });
 
-test('css/registration.css: Progress bar styling (.contrib-progress-fill)', () => {
-  assert(regCss.includes('.contrib-progress-track {'), '.contrib-progress-track missing');
-  assert(regCss.includes('.contrib-progress-fill {'), '.contrib-progress-fill missing');
-  assert(regCss.includes('border-radius: 99px'), 'Rounded track missing');
+test('css/registration.css: Public contribution progress bar styles are removed', () => {
+  assert(!regCss.includes('.contrib-progress-track {'), '.contrib-progress-track still present');
+  assert(!regCss.includes('.contrib-progress-fill {'), '.contrib-progress-fill still present');
+  assert(!regCss.includes('.contrib-target-card {'), '.contrib-target-card still present');
 });
 
 test('css/registration.css: Accessibility and prefers-reduced-motion', () => {

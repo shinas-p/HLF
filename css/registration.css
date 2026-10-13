@@ -1458,7 +1458,6 @@
    - Tier Cards (4-column grid)
    - Contribution Button Interaction & Animation System
    - Top Contributors Leaderboard Card
-   - Support Target & Animated Progress Bar
    - Custom Contribution Card
    ============================================================ */
 
@@ -1534,14 +1533,13 @@
   gap: 16px;
 }
 
-/* Community Support Grid (Leaderboard + Support Target) */
+/* Community Support Area (Leaderboard) */
 .contrib-community-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 16px;
   margin-top: 20px;
   align-items: start;
-  /* Prevents grid cells from stretching to match tallest height */
 }
 
 /* Top Contributors Card (Compact Visual Podium Leaderboard) */
@@ -1904,83 +1902,6 @@
   font-size: 12px;
 }
 
-/* Support Target Card */
-.contrib-target-card {
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 16px;
-  border-top: 3px solid var(--teal);
-  position: relative;
-  overflow: hidden;
-  align-self: start;
-  height: auto;
-  min-height: 0;
-}
-
-.contrib-target-figures {
-  margin: 10px 0;
-}
-
-.contrib-target-figures .amount-raised {
-  font-size: clamp(1.8rem, 3.2vw, 2.5rem);
-  font-weight: 700;
-  letter-spacing: -0.04em;
-  color: var(--ink);
-  line-height: 1.1;
-}
-
-.contrib-target-figures .amount-raised span.accent {
-  color: var(--teal);
-}
-
-.contrib-target-figures .amount-goal {
-  font-size: 13px;
-  color: var(--mute);
-  margin-top: 6px;
-}
-
-.contrib-progress-track {
-  width: 100%;
-  height: 14px;
-  border-radius: 99px;
-  background: rgba(0, 0, 0, 0.12);
-  border: 1px solid var(--line);
-  overflow: hidden;
-  position: relative;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.08);
-}
-
-:root[data-theme="dark"] .contrib-progress-track {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.contrib-progress-fill {
-  height: 100%;
-  width: 0%;
-  border-radius: 99px;
-  background: linear-gradient(90deg, var(--teal), var(--yel));
-  box-shadow: 0 0 14px -2px var(--teal);
-  transition: width 1.2s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-.contrib-target-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 13px;
-  color: var(--mute);
-  margin-top: 6px;
-}
-
-.contrib-target-pct {
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: var(--teal);
-  letter-spacing: -0.03em;
-}
-
 /* Custom Contribution Card (05 Custom) */
 .custom-contrib-card {
   padding: 22px 26px;
@@ -2040,10 +1961,6 @@
     animation: none !important;
   }
 
-  .contrib-progress-fill {
-    transition: none !important;
-  }
-
   .contrib-btn:hover,
   .contrib-btn:active,
   .contrib-podium-champion:hover,
@@ -2076,8 +1993,7 @@
     grid-template-columns: 1fr;
   }
 
-  .contrib-leaderboard-card,
-  .contrib-target-card {
+  .contrib-leaderboard-card {
     padding: 16px 14px;
   }
 

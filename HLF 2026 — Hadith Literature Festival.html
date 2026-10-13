@@ -1193,7 +1193,7 @@
       <!-- Tier cards: 01 Minimal, 02 Bronze, 03 Silver, 04 Golden -->
       <div class="tiers-4" id="tiers"></div>
 
-      <!-- Community Support Area: Top Contributors + Support Target -->
+      <!-- Community Support Area: Top Contributors -->
       <div class="contrib-community-grid">
         <!-- TOP CONTRIBUTORS -->
         <div class="contrib-leaderboard-card glass rv" id="contrib-leaderboard-card">
@@ -1208,36 +1208,6 @@
             <div class="contrib-empty-state">
               <span class="empty-icon">✦</span>
               <p class="empty-title">Be the first supporter</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- HLF 2026 SUPPORT TARGET -->
-        <div class="contrib-target-card glass rv" id="contrib-target-card">
-          <div class="contrib-card-header">
-            <div>
-              <h3 class="contrib-card-title"><span class="t">✦</span> HLF 2026 SUPPORT TARGET</h3>
-              <p class="contrib-card-sub">Community-powered academic &amp; cultural festival</p>
-            </div>
-            <span class="tag" style="font-size: 10px; padding: 3px 8px; border-radius: 99px; border: 1px solid var(--line);">PROGRESS</span>
-          </div>
-
-          <div class="contrib-target-figures">
-            <div class="amount-raised">
-              <span id="contrib-raised-amount" class="accent">₹0</span>
-              <span style="font-size: 1.1rem; font-weight: 500; color: var(--mute);"> raised of </span>
-              <span id="contrib-goal-amount">₹50,000</span>
-            </div>
-            <div class="amount-goal">Directly powering student sessions, research &amp; publications.</div>
-          </div>
-
-          <div>
-            <div class="contrib-progress-track">
-              <div class="contrib-progress-fill" id="contrib-progress-fill" style="width: 0%;"></div>
-            </div>
-            <div class="contrib-target-footer">
-              <span>Funding Scale</span>
-              <span class="contrib-target-pct" id="contrib-target-pct">0%</span>
             </div>
           </div>
         </div>
@@ -1423,56 +1393,23 @@
       </div>
     `).join("");
 
-    // Public Contribution Target & Top Contributors System
+    // Public Contribution: Top Contributors System
     async function loadPublicContributionData() {
-      const DEFAULT_TARGET = 50000;
-      let target = DEFAULT_TARGET;
-      let raised = 0;
       let topContributors = [];
 
       const sb = (typeof window.getSupabase === 'function') ? window.getSupabase() : null;
       if (sb) {
         try {
           const { data, error } = await sb.rpc('get_public_contribution_data');
-          if (!error && data) {
-            if (typeof data.target === 'number' && data.target > 0) target = data.target;
-            if (typeof data.raised === 'number') raised = data.raised;
-            if (Array.isArray(data.top_contributors)) topContributors = data.top_contributors;
-          } else {
-            const { data: sRow } = await sb.from('festival_settings').select('donation_goal').eq('id', 'general').maybeSingle();
-            if (sRow && sRow.donation_goal && Number(sRow.donation_goal) > 0) {
-              target = Number(sRow.donation_goal);
-            }
+          if (!error && data && Array.isArray(data.top_contributors)) {
+            topContributors = data.top_contributors;
           }
         } catch (err) {
           console.warn('Could not load public contribution data, using safe fallback:', err);
         }
       }
 
-      renderSupportTargetUI(raised, target);
       renderTopContributorsUI(topContributors);
-    }
-
-    function renderSupportTargetUI(raised, target) {
-      const safeTarget = (typeof target === 'number' && target > 0) ? target : 50000;
-      const safeRaised = (typeof raised === 'number' && raised >= 0) ? raised : 0;
-      const rawPct = safeTarget > 0 ? (safeRaised / safeTarget) * 100 : 0;
-      const displayPct = rawPct > 0 ? (rawPct >= 100 ? 100 : Math.round(rawPct * 10) / 10) : 0;
-      const barPct = Math.min(100, Math.max(0, rawPct));
-
-      const raisedEl = document.getElementById('contrib-raised-amount');
-      const goalEl = document.getElementById('contrib-goal-amount');
-      const pctEl = document.getElementById('contrib-target-pct');
-      const barEl = document.getElementById('contrib-progress-fill');
-
-      if (raisedEl) raisedEl.textContent = '₹' + safeRaised.toLocaleString('en-IN');
-      if (goalEl) goalEl.textContent = '₹' + safeTarget.toLocaleString('en-IN');
-      if (pctEl) pctEl.textContent = displayPct + '%';
-      if (barEl) {
-        requestAnimationFrame(() => {
-          barEl.style.width = barPct + '%';
-        });
-      }
     }
 
     function renderTopContributorsUI(contributors) {
