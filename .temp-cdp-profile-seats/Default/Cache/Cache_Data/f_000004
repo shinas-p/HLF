@@ -1,0 +1,3625 @@
+/**
+ * HLF 2026 — In-Website Registration & Dynamic Supabase Integration
+ * Integrates directly with Supabase Database & Storage (Row Level Security enabled)
+ */
+
+(function () {
+  'use strict';
+
+  let activeRegistrationData = null;
+  let activeContributionData = null;
+  let selectedScreenshotFile = null;
+  let selectedContribScreenshotFile = null;
+  let selectedPaymentMethod = 'upi';
+
+  const REG_DRAFT_KEY = 'hlf_registration_draft_v1';
+  const CONTRIB_DRAFT_KEY = 'hlf_contribution_draft_v1';
+
+  // Centralized payment config getter (ensures consistent UPI ID & payee across entire site)
+  function getPaymentConfig() {
+    const fallback = {
+      fee: 50,
+      upiId: '9847411637@kotakbank',
+      payeeName: 'SHINAS',
+      note: 'HLF 2026 Registration',
+      qrImagePath: ''
+    };
+    if (typeof window !== 'undefined' && window.HLF_CONFIG && window.HLF_CONFIG.payment) {
+      return {
+        fee: window.HLF_CONFIG.payment.fee || fallback.fee,
+        upiId: window.HLF_CONFIG.payment.upiId || fallback.upiId,
+        payeeName: window.HLF_CONFIG.payment.payeeName || fallback.payeeName,
+        note: window.HLF_CONFIG.payment.note || fallback.note,
+        qrImagePath: window.HLF_CONFIG.payment.qrImagePath || fallback.qrImagePath
+      };
+    }
+    return fallback;
+  }
+
+  function saveToStorage(key, data) {
+    try {
+      const s = JSON.stringify(data);
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem(key, s);
+      if (typeof localStorage !== 'undefined') localStorage.setItem(key, s);
+    } catch (e) {
+      console.warn('Storage save failed:', e);
+    }
+  }
+
+  function getFromStorage(key) {
+    try {
+      if (typeof sessionStorage !== 'undefined') {
+        const s = sessionStorage.getItem(key);
+        if (s) return JSON.parse(s);
+      }
+      if (typeof localStorage !== 'undefined') {
+        const l = localStorage.getItem(key);
+        if (l) return JSON.parse(l);
+      }
+    } catch (e) {
+      console.warn('Storage read failed:', e);
+    }
+    return null;
+  }
+
+  function removeFromStorage(key) {
+    try {
+      if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem(key);
+      if (typeof localStorage !== 'undefined') localStorage.removeItem(key);
+    } catch (e) {}
+  }
+
+  // Safe Clipboard Copy Helper with Document ExecCommand Fallback
+  async function copyUpiIdToClipboard(buttonEl, textSpanEl, feedbackEl) {
+    const config = getPaymentConfig();
+    const upiId = config.upiId;
+    if (!upiId) return;
+
+    let success = false;
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      try {
+        await navigator.clipboard.writeText(upiId);
+        success = true;
+      } catch (err) {
+        console.warn('navigator.clipboard.writeText failed, using fallback:', err);
+      }
+    }
+
+    if (!success && typeof document !== 'undefined') {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = upiId;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        ta.style.top = '0';
+        ta.setAttribute('readonly', '');
+        document.body.appendChild(ta);
+        ta.select();
+        ta.setSelectionRange(0, ta.value.length);
+        success = document.execCommand('copy');
+        document.body.removeChild(ta);
+      } catch (fbErr) {
+        console.warn('execCommand copy fallback failed:', fbErr);
+      }
+    }
+
+    if (success) {
+      if (textSpanEl) {
+        const orig = textSpanEl.textContent;
+        textSpanEl.textContent = 'UPI ID copied ✓';
+        if (buttonEl) buttonEl.classList.add('copied');
+        setTimeout(() => {
+          textSpanEl.textContent = orig;
+          if (buttonEl) buttonEl.classList.remove('copied');
+        }, 2500);
+      }
+      if (feedbackEl) {
+        feedbackEl.textContent = 'UPI ID copied to clipboard!';
+        feedbackEl.className = 'copy-feedback-msg';
+        feedbackEl.style.display = 'inline-block';
+        setTimeout(() => { feedbackEl.style.display = 'none'; }, 2500);
+      }
+    } else {
+      if (textSpanEl) {
+        textSpanEl.textContent = 'Manual copy needed';
+        setTimeout(() => { textSpanEl.textContent = 'Copy UPI ID'; }, 3000);
+      }
+      if (feedbackEl) {
+        feedbackEl.innerHTML = `Could not auto-copy. Please manually copy: <strong>${escapeHtml(upiId)}</strong>`;
+        feedbackEl.className = 'copy-feedback-msg error';
+        feedbackEl.style.display = 'inline-block';
+      }
+      const isContrib = buttonEl && buttonEl.id === 'contrib-copy-upi-btn';
+      const upiDisplay = document.getElementById(isContrib ? 'contrib-upi-id-text' : 'reg-upi-id-text');
+      if (upiDisplay && window.getSelection) {
+        try {
+          const selection = window.getSelection();
+          const range = document.createRange();
+          range.selectNodeContents(upiDisplay);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        } catch (e) {}
+      }
+    }
+  }
+
+  // Registration draft persistence
+  function saveRegistrationDraft(stepOverride) {
+    const fullName = (document.getElementById('reg-fullname')?.value || '').trim();
+    const mobile = (document.getElementById('reg-mobile')?.value || '').trim();
+    const email = (document.getElementById('reg-email')?.value || '').trim();
+    const institution = (document.getElementById('reg-institution')?.value || '').trim();
+    const otherInstitution = (document.getElementById('reg-other-institution')?.value || '').trim();
+    const course = (document.getElementById('reg-course')?.value || '').trim();
+    const department = (document.getElementById('reg-department')?.value || '').trim();
+    const district = (document.getElementById('reg-district')?.value || '').trim();
+    const notes = (document.getElementById('reg-notes')?.value || '').trim();
+    const consent = !!document.getElementById('reg-consent')?.checked;
+
+    const step2El = document.getElementById('reg-step2-view');
+    const currentStep = stepOverride || (step2El && step2El.style.display !== 'none' ? 2 : 1);
+
+    const draft = {
+      step: currentStep,
+      timestamp: Date.now(),
+      selectedPaymentMethod: selectedPaymentMethod || 'upi',
+      formData: {
+        fullName,
+        mobile,
+        email,
+        institution,
+        otherInstitution,
+        course,
+        department,
+        district,
+        notes,
+        consent
+      },
+      activeRegistrationData: activeRegistrationData || null
+    };
+
+    saveToStorage(REG_DRAFT_KEY, draft);
+  }
+
+  function restoreRegistrationDraft() {
+    const draft = getFromStorage(REG_DRAFT_KEY);
+    if (!draft || !draft.formData) return null;
+
+    if (draft.timestamp && Date.now() - draft.timestamp > 24 * 60 * 60 * 1000) {
+      removeFromStorage(REG_DRAFT_KEY);
+      return null;
+    }
+
+    if (draft.selectedPaymentMethod) {
+      selectedPaymentMethod = draft.selectedPaymentMethod;
+    }
+
+    const { formData } = draft;
+    if (formData.fullName && document.getElementById('reg-fullname')) {
+      document.getElementById('reg-fullname').value = formData.fullName;
+    }
+    if (formData.mobile && document.getElementById('reg-mobile')) {
+      document.getElementById('reg-mobile').value = formData.mobile;
+    }
+    if (formData.email && document.getElementById('reg-email')) {
+      document.getElementById('reg-email').value = formData.email;
+    }
+    if (formData.institution && document.getElementById('reg-institution')) {
+      document.getElementById('reg-institution').value = formData.institution;
+      const searchInput = document.getElementById('reg-institution-search');
+      if (searchInput) searchInput.value = formData.institution;
+      if (formData.institution === 'Other') {
+        const otherGroup = document.getElementById('reg-other-institution-group');
+        if (otherGroup) otherGroup.style.display = 'block';
+        if (formData.otherInstitution && document.getElementById('reg-other-institution')) {
+          document.getElementById('reg-other-institution').value = formData.otherInstitution;
+        }
+      }
+    }
+    if (formData.course && document.getElementById('reg-course')) {
+      document.getElementById('reg-course').value = formData.course;
+    }
+    if (formData.department && document.getElementById('reg-department')) {
+      document.getElementById('reg-department').value = formData.department;
+    }
+    if (formData.district && document.getElementById('reg-district')) {
+      document.getElementById('reg-district').value = formData.district;
+    }
+    if (formData.notes && document.getElementById('reg-notes')) {
+      document.getElementById('reg-notes').value = formData.notes;
+    }
+    if (formData.consent && document.getElementById('reg-consent')) {
+      document.getElementById('reg-consent').checked = formData.consent;
+    }
+
+    if (draft.activeRegistrationData) {
+      activeRegistrationData = draft.activeRegistrationData;
+    }
+
+    return draft;
+  }
+
+  function clearRegistrationDraft() {
+    removeFromStorage(REG_DRAFT_KEY);
+  }
+
+  // Contribution draft persistence
+  function saveContributionDraft(stepOverride) {
+    if (!activeContributionData) return;
+    const nameInput = document.getElementById('contrib-fullname');
+    const mobileInput = document.getElementById('contrib-mobile');
+    const emailInput = document.getElementById('contrib-email');
+    const customInput = document.getElementById('contrib-custom-amount-input');
+
+    const fullName = nameInput ? nameInput.value.trim() : (activeContributionData.fullName || '');
+    const mobile = mobileInput ? mobileInput.value.trim() : (activeContributionData.mobile || '');
+    const email = emailInput ? emailInput.value.trim() : (activeContributionData.email || '');
+
+    const step2El = document.getElementById('contrib-step2-view');
+    const currentStep = stepOverride || (step2El && step2El.style.display !== 'none' ? 2 : 1);
+
+    const draft = {
+      step: currentStep,
+      timestamp: Date.now(),
+      amount: activeContributionData.amount,
+      tierName: activeContributionData.tierName,
+      isCustom: activeContributionData.isCustom,
+      formData: {
+        fullName,
+        mobile,
+        email,
+        customAmount: customInput ? customInput.value.trim() : ''
+      },
+      activeContributionData: activeContributionData
+    };
+
+    saveToStorage(CONTRIB_DRAFT_KEY, draft);
+  }
+
+  function restoreContributionDraft() {
+    const draft = getFromStorage(CONTRIB_DRAFT_KEY);
+    if (!draft) return null;
+
+    if (draft.timestamp && Date.now() - draft.timestamp > 24 * 60 * 60 * 1000) {
+      removeFromStorage(CONTRIB_DRAFT_KEY);
+      return null;
+    }
+
+    if (draft.formData) {
+      const nameInput = document.getElementById('contrib-fullname');
+      const mobileInput = document.getElementById('contrib-mobile');
+      const emailInput = document.getElementById('contrib-email');
+      const customInput = document.getElementById('contrib-custom-amount-input');
+
+      if (nameInput && draft.formData.fullName) nameInput.value = draft.formData.fullName;
+      if (mobileInput && draft.formData.mobile) mobileInput.value = draft.formData.mobile;
+      if (emailInput && draft.formData.email) emailInput.value = draft.formData.email;
+      if (customInput && draft.formData.customAmount) customInput.value = draft.formData.customAmount;
+    }
+
+    if (draft.activeContributionData) {
+      activeContributionData = draft.activeContributionData;
+    }
+
+    return draft;
+  }
+
+  function clearContributionDraft() {
+    removeFromStorage(CONTRIB_DRAFT_KEY);
+  }
+
+  function checkAndRestorePendingSession() {
+    const regDialog = document.getElementById('reg-dialog');
+    const contribDialog = document.getElementById('contrib-dialog');
+    if ((regDialog && regDialog.open) || (contribDialog && contribDialog.open)) {
+      return;
+    }
+
+    // 1. Check registration draft
+    const regDraft = getFromStorage(REG_DRAFT_KEY);
+    if (regDraft && regDraft.step === 2 && regDraft.activeRegistrationData && regDraft.activeRegistrationData.registration_id && !regDraft.activeRegistrationData.submitted_final) {
+      openRegistrationModal();
+      return;
+    }
+
+    // 2. Check contribution draft
+    const contribDraft = getFromStorage(CONTRIB_DRAFT_KEY);
+    if (contribDraft && contribDraft.step === 2 && contribDraft.activeContributionData && !contribDraft.activeContributionData.submitted_final) {
+      openContributionModal(contribDraft.amount, contribDraft.tierName, true);
+      return;
+    }
+  }
+
+  function setupRegistrationInputListeners() {
+    const fields = [
+      'reg-fullname', 'reg-mobile', 'reg-email', 'reg-institution',
+      'reg-other-institution', 'reg-course', 'reg-department',
+      'reg-district', 'reg-notes', 'reg-consent'
+    ];
+    fields.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', () => saveRegistrationDraft());
+        el.addEventListener('change', () => saveRegistrationDraft());
+      }
+    });
+  }
+
+  function setupContributionInputListeners() {
+    const fields = ['contrib-fullname', 'contrib-mobile', 'contrib-email', 'contrib-custom-amount-input'];
+    fields.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', () => saveContributionDraft());
+        el.addEventListener('change', () => saveContributionDraft());
+      }
+    });
+  }
+
+  const HLF_INSTITUTIONS = [
+    "Darul Huda Nedumangadu Campus",
+    "Darul Huda Central Campus, Chemmad",
+    "Islahul Uloom Arabic College, Tanur",
+    "Sabeelul Hidaya Islamic College, Parappur",
+    "Maunathul Islam Arabic College, Ponnani",
+    "Darul Hidaya Da'wa College, Manur",
+    "MIC Darul Irshad Academy, Uduma",
+    "Malik Deenar Islamic Academy, Thalangara",
+    "Darul Hasanath Islamic College, Kannadipparamba",
+    "Darunnajath Arabic College, Koonanchery",
+    "Busthanul Uloom Arabic College, Maniyoor",
+    "Darunajath Islamic Complex, Vallapuzha",
+    "Manhajurrashad Islamic College, Chelembra",
+    "Nahjurrashad Islamic College, Chamakkala",
+    "Shaikh Fareed Auliya Da'wa College, Odamala",
+    "Darul Uloom Islamic Da'wa College, Thootha",
+    "Darul Falah Islamic Academy, Taliparamba",
+    "Darul Irfan Islamic Academy, Pandikkad",
+    "K.M.O Islamic Academy, Koduvally",
+    "Al Hidaya Islamic Academy, Kalamassery",
+    "Noorul Hidaya Islamic Academy Pattambi",
+    "Shamsul Huda Islamic Academy, Kuttikkattur",
+    "Madinul Uloom Islamic Academy, Arattupuzha",
+    "Darulssalam Academy, Velliyode",
+    "Daruthaqwa Islamic Academy, Pulikkani",
+    "Jabalunnoor Islamic Complex, Perambra",
+    "Daru Rahma Arabic College, Kodakkal",
+    "Irshadiyya Islamic Complex",
+    "Shamsul Ulama Smaraka Islamic Academy",
+    "Quvvathul Islam Arabic College, Mumbai",
+    "Darunnor Education Center, Kashipatna",
+    "Noorul Huda Islamic Academy, Madannoor",
+    "Siddeeq Moula Arabic College, Amini Dweep",
+    "Other"
+  ];
+
+  // 0. Seat availability & Capacity Tracking
+  let activeSeatData = {
+    total_seats: 30,
+    booked_seats: 12,
+    remaining_seats: 18,
+    booking_progress: 40,
+    is_full: false
+  };
+
+  async function syncSeatAvailability() {
+    try {
+      const sb = window.getSupabase ? window.getSupabase() : null;
+      if (!sb) {
+        renderSeatAvailabilityUI(activeSeatData);
+        return;
+      }
+
+      const { data, error } = await sb.rpc('get_seat_availability');
+      if (error) {
+        console.warn('Could not fetch seat availability from RPC:', error);
+        renderSeatAvailabilityUI(activeSeatData);
+        return;
+      }
+
+      if (data && data.success) {
+        activeSeatData = data;
+        renderSeatAvailabilityUI(data);
+      }
+    } catch (err) {
+      console.warn('Seat availability sync error:', err);
+      renderSeatAvailabilityUI(activeSeatData);
+    }
+  }
+
+  function renderSeatAvailabilityUI(data) {
+    const total = data.total_seats || 30;
+    const booked = typeof data.booked_seats === 'number' ? data.booked_seats : 12;
+    const remaining = typeof data.remaining_seats === 'number' ? data.remaining_seats : Math.max(0, total - booked);
+    const pct = typeof data.booking_progress === 'number' ? data.booking_progress : Math.round((booked / total) * 100);
+    const isFull = data.is_full === true || remaining <= 0;
+
+    const card = document.getElementById('hero-seat-card');
+    const tagLabel = document.getElementById('seat-tag-label');
+    const remainingBadge = document.getElementById('seat-remaining-badge');
+    const bookedNum = document.getElementById('seat-booked-num');
+    const totalNum = document.getElementById('seat-total-num');
+    const pctBadge = document.getElementById('seat-pct-badge');
+    const fill = document.getElementById('hero-seat-fill');
+    const progressbar = document.getElementById('hero-seat-progressbar');
+    const ctaLabel = document.getElementById('seat-cta-label');
+    const regBtn = document.getElementById('seat-reg-cta');
+
+    if (card) {
+      card.classList.toggle('is-full', isFull);
+    }
+    if (bookedNum) bookedNum.textContent = booked;
+    if (totalNum) totalNum.textContent = total;
+    if (pctBadge) pctBadge.textContent = `${pct}% filled`;
+
+    if (fill) {
+      fill.style.width = `${Math.min(100, Math.max(0, pct))}%`;
+    }
+    if (progressbar) {
+      progressbar.setAttribute('aria-valuenow', booked);
+      progressbar.setAttribute('aria-valuemax', total);
+    }
+
+    if (isFull) {
+      if (tagLabel) tagLabel.textContent = 'ALL SEATS BOOKED';
+      if (remainingBadge) {
+        remainingBadge.textContent = 'Full Capacity (0 remaining)';
+      }
+      if (ctaLabel) ctaLabel.textContent = 'All Seats Booked';
+      if (regBtn) {
+        regBtn.setAttribute('aria-disabled', 'true');
+        regBtn.classList.add('disabled');
+      }
+    } else {
+      if (tagLabel) tagLabel.textContent = 'LIMITED SEATS AVAILABLE';
+      if (remainingBadge) {
+        remainingBadge.textContent = `${remaining} seats remaining`;
+      }
+      if (ctaLabel) ctaLabel.textContent = 'Register Now →';
+      if (regBtn) {
+        regBtn.removeAttribute('aria-disabled');
+        regBtn.classList.remove('disabled');
+      }
+    }
+  }
+
+  function setupSeatProgressCTA() {
+    const btn = document.getElementById('seat-reg-cta');
+    if (!btn) return;
+
+    btn.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (activeSeatData && activeSeatData.is_full) {
+        alert('All 30 programme seats are booked for HLF 2026. Delegate registration is currently at full capacity.');
+        return;
+      }
+      if (typeof window.openRegistrationModal === 'function') {
+        window.openRegistrationModal();
+      }
+    };
+  }
+
+  function bootHLFInteractions() {
+    if (window.__HLF_INTERACTIONS_READY) return;
+    window.__HLF_INTERACTIONS_READY = true;
+
+    try {
+      injectRegistrationModal();
+    } catch (error) {
+      console.error('Registration modal initialization failed:', error);
+    }
+
+    try {
+      injectContributionModal();
+    } catch (error) {
+      console.error('Contribution modal initialization failed:', error);
+    }
+
+    try {
+      setupRegisterButtons();
+    } catch (error) {
+      console.error('Register button initialization failed:', error);
+    }
+
+    try {
+      setupContributionButtons();
+    } catch (error) {
+      console.error('Contribution button initialization failed:', error);
+    }
+
+    try {
+      setupContactQR();
+    } catch (error) {
+      console.error('Contact QR initialization failed:', error);
+    }
+
+    try {
+      setupSeatProgressCTA();
+      syncSeatAvailability();
+    } catch (error) {
+      console.error('Seat availability initialization failed:', error);
+    }
+
+    try {
+      setupRegistrationInputListeners();
+      setupContributionInputListeners();
+    } catch (error) {
+      console.error('Form draft input listeners initialization failed:', error);
+    }
+
+    try {
+      loadSupabaseData();
+    } catch (error) {
+      console.error('Supabase dynamic data sync failed:', error);
+    }
+
+    // Check for pending backgrounded session or #register in URL
+    checkAndRestorePendingSession();
+
+    if (window.location.hash === '#register') {
+      setTimeout(() => {
+        try { openRegistrationModal(); } catch (e) { }
+      }, 150);
+    }
+
+    // Mobile browser lifecycle persistence hooks
+    window.addEventListener('pageshow', () => {
+      checkAndRestorePendingSession();
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        checkAndRestorePendingSession();
+      }
+    });
+  }
+
+  // 1. Inject Registration Modal into Document
+  function injectRegistrationModal() {
+    if (document.getElementById('reg-dialog')) return;
+
+    const paymentCfg = getPaymentConfig();
+
+    const dialog = document.createElement('dialog');
+    dialog.id = 'reg-dialog';
+    dialog.className = 'reg-dialog glass';
+    dialog.innerHTML = `
+      <div class="reg-dialog-inner">
+        <!-- Close Button -->
+        <button type="button" class="reg-close-btn" id="reg-close-x" aria-label="Close">×</button>
+
+        <!-- STEP 1: PARTICIPANT INFORMATION -->
+        <div id="reg-step1-view">
+          <div class="reg-dialog-header">
+            <p class="tag"><b>[REGISTRATION]</b> ✦ HLF 2026</p>
+            <h2 class="reg-title">Delegate Registration</h2>
+            <p class="reg-subtitle">Hadith Literature Festival · 18–20 October 2026 · Chemmad, Kerala</p>
+            
+            <div class="reg-fee-badge">
+              <span class="fee-label">FEE</span>
+              <span class="fee-val">₹${paymentCfg.fee}</span>
+              <span class="fee-desc">Official Entry & Delegate Access</span>
+            </div>
+          </div>
+
+          <!-- Step Indicator -->
+          <div class="reg-step-tracker">
+            <div class="reg-step-pill active" id="tracker-step-1">
+              <span class="step-dot">1</span>
+              <span>Participant Details</span>
+            </div>
+            <span class="reg-step-arrow">→</span>
+            <div class="reg-step-pill" id="tracker-step-2">
+              <span class="step-dot">2</span>
+              <span>₹50 UPI Payment</span>
+            </div>
+            <span class="reg-step-arrow">→</span>
+            <div class="reg-step-pill" id="tracker-step-3">
+              <span class="step-dot">3</span>
+              <span>Confirmation</span>
+            </div>
+          </div>
+
+          <form id="hlf-step1-form" novalidate>
+            <div class="reg-form-section">
+              <h3 class="reg-section-title"><span class="step">1</span> Participant Information</h3>
+              <div class="reg-grid">
+                <!-- Full Name -->
+                <div class="reg-field reg-col-2">
+                  <label class="reg-label" for="reg-fullname">Full Name <span class="req">*</span></label>
+                  <input type="text" id="reg-fullname" class="reg-input" placeholder="e.g. Muhammed Shinas" required autocomplete="name">
+                </div>
+
+                <!-- Mobile -->
+                <div class="reg-field">
+                  <label class="reg-label" for="reg-mobile">Whatsapp Number <span class="req">*</span></label>
+                  <input type="tel" id="reg-mobile" class="reg-input" placeholder="10-digit mobile number" maxlength="10" required autocomplete="tel">
+                </div>
+
+                <!-- Email -->
+                <div class="reg-field">
+                  <label class="reg-label" for="reg-email">Email Address <span class="opt">(Optional)</span></label>
+                  <input type="email" id="reg-email" class="reg-input" placeholder="name@example.com" autocomplete="email">
+                </div>
+
+                <!-- College / Institution (Required Searchable Dropdown) -->
+                <div class="reg-field reg-col-2">
+                  <label class="reg-label" for="reg-institution-search">College / Institution <span class="req">*</span></label>
+                  <div class="reg-combobox" id="inst-combobox">
+                    <div class="reg-combobox-input-wrap">
+                      <input type="text" id="reg-institution-search" class="reg-input" placeholder="Type to search or select institution..." autocomplete="off">
+                      <button type="button" class="reg-combobox-toggle" id="inst-toggle-btn" tabindex="-1" aria-label="Toggle dropdown">▾</button>
+                    </div>
+                    <input type="hidden" id="reg-institution" value="">
+                    <div class="reg-combobox-dropdown" id="inst-dropdown" style="display: none;">
+                      <ul class="reg-combobox-list" id="inst-options-list"></ul>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Custom Institution Field (Shown when 'Other' selected) -->
+                <div class="reg-field reg-col-2" id="reg-other-institution-group" style="display: none;">
+                  <label class="reg-label" for="reg-other-institution">Institution Name <span class="req">*</span></label>
+                  <input type="text" id="reg-other-institution" class="reg-input" placeholder="Enter your full college / institution name">
+                </div>
+
+                <!-- Course / Class -->
+                <div class="reg-field">
+                  <label class="reg-label" for="reg-course">Course / Class <span class="opt">(Optional)</span></label>
+                  <input type="text" id="reg-course" class="reg-input" placeholder="e.g. Degree / PG / Sanad">
+                </div>
+
+                <!-- Department -->
+                <div class="reg-field">
+                  <label class="reg-label" for="reg-department">Department <span class="opt">(Optional)</span></label>
+                  <input type="text" id="reg-department" class="reg-input" placeholder="e.g. Hadith & Related Sciences">
+                </div>
+
+                <!-- District -->
+                <div class="reg-field reg-col-2">
+                  <label class="reg-label" for="reg-district">District / State <span class="opt">(Optional)</span></label>
+                  <input type="text" id="reg-district" class="reg-input" placeholder="e.g. Malappuram, Kerala">
+                </div>
+
+                <!-- Special Requirements / Notes -->
+                <div class="reg-field reg-col-2">
+                  <label class="reg-label" for="reg-notes">Special Requirements / Notes <span class="opt">(Optional)</span></label>
+                  <textarea id="reg-notes" class="reg-textarea" rows="2" placeholder="Any accessibility or travel notes"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- Consent -->
+            <label class="reg-consent-box">
+              <input type="checkbox" id="reg-consent" required>
+              <span>I confirm that the details provided are accurate and agree to register for HLF 2026.</span>
+            </label>
+
+            <!-- Error Banner -->
+            <div id="reg-error-banner-1" class="reg-error-msg" role="alert"></div>
+
+            <!-- Submit Button Step 1 -->
+            <button type="submit" id="reg-step1-btn" class="btn p" style="width: 100%; justify-content: center; font-size: 1.05rem; padding: 16px;">
+              <span>Proceed to ₹50 Payment →</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- STEP 2: PAYMENT SECTION -->
+        <div id="reg-step2-view" style="display: none;">
+          <div class="reg-dialog-header">
+            <p class="tag"><b>[STEP 2/2]</b> ✦ PAYMENT SELECTION</p>
+            <h2 class="reg-title">Complete ₹50 Registration Fee</h2>
+            <p class="reg-subtitle">Choose your payment method: Pay online via UPI or pay cash to an authorized organizer</p>
+          </div>
+
+          <!-- Step Indicator -->
+          <div class="reg-step-tracker">
+            <div class="reg-step-pill completed">
+              <span class="step-dot">✓</span>
+              <span>Details Saved</span>
+            </div>
+            <span class="reg-step-arrow">→</span>
+            <div class="reg-step-pill active">
+              <span class="step-dot">2</span>
+              <span>₹50 Payment</span>
+            </div>
+            <span class="reg-step-arrow">→</span>
+            <div class="reg-step-pill">
+              <span class="step-dot">3</span>
+              <span>Confirmation</span>
+            </div>
+          </div>
+
+          <!-- Payment Method Switcher (UPI vs Cash) -->
+          <div class="reg-pay-method-switcher" role="tablist">
+            <button type="button" class="reg-method-tab active" id="tab-method-upi" role="tab" aria-selected="true">
+              <span>📱</span> Pay Online via UPI
+            </button>
+            <button type="button" class="reg-method-tab" id="tab-method-cash" role="tab" aria-selected="false">
+              <span>💵</span> Pay Cash to Organizer
+            </button>
+          </div>
+
+          <!-- Allocated Reg ID Card (Shared) -->
+          <div class="reg-allocated-box">
+            <div class="alloc-left">
+              <span class="alloc-label">Allocated Registration ID</span>
+              <span class="alloc-id" id="step2-reg-id">HLF26-XXXX</span>
+            </div>
+            <button type="button" class="reg-btn-sm" id="step2-copy-id-btn">
+              <span>📋</span> <span id="step2-copy-id-text">Copy ID</span>
+            </button>
+          </div>
+
+          <!-- METHOD A: UPI PAYMENT PANEL -->
+          <div id="reg-upi-panel">
+            <!-- UPI Payment Card -->
+            <div class="reg-pay-card">
+              <div class="reg-qr-wrap">
+                <div class="reg-qr-box" id="reg-qr-container">
+                  <div id="reg-qr-canvas"></div>
+                  ${paymentCfg.qrImagePath ? `<img id="reg-qr-img" src="${paymentCfg.qrImagePath}" alt="HLF UPI QR" style="display:none;" onerror="this.style.display='none'; document.getElementById('reg-qr-canvas').style.display='block';">` : ''}
+                </div>
+                <span style="font-size: 11px; color: var(--mute);">Scan with any UPI App</span>
+              </div>
+
+              <div class="reg-pay-info">
+                <div class="upi-details">
+                  <span class="upi-label">Registration Fee</span>
+                  <span style="font-size: 1.4rem; font-weight: 700; color: var(--red);">₹50.00</span>
+                </div>
+                <div class="upi-details">
+                  <span class="upi-label">UPI ID</span>
+                  <span class="upi-val" id="reg-upi-id-text">${paymentCfg.upiId}</span>
+                </div>
+                <div class="upi-details">
+                  <span class="upi-label">Payee Name</span>
+                  <span id="reg-payee-name-text" style="font-size: 13px; font-weight: 500; color: var(--ink);">${paymentCfg.payeeName}</span>
+                </div>
+
+                <div class="reg-pay-actions">
+                  <button type="button" class="reg-btn-sm" id="reg-copy-upi-btn" aria-label="Copy official UPI ID">
+                    <span>📋</span> <span id="reg-copy-text">Copy UPI ID</span>
+                  </button>
+                  <a href="#" class="reg-btn-sm primary" id="reg-pay-intent-btn">
+                    <span>⚡</span> Pay ₹50 via UPI App
+                  </a>
+                </div>
+                <div id="reg-copy-feedback" class="copy-feedback-msg" style="display: none;" role="status"></div>
+
+                <div class="reg-payment-disclaimer" id="reg-payment-disclaimer">
+                  <div class="disclaimer-header">
+                    <span class="disclaimer-icon">ℹ️</span>
+                    <strong>Payment Help</strong>
+                  </div>
+                  <p class="disclaimer-text">
+                    If you are unable to complete your payment using the UPI payment button, or your UPI app displays a warning or payment error, you can copy our official UPI ID and pay manually from your preferred UPI app. Open Google Pay, Paytm, PhonePe, or another supported UPI app, choose the option to pay using a UPI ID, and enter the copied ID. Before paying, verify that the displayed recipient name and amount are correct. If the warning persists or the recipient details do not match, do not proceed; contact the HLF organizers for assistance.
+                  </p>
+                </div>
+
+                <div class="reg-payment-notice">
+                  <strong>How to complete payment:</strong><br>
+                  1. Tap <strong>Pay ₹50 via UPI App</strong> or scan the QR code using Google Pay, PhonePe, Paytm, BHIM, etc.<br>
+                  2. Or tap <strong>Copy UPI ID</strong> to pay manually: open your UPI app, paste the UPI ID, enter <strong>₹50</strong> as the amount, and verify the recipient name before paying.<br>
+                  3. Complete the ₹50 registration payment.<br>
+                  4. Take a screenshot showing your completed payment receipt.<br>
+                  5. Upload the screenshot below and complete your registration.
+                </div>
+              </div>
+            </div>
+
+            <form id="hlf-step2-form" novalidate>
+              <!-- Payment Transaction Screenshot Upload -->
+              <div class="reg-field" style="margin-bottom: 18px;">
+                <label class="reg-label">Payment Transaction Screenshot <span class="req">*</span></label>
+                <p style="font-size: 11px; color: var(--mute); margin: 0 0 10px;">Upload a screenshot showing your ₹50 UPI payment transaction.</p>
+                
+                <div class="reg-screenshot-zone" id="reg-screenshot-zone">
+                  <input type="file" id="reg-screenshot-file" accept="image/jpeg,image/png,image/webp" style="display: none;">
+                  <div id="reg-screenshot-prompt">
+                    <div style="font-size: 32px; margin-bottom: 6px;">📸</div>
+                    <div style="font-size: 13px; font-weight: 600; color: var(--teal);">Click or drag & drop payment screenshot</div>
+                    <div style="font-size: 11px; color: var(--mute); margin-top: 4px;">Supports JPG, PNG, WEBP (Max 5 MB)</div>
+                  </div>
+                  
+                  <div id="reg-screenshot-preview" style="display: none;" class="reg-screenshot-preview">
+                    <img id="reg-screenshot-preview-img" src="" alt="Payment Screenshot" class="reg-screenshot-thumb">
+                    <div class="reg-screenshot-meta">
+                      <div id="reg-screenshot-filename" class="name">—</div>
+                      <div id="reg-screenshot-filesize" class="size">—</div>
+                      <div style="display: flex; gap: 8px; margin-top: 6px;">
+                        <button type="button" class="reg-btn-sm" id="reg-screenshot-change-btn">Change</button>
+                        <button type="button" class="reg-btn-sm danger" id="reg-screenshot-remove-btn">Remove</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Error Banner Step 2 -->
+              <div id="reg-error-banner-2" class="reg-error-msg" role="alert"></div>
+
+              <div class="reg-nav-actions">
+                <button type="button" class="btn" id="step2-back-btn" style="flex: 0 0 auto;">
+                  ← Back
+                </button>
+                <button type="submit" id="reg-step2-btn" class="btn p">
+                  <span>Confirm Payment & Complete Registration ✦</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- METHOD B: CASH PAYMENT PANEL -->
+          <div id="reg-cash-panel" style="display: none;">
+            <div class="reg-cash-card">
+              <div class="reg-cash-header">
+                <div class="reg-cash-icon">💵</div>
+                <div>
+                  <h3 class="reg-cash-title">Pay Cash to an Organizer</h3>
+                  <p class="reg-cash-subtitle">Official offline payment option for delegates</p>
+                </div>
+              </div>
+
+              <div class="reg-cash-instruction">
+                <strong>Important Instruction:</strong>
+                Pay the ₹50 registration fee directly to an authorized HLF organizer. Your cash payment must be recorded and verified by the HLF team before your registration is confirmed.
+              </div>
+
+              <div class="upi-details" style="margin-bottom: 14px; background: rgba(0,0,0,0.03); padding: 12px 14px; border-radius: 10px;">
+                <span class="upi-label">Registration Fee</span>
+                <span style="font-size: 1.3rem; font-weight: 700; color: var(--teal);">₹50.00 (Cash)</span>
+              </div>
+
+              <ul class="reg-cash-steps">
+                <li>
+                  <span class="step-num">1</span>
+                  <span>Keep your Registration ID (shown above) ready to present to an authorized HLF organizer or committee member.</span>
+                </li>
+                <li>
+                  <span class="step-num">2</span>
+                  <span>Hand over ₹50 cash in person to the organizer at the venue or registration desk.</span>
+                </li>
+                <li>
+                  <span class="step-num">3</span>
+                  <span>The organizer will record your cash payment in the HLF Admin Portal, confirming your delegate registration.</span>
+                </li>
+              </ul>
+
+              <div class="reg-cash-notice-box">
+                ℹ️ No payment screenshot is needed for cash payments. Click the button below to submit your registration under the cash option.
+              </div>
+
+              <div id="reg-cash-error-banner" class="reg-error-msg" role="alert" style="display: none; margin-bottom: 14px;"></div>
+
+              <div class="reg-nav-actions">
+                <button type="button" class="btn" id="step2-cash-back-btn" style="flex: 0 0 auto;">
+                  ← Back
+                </button>
+                <button type="button" id="reg-cash-submit-btn" class="btn p" style="flex: 1;">
+                  <span>Submit Registration (Pay Cash by Hand) ✦</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 3: CONFIRMATION SUCCESS VIEW -->
+        <div id="reg-success-view" class="reg-success-view">
+          <div class="reg-success-icon">🎉</div>
+          <h2 class="reg-success-title">Registration Submitted</h2>
+          <p class="reg-success-sub" id="success-reg-sub">Your delegate registration for HLF 2026 has been received.</p>
+
+          <div class="reg-id-card">
+            <span class="id-label">OFFICIAL REGISTRATION ID</span>
+            <div class="id-number" id="success-reg-id">HLF26-XXXX</div>
+            <div style="margin-top: 10px;">
+              <span class="reg-status-pill pending" id="success-reg-status">Pending Verification</span>
+            </div>
+            <div style="margin-top: 14px;">
+              <button type="button" class="reg-btn-sm" id="success-copy-id-btn">📋 Copy Registration ID</button>
+            </div>
+          </div>
+
+          <table class="reg-details-table">
+            <tr><td>Participant Name:</td><td id="success-name">—</td></tr>
+            <tr><td>Institution:</td><td id="success-inst">—</td></tr>
+            <tr><td>Mobile Number:</td><td id="success-mobile">—</td></tr>
+            <tr><td>Registration Fee:</td><td id="success-fee-val"><strong>₹50</strong></td></tr>
+            <tr><td>Payment Status:</td><td id="success-pay-status-val"><span class="reg-status-pill pending">Pending Verification</span></td></tr>
+            <tr><td>Submission Date/Time:</td><td id="success-date">—</td></tr>
+          </table>
+
+          <div class="reg-instructions-box" id="success-instructions-box">
+            <strong>Important Instructions:</strong><br>
+            • Please save or screenshot your Registration ID.<br>
+            • Your UPI payment will be manually verified by the HLF registration committee.<br>
+            • Present this Registration ID at the HLF reception counter on 18 October 2026 at Darul Huda Islamic University, Chemmad to collect your official delegate badge and festival kit.
+          </div>
+
+          <div class="reg-success-actions">
+            <button type="button" class="btn p" id="success-print-btn">🖨️ Print / Download Confirmation Pass</button>
+            <button type="button" class="btn" id="success-close-btn">Done / Return to Site</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(dialog);
+
+    // Bind Dialog Events
+    document.getElementById('reg-close-x').onclick = closeRegistrationModal;
+    document.getElementById('success-close-btn').onclick = closeRegistrationModal;
+    document.getElementById('success-print-btn').onclick = printRegistrationConfirmation;
+    document.getElementById('success-copy-id-btn').onclick = copyRegistrationId;
+
+    // Close when clicking dialog backdrop
+    dialog.addEventListener('click', (e) => {
+      if (e.target !== dialog) return;
+      const rect = dialog.getBoundingClientRect();
+      const isInDialog = (rect.top <= e.clientY && e.clientY <= rect.top + rect.height &&
+        rect.left <= e.clientX && e.clientX <= rect.left + rect.width);
+      if (!isInDialog) {
+        closeRegistrationModal();
+      }
+    });
+
+    // Restore body scroll on cancel/close
+    dialog.addEventListener('close', () => {
+      document.body.style.overflow = '';
+    });
+    dialog.addEventListener('cancel', () => {
+      document.body.style.overflow = '';
+    });
+
+    // Step 2 Back Button (returns to Step 1 preserving all inputs)
+    document.getElementById('step2-back-btn').onclick = () => {
+      showStep(1);
+      saveRegistrationDraft(1);
+    };
+
+    // Copy Allocated ID in Step 2
+    document.getElementById('step2-copy-id-btn').onclick = async (e) => {
+      if (e && e.preventDefault) e.preventDefault();
+      if (!activeRegistrationData || !activeRegistrationData.registration_id) return;
+      try {
+        await navigator.clipboard.writeText(activeRegistrationData.registration_id);
+        const txt = document.getElementById('step2-copy-id-text');
+        if (txt) {
+          txt.textContent = 'Copied ✓';
+          setTimeout(() => { txt.textContent = 'Copy ID'; }, 2000);
+        }
+      } catch (err) { }
+    };
+
+    // Copy UPI ID Button with feedback and fallback
+    document.getElementById('reg-copy-upi-btn').onclick = async (e) => {
+      if (e && e.preventDefault) e.preventDefault();
+      if (e && e.stopPropagation) e.stopPropagation();
+      await copyUpiIdToClipboard(
+        document.getElementById('reg-copy-upi-btn'),
+        document.getElementById('reg-copy-text'),
+        document.getElementById('reg-copy-feedback')
+      );
+    };
+
+    // Intent button click saves draft before external app launch
+    const regIntentBtn = document.getElementById('reg-pay-intent-btn');
+    if (regIntentBtn) {
+      regIntentBtn.onclick = () => {
+        saveRegistrationDraft(2);
+      };
+    }
+
+    // Payment Method Switcher Tabs (UPI vs Cash)
+    const tabUpi = document.getElementById('tab-method-upi');
+    if (tabUpi) tabUpi.onclick = () => selectPaymentMethod('upi');
+    const tabCash = document.getElementById('tab-method-cash');
+    if (tabCash) tabCash.onclick = () => selectPaymentMethod('cash');
+
+    const cashBackBtn = document.getElementById('step2-cash-back-btn');
+    if (cashBackBtn) {
+      cashBackBtn.onclick = () => {
+        showStep(1);
+        saveRegistrationDraft(1);
+      };
+    }
+
+    const cashSubmitBtn = document.getElementById('reg-cash-submit-btn');
+    if (cashSubmitBtn) {
+      cashSubmitBtn.onclick = handleCashSubmit;
+    }
+
+    // Form Submissions
+    const step1Form = document.getElementById('hlf-step1-form');
+    if (step1Form) {
+      step1Form.onsubmit = handleStep1Submit;
+      step1Form.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && e.target && e.target.tagName !== 'TEXTAREA') {
+          e.preventDefault();
+        }
+      });
+    }
+    const step2Form = document.getElementById('hlf-step2-form');
+    if (step2Form) {
+      step2Form.onsubmit = handleStep2Submit;
+    }
+
+    // Initialize Combobox and Upload
+    setupInstitutionCombobox();
+    setupScreenshotUpload();
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  // Searchable Dropdown for College / Institution
+  function setupInstitutionCombobox() {
+    const combobox = document.getElementById('inst-combobox');
+    const searchInput = document.getElementById('reg-institution-search');
+    const toggleBtn = document.getElementById('inst-toggle-btn');
+    const dropdown = document.getElementById('inst-dropdown');
+    const list = document.getElementById('inst-options-list');
+    const hiddenInput = document.getElementById('reg-institution');
+    const otherGroup = document.getElementById('reg-other-institution-group');
+    const otherInput = document.getElementById('reg-other-institution');
+
+    if (!combobox || !searchInput || !dropdown || !list || !hiddenInput) return;
+
+    let activeIndex = -1;
+    let filteredList = [...HLF_INSTITUTIONS];
+
+    function renderList(query = '') {
+      list.innerHTML = '';
+      const q = query.toLowerCase().trim();
+      filteredList = HLF_INSTITUTIONS.filter(inst => inst.toLowerCase().includes(q));
+
+      if (filteredList.length === 0) {
+        list.innerHTML = `
+          <li class="reg-combobox-empty">No matching colleges found.</li>
+          <li class="reg-combobox-item" data-value="Other">
+            <span>Other</span>
+            <span style="font-size: 11px; opacity: 0.7;">Enter custom institution</span>
+          </li>`;
+        const otherItem = list.querySelector('[data-value="Other"]');
+        if (otherItem) {
+          otherItem.onclick = () => selectItem('Other');
+        }
+        return;
+      }
+
+      filteredList.forEach((inst, idx) => {
+        const li = document.createElement('li');
+        li.className = 'reg-combobox-item' + (hiddenInput.value === inst ? ' selected' : '');
+        li.dataset.value = inst;
+        li.dataset.index = idx;
+
+        if (q && inst.toLowerCase().includes(q) && inst !== 'Other') {
+          const matchStart = inst.toLowerCase().indexOf(q);
+          const matchEnd = matchStart + q.length;
+          li.innerHTML = `<span>${escapeHtml(inst.slice(0, matchStart))}<strong style="color:var(--teal);text-decoration:underline;">${escapeHtml(inst.slice(matchStart, matchEnd))}</strong>${escapeHtml(inst.slice(matchEnd))}</span>`;
+        } else {
+          li.innerHTML = `<span>${escapeHtml(inst)}</span>`;
+        }
+
+        if (inst === 'Other') {
+          li.innerHTML += `<span style="font-size: 11px; opacity: 0.7;">Custom Name</span>`;
+        }
+
+        li.onclick = (e) => {
+          e.stopPropagation();
+          selectItem(inst);
+        };
+
+        list.appendChild(li);
+      });
+    }
+
+    function openDropdown() {
+      renderList(searchInput.value === hiddenInput.value ? '' : searchInput.value);
+      dropdown.style.display = 'block';
+      combobox.classList.add('open');
+      activeIndex = -1;
+    }
+
+    function closeDropdown() {
+      dropdown.style.display = 'none';
+      combobox.classList.remove('open');
+      activeIndex = -1;
+      if (hiddenInput.value && !searchInput.value) {
+        hiddenInput.value = '';
+        if (otherGroup) otherGroup.style.display = 'none';
+      } else if (hiddenInput.value) {
+        searchInput.value = hiddenInput.value;
+      }
+    }
+
+    function selectItem(val) {
+      hiddenInput.value = val;
+      searchInput.value = val;
+      closeDropdown();
+
+      if (val === 'Other') {
+        if (otherGroup) {
+          otherGroup.style.display = 'block';
+          if (otherInput) {
+            otherInput.required = true;
+            setTimeout(() => otherInput.focus(), 50);
+          }
+        }
+      } else {
+        if (otherGroup) {
+          otherGroup.style.display = 'none';
+          if (otherInput) {
+            otherInput.required = false;
+            otherInput.value = '';
+          }
+        }
+      }
+    }
+
+    searchInput.addEventListener('focus', () => {
+      openDropdown();
+    });
+
+    searchInput.addEventListener('click', () => {
+      openDropdown();
+    });
+
+    searchInput.addEventListener('input', () => {
+      openDropdown();
+      if (hiddenInput.value && searchInput.value !== hiddenInput.value) {
+        hiddenInput.value = '';
+        if (otherGroup) otherGroup.style.display = 'none';
+      }
+    });
+
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (dropdown.style.display === 'block') {
+          closeDropdown();
+        } else {
+          openDropdown();
+          searchInput.focus();
+        }
+      });
+    }
+
+    // Keyboard navigation
+    searchInput.addEventListener('keydown', (e) => {
+      const items = list.querySelectorAll('.reg-combobox-item');
+      if (dropdown.style.display !== 'block') {
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+          openDropdown();
+          return;
+        }
+      }
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (items.length > 0) {
+          activeIndex = (activeIndex + 1) % items.length;
+          updateActiveItem(items);
+        }
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (items.length > 0) {
+          activeIndex = (activeIndex - 1 + items.length) % items.length;
+          updateActiveItem(items);
+        }
+      } else if (e.key === 'Enter') {
+        if (activeIndex >= 0 && items[activeIndex]) {
+          e.preventDefault();
+          selectItem(items[activeIndex].dataset.value);
+        }
+      } else if (e.key === 'Escape') {
+        closeDropdown();
+      }
+    });
+
+    function updateActiveItem(items) {
+      items.forEach((it, idx) => {
+        if (idx === activeIndex) {
+          it.classList.add('active');
+          it.scrollIntoView({ block: 'nearest' });
+        } else {
+          it.classList.remove('active');
+        }
+      });
+    }
+
+    // Close on outside click
+    document.addEventListener('click', (e) => {
+      if (!combobox.contains(e.target)) {
+        closeDropdown();
+      }
+    });
+  }
+
+  // Payment Transaction Screenshot Upload
+  function setupScreenshotUpload() {
+    const zone = document.getElementById('reg-screenshot-zone');
+    const fileInput = document.getElementById('reg-screenshot-file');
+    const promptBox = document.getElementById('reg-screenshot-prompt');
+    const previewBox = document.getElementById('reg-screenshot-preview');
+    const previewImg = document.getElementById('reg-screenshot-preview-img');
+    const filenameEl = document.getElementById('reg-screenshot-filename');
+    const filesizeEl = document.getElementById('reg-screenshot-filesize');
+    const changeBtn = document.getElementById('reg-screenshot-change-btn');
+    const removeBtn = document.getElementById('reg-screenshot-remove-btn');
+
+    if (!zone || !fileInput) return;
+
+    zone.onclick = (e) => {
+      if (e.target.closest('#reg-screenshot-remove-btn') || e.target.closest('#reg-screenshot-change-btn')) {
+        return;
+      }
+      fileInput.click();
+    };
+
+    if (changeBtn) {
+      changeBtn.onclick = (e) => {
+        e.stopPropagation();
+        fileInput.click();
+      };
+    }
+
+    if (removeBtn) {
+      removeBtn.onclick = (e) => {
+        e.stopPropagation();
+        resetScreenshot();
+      };
+    }
+
+    // Drag and drop
+    zone.ondragover = (e) => {
+      e.preventDefault();
+      zone.classList.add('dragover');
+    };
+    zone.ondragleave = () => {
+      zone.classList.remove('dragover');
+    };
+    zone.ondrop = (e) => {
+      e.preventDefault();
+      zone.classList.remove('dragover');
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        processSelectedFile(e.dataTransfer.files[0]);
+      }
+    };
+
+    fileInput.onchange = (e) => {
+      if (e.target.files && e.target.files[0]) {
+        processSelectedFile(e.target.files[0]);
+      }
+    };
+
+    function processSelectedFile(file) {
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+      if (!allowedTypes.includes(file.type.toLowerCase())) {
+        showError(2, 'Please upload a valid image file (JPG, PNG, or WEBP).');
+        resetScreenshot();
+        return;
+      }
+
+      // Max size: 5 MB (5 * 1024 * 1024 bytes)
+      if (file.size > 5 * 1024 * 1024) {
+        showError(2, 'Image file size exceeds 5 MB. Please select a smaller screenshot.');
+        resetScreenshot();
+        return;
+      }
+
+      // Clear previous error
+      const err = document.getElementById('reg-error-banner-2');
+      if (err) { err.style.display = 'none'; err.textContent = ''; }
+
+      selectedScreenshotFile = file;
+
+      // Render preview
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        previewImg.src = ev.target.result;
+        filenameEl.textContent = file.name;
+        filesizeEl.textContent = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+        promptBox.style.display = 'none';
+        previewBox.style.display = 'flex';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function resetScreenshot() {
+      selectedScreenshotFile = null;
+      fileInput.value = '';
+      previewImg.src = '';
+      filenameEl.textContent = '—';
+      filesizeEl.textContent = '—';
+      previewBox.style.display = 'none';
+      promptBox.style.display = 'block';
+    }
+  }
+
+  // Helper to switch view steps
+  function showStep(stepNum) {
+    const s1 = document.getElementById('reg-step1-view');
+    const s2 = document.getElementById('reg-step2-view');
+    const s3 = document.getElementById('reg-success-view');
+
+    if (s1) s1.style.display = stepNum === 1 ? 'block' : 'none';
+    if (s2) s2.style.display = stepNum === 2 ? 'block' : 'none';
+    if (s3) s3.style.display = stepNum === 3 ? 'block' : 'none';
+
+    if (stepNum === 2) {
+      selectPaymentMethod(selectedPaymentMethod || 'upi');
+    }
+
+    // Clear error banners
+    const err1 = document.getElementById('reg-error-banner-1');
+    const err2 = document.getElementById('reg-error-banner-2');
+    const errCash = document.getElementById('reg-cash-error-banner');
+    if (err1) { err1.style.display = 'none'; err1.textContent = ''; }
+    if (err2) { err2.style.display = 'none'; err2.textContent = ''; }
+    if (errCash) { errCash.style.display = 'none'; errCash.textContent = ''; }
+
+    // Scroll inner container to top
+    const inner = document.querySelector('.reg-dialog-inner');
+    if (inner) inner.scrollTop = 0;
+  }
+
+  // Toggle between UPI and Cash payment methods in Step 2
+  function selectPaymentMethod(method) {
+    selectedPaymentMethod = method;
+    const tabUpi = document.getElementById('tab-method-upi');
+    const tabCash = document.getElementById('tab-method-cash');
+    const panelUpi = document.getElementById('reg-upi-panel');
+    const panelCash = document.getElementById('reg-cash-panel');
+
+    if (method === 'cash') {
+      if (tabUpi) { tabUpi.classList.remove('active'); tabUpi.setAttribute('aria-selected', 'false'); }
+      if (tabCash) { tabCash.classList.add('active'); tabCash.setAttribute('aria-selected', 'true'); }
+      if (panelUpi) panelUpi.style.display = 'none';
+      if (panelCash) panelCash.style.display = 'block';
+    } else {
+      if (tabUpi) { tabUpi.classList.add('active'); tabUpi.setAttribute('aria-selected', 'true'); }
+      if (tabCash) { tabCash.classList.remove('active'); tabCash.setAttribute('aria-selected', 'false'); }
+      if (panelUpi) panelUpi.style.display = 'block';
+      if (panelCash) panelCash.style.display = 'none';
+    }
+
+    try {
+      saveRegistrationDraft();
+    } catch (e) {
+      console.warn('Error saving draft on payment method switch:', e);
+    }
+  }
+
+  // 2. Setup UPI Intent & QR Code with Registration ID
+  function renderUpiPaymentControls(regId) {
+    const paymentCfg = getPaymentConfig();
+
+    const noteText = regId ? `HLF 2026 Registration - ${regId}` : 'HLF 2026 Registration';
+    const upiQuery = `pa=${encodeURIComponent(paymentCfg.upiId)}&pn=${encodeURIComponent(paymentCfg.payeeName)}&am=${paymentCfg.fee}&cu=INR&tn=${encodeURIComponent(noteText)}`;
+    const upiIntentUrl = `upi://pay?${upiQuery}`;
+
+    const intentBtn = document.getElementById('reg-pay-intent-btn');
+    if (intentBtn) {
+      intentBtn.href = upiIntentUrl;
+      intentBtn.removeAttribute('target');
+      intentBtn.removeAttribute('rel');
+    }
+
+    const upiText = document.getElementById('reg-upi-id-text');
+    if (upiText) {
+      upiText.textContent = paymentCfg.upiId;
+    }
+
+    const payeeText = document.getElementById('reg-payee-name-text');
+    if (payeeText) {
+      payeeText.textContent = paymentCfg.payeeName;
+    }
+
+    if (regId) {
+      const step2Id = document.getElementById('step2-reg-id');
+      if (step2Id) step2Id.textContent = regId;
+    }
+
+    // Render QR Code in canvas container using QRCode library
+    const qrCanvas = document.getElementById('reg-qr-canvas');
+    if (qrCanvas && window.QRCode) {
+      qrCanvas.innerHTML = '';
+      try {
+        new window.QRCode(qrCanvas, {
+          text: upiIntentUrl,
+          width: 140,
+          height: 140,
+          colorDark: '#0b2a22',
+          colorLight: '#ffffff',
+          correctLevel: window.QRCode.CorrectLevel.M
+        });
+      } catch (e) {
+        console.warn('QR code generation warning:', e);
+      }
+    }
+  }
+
+  // 3. Connect all Register Buttons in Document
+  function setupRegisterButtons() {
+    document.querySelectorAll('.reg').forEach(el => {
+      el.removeAttribute('target');
+      el.setAttribute('role', 'button');
+      el.style.cursor = 'pointer';
+      if (el.tagName && el.tagName.toLowerCase() === 'a') {
+        el.setAttribute('href', 'javascript:void(0)');
+      }
+      el.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        openRegistrationModal();
+      };
+    });
+  }
+
+  // 4. Update Contact Section QR Code to point to internal registration
+  function setupContactQR() {
+    const qrTarget = document.getElementById('qr');
+    if (qrTarget && window.QRCode) {
+      qrTarget.innerHTML = '';
+      const regUrl = window.location.origin + window.location.pathname + '#register';
+      try {
+        new window.QRCode(qrTarget, {
+          text: regUrl,
+          width: 200,
+          height: 200,
+          colorDark: '#0b2a22',
+          colorLight: '#ffffff',
+          correctLevel: window.QRCode.CorrectLevel.M
+        });
+      } catch (e) { }
+    }
+  }
+
+  // 5. Open / Close Modal Helpers
+  function openRegistrationModal() {
+    const dialog = document.getElementById('reg-dialog');
+    if (!dialog) return;
+
+    // Check programme capacity if candidate does not already have an active session
+    if (activeSeatData && activeSeatData.is_full && (!activeRegistrationData || !activeRegistrationData.registration_id)) {
+      alert('All programme seats are currently booked for HLF 2026. Delegate registration is closed.');
+      return;
+    }
+
+    // Lock page background scrolling
+    document.body.style.overflow = 'hidden';
+
+    // Restore draft details if available
+    const restored = restoreRegistrationDraft();
+    if (!restored) {
+      selectedPaymentMethod = 'upi';
+    }
+
+    // Show Step 1 unless already in Step 2 with allocated ID
+    if (activeRegistrationData && activeRegistrationData.registration_id && !activeRegistrationData.submitted_final) {
+      showStep(2);
+      renderUpiPaymentControls(activeRegistrationData.registration_id);
+    } else {
+      showStep(1);
+    }
+
+    if (typeof dialog.showModal === 'function') {
+      dialog.showModal();
+    } else {
+      dialog.setAttribute('open', '');
+    }
+  }
+
+  function closeRegistrationModal() {
+    const dialog = document.getElementById('reg-dialog');
+    if (!dialog) return;
+
+    // Restore background scrolling
+    document.body.style.overflow = '';
+
+    if (typeof dialog.close === 'function') {
+      dialog.close();
+    } else {
+      dialog.removeAttribute('open');
+    }
+
+    if (window.location.hash === '#register') {
+      history.replaceState(null, '', window.location.pathname);
+    }
+  }
+
+  // 6. Handle Step 1 Submission: Participant Details -> Allocate Registration ID
+  async function handleStep1Submit(e) {
+    e.preventDefault();
+
+    const errBanner = document.getElementById('reg-error-banner-1');
+    if (errBanner) {
+      errBanner.style.display = 'none';
+      errBanner.textContent = '';
+    }
+
+    const fullName = document.getElementById('reg-fullname').value.trim();
+    const mobile = document.getElementById('reg-mobile').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const course = document.getElementById('reg-course').value.trim();
+    const department = document.getElementById('reg-department').value.trim();
+    const district = document.getElementById('reg-district').value.trim();
+    const notes = document.getElementById('reg-notes').value.trim();
+    const consent = document.getElementById('reg-consent').checked;
+    const accommodationRequired = Boolean(document.getElementById('reg-accommodation')?.checked);
+    const foodRequired = Boolean(document.getElementById('reg-food')?.checked);
+
+    // Validation
+    if (!fullName || fullName.length < 2) {
+      showError(1, 'Please enter your full name (minimum 2 characters).');
+      document.getElementById('reg-fullname').focus();
+      return;
+    }
+
+    const mobileClean = mobile.replace(/[\s-]/g, '');
+    const mobileRegex = /^[6-9]\d{9}$/;
+    if (!mobileRegex.test(mobileClean)) {
+      showError(1, 'Please enter a valid 10-digit Indian mobile number.');
+      document.getElementById('reg-mobile').focus();
+      return;
+    }
+
+    if (email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        showError(1, 'Please enter a valid email address.');
+        document.getElementById('reg-email').focus();
+        return;
+      }
+    }
+
+    const selectedInst = (document.getElementById('reg-institution')?.value || '').trim();
+    if (!selectedInst) {
+      showError(1, 'Please select your college / institution.');
+      document.getElementById('reg-institution-search')?.focus();
+      return;
+    }
+
+    let finalInstitution = selectedInst;
+    if (selectedInst === 'Other') {
+      const customInst = (document.getElementById('reg-other-institution')?.value || '').trim();
+      if (!customInst || customInst.length < 2) {
+        showError(1, 'Please enter your college / institution name.');
+        document.getElementById('reg-other-institution')?.focus();
+        return;
+      }
+      finalInstitution = customInst;
+    }
+
+    if (!consent) {
+      showError(1, 'Please check the consent box to confirm that your information is accurate.');
+      document.getElementById('reg-consent').focus();
+      return;
+    }
+
+    // Submit details via Supabase initiate_registration RPC
+    const submitBtn = document.getElementById('reg-step1-btn');
+    const origBtnHtml = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `<span class="reg-spinner"></span> Generating Registration ID...`;
+
+    try {
+      const sb = window.getSupabase ? window.getSupabase() : null;
+      if (!sb) {
+        throw new Error('Supabase client could not be initialized. Please check network connection.');
+      }
+
+      // If we already initiated and have an ID, we can proceed or update
+      let regId = activeRegistrationData ? activeRegistrationData.registration_id : null;
+
+      if (!regId) {
+        if (activeSeatData && activeSeatData.is_full) {
+          showError(1, 'All seats are booked. Delegate registration is currently full.');
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = origBtnHtml;
+          return;
+        }
+
+        const { data, error } = await sb.rpc('initiate_registration', {
+          p_full_name: fullName,
+          p_mobile: mobileClean,
+          p_institution: finalInstitution,
+          p_email: email || null,
+          p_course: course || null,
+          p_department: department || null,
+          p_district: district || null,
+          p_accommodation_required: accommodationRequired,
+          p_food_required: foodRequired,
+          p_special_requirements: notes || null
+        });
+
+        if (error) {
+          console.error('Registration initiate RPC error:', error);
+          throw new Error(error.message || 'Could not initiate registration. Please try again.');
+        }
+
+        if (!data || !data.success) {
+          throw new Error('Unexpected response from registration service.');
+        }
+
+        regId = data.registration_id;
+        activeRegistrationData = {
+          registration_id: regId,
+          full_name: fullName,
+          institution: finalInstitution,
+          mobile: mobileClean,
+          email: email,
+          registration_fee: 50,
+          payment_status: 'pending',
+          created_at: data.created_at || new Date().toISOString()
+        };
+      } else {
+        // Update stored participant details
+        activeRegistrationData.full_name = fullName;
+        activeRegistrationData.institution = finalInstitution;
+        activeRegistrationData.mobile = mobileClean;
+      }
+
+      // Switch to Step 2
+      showStep(2);
+      renderUpiPaymentControls(regId);
+      saveRegistrationDraft(2);
+
+    } catch (err) {
+      console.error('Step 1 error:', err);
+      showError(1, err.message || 'An error occurred while saving your details. Please try again.');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = origBtnHtml;
+    }
+  }
+
+  // 7. Handle Step 2 Submission: Upload Screenshot -> Save Payment
+  async function handleStep2Submit(e) {
+    e.preventDefault();
+
+    const errBanner = document.getElementById('reg-error-banner-2');
+    if (errBanner) {
+      errBanner.style.display = 'none';
+      errBanner.textContent = '';
+    }
+
+    if (!activeRegistrationData || !activeRegistrationData.registration_id) {
+      showError(2, 'Registration session expired. Please return to Step 1 and try again.');
+      return;
+    }
+
+    // Validate Payment Screenshot File
+    if (!selectedScreenshotFile) {
+      showError(2, 'Please upload your payment transaction screenshot before completing registration.');
+      return;
+    }
+
+    const submitBtn = document.getElementById('reg-step2-btn');
+    const origBtnHtml = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `<span class="reg-spinner"></span> Uploading Proof & Confirming...`;
+
+    try {
+      const sb = window.getSupabase ? window.getSupabase() : null;
+      if (!sb) {
+        throw new Error('Supabase client could not be initialized. Please check network connection.');
+      }
+
+      const regId = activeRegistrationData.registration_id;
+      const fileExt = (selectedScreenshotFile.name.split('.').pop() || 'png').toLowerCase();
+      const fileTimestamp = Date.now();
+      const filePath = `registrations/${regId}/payment-proof-${fileTimestamp}.${fileExt}`;
+
+      // Upload file to dedicated Supabase Storage bucket (pure INSERT without upsert to satisfy RLS)
+      const { data: uploadData, error: uploadErr } = await sb.storage
+        .from('hlf-payment-proofs')
+        .upload(filePath, selectedScreenshotFile, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadErr) {
+        console.error('Registration screenshot storage upload error:', uploadErr);
+        throw new Error('Payment screenshot upload failed: ' + uploadErr.message);
+      }
+
+      const { data: publicUrlData } = sb.storage.from('hlf-payment-proofs').getPublicUrl(filePath);
+      const screenshotUrl = publicUrlData ? publicUrlData.publicUrl : null;
+
+      // Confirm registration with screenshot path and URL
+      const { data, error } = await sb.rpc('confirm_registration_screenshot', {
+        p_registration_id: regId,
+        p_payment_screenshot_path: filePath,
+        p_payment_screenshot_url: screenshotUrl
+      });
+
+      if (error) {
+        console.error('Payment confirmation RPC error:', error);
+        throw new Error('Payment screenshot database update failed: ' + (error.message || 'Confirmation failed'));
+      }
+
+      if (!data || !data.success) {
+        throw new Error('Unexpected response from registration service.');
+      }
+
+      // Success
+      activeRegistrationData.payment_method = 'upi';
+      activeRegistrationData.payment_screenshot_path = filePath;
+      activeRegistrationData.payment_screenshot_url = screenshotUrl;
+      activeRegistrationData.payment_status = 'pending';
+      activeRegistrationData.submitted_final = true;
+
+      // Clear the temporary draft once registration is successfully submitted
+      clearRegistrationDraft();
+
+      displaySuccessView(activeRegistrationData);
+
+    } catch (err) {
+      console.error('Step 2 error:', err);
+      showError(2, err.message || 'An error occurred while confirming payment. Please try again.');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = origBtnHtml;
+    }
+  }
+
+  // 7b. Handle Cash Payment Submission: Call confirm_registration_cash RPC
+  async function handleCashSubmit(e) {
+    if (e && e.preventDefault) e.preventDefault();
+
+    const errBanner = document.getElementById('reg-cash-error-banner');
+    if (errBanner) {
+      errBanner.style.display = 'none';
+      errBanner.textContent = '';
+    }
+
+    if (!activeRegistrationData || !activeRegistrationData.registration_id) {
+      showCashError('Registration session expired. Please return to Step 1 and try again.');
+      return;
+    }
+
+    const submitBtn = document.getElementById('reg-cash-submit-btn');
+    const origBtnHtml = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `<span class="reg-spinner"></span> Submitting Cash Registration...`;
+
+    try {
+      const sb = window.getSupabase ? window.getSupabase() : null;
+      if (!sb) {
+        throw new Error('Supabase client could not be initialized. Please check network connection.');
+      }
+
+      const regId = activeRegistrationData.registration_id;
+
+      // Submit cash choice via Supabase confirm_registration_cash RPC
+      const { data, error } = await sb.rpc('confirm_registration_cash', {
+        p_registration_id: regId
+      });
+
+      if (error) {
+        console.error('Cash registration RPC error:', error);
+        throw new Error('Cash registration update failed: ' + (error.message || 'Submission failed'));
+      }
+
+      if (!data || !data.success) {
+        throw new Error('Unexpected response from registration service.');
+      }
+
+      // Success
+      activeRegistrationData.payment_method = 'cash';
+      activeRegistrationData.payment_status = 'pending';
+      activeRegistrationData.registration_status = 'submitted';
+      activeRegistrationData.submitted_final = true;
+
+      // Clear the temporary draft once registration is successfully submitted
+      clearRegistrationDraft();
+
+      displaySuccessView(activeRegistrationData);
+
+    } catch (err) {
+      console.error('Cash submission error:', err);
+      showCashError(err.message || 'An error occurred while submitting your cash registration. Please try again.');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = origBtnHtml;
+    }
+  }
+
+  function showCashError(msg) {
+    const errBanner = document.getElementById('reg-cash-error-banner');
+    if (errBanner) {
+      errBanner.textContent = msg;
+      errBanner.style.display = 'block';
+      errBanner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
+  function showError(stepNum, msg) {
+    const errBanner = document.getElementById(`reg-error-banner-${stepNum}`);
+    if (errBanner) {
+      errBanner.textContent = msg;
+      errBanner.style.display = 'block';
+      errBanner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
+  // 8. Display Confirmation Screen (Step 3)
+  function displaySuccessView(data) {
+    showStep(3);
+
+    document.getElementById('success-reg-id').textContent = data.registration_id;
+    document.getElementById('success-name').textContent = data.full_name;
+    document.getElementById('success-inst').textContent = data.institution;
+    document.getElementById('success-mobile').textContent = data.mobile;
+
+    const formattedDate = formatAcknowledgementDate(data.created_at);
+    document.getElementById('success-date').textContent = formattedDate;
+
+    const isCash = (data.payment_method || '').toLowerCase() === 'cash';
+    const statusPill = document.getElementById('success-reg-status');
+    if (statusPill) {
+      statusPill.textContent = isCash ? 'Awaiting Cash Collection' : 'Pending Verification';
+    }
+
+    const subTitle = document.getElementById('success-reg-sub');
+    if (subTitle) {
+      subTitle.textContent = isCash
+        ? 'Your delegate registration has been recorded for cash handover.'
+        : 'Your delegate registration for HLF 2026 has been received.';
+    }
+
+    const feeEl = document.getElementById('success-fee-val');
+    if (feeEl) {
+      feeEl.innerHTML = isCash ? '<strong>₹50 (Cash to Organizer)</strong>' : '<strong>₹50 (UPI Online)</strong>';
+    }
+
+    const payStatusEl = document.getElementById('success-pay-status-val');
+    if (payStatusEl) {
+      payStatusEl.innerHTML = isCash
+        ? '<span class="reg-status-pill pending">Awaiting Cash Collection</span>'
+        : '<span class="reg-status-pill pending">Pending Verification</span>';
+    }
+
+    const instBox = document.getElementById('success-instructions-box');
+    if (instBox) {
+      if (isCash) {
+        instBox.innerHTML = `
+          <strong>Important Cash Payment Instructions:</strong><br>
+          • Please save or screenshot your Registration ID (<strong>${data.registration_id}</strong>).<br>
+          • <strong>Pay the ₹50 registration fee directly to an authorized HLF organizer</strong>.<br>
+          • Your cash payment must be recorded and verified by the HLF team before your registration is confirmed.<br>
+          • Present this Registration ID at the HLF reception counter on 18 October 2026 at Darul Huda Islamic University, Chemmad to collect your official delegate badge and festival kit.
+        `;
+      } else {
+        instBox.innerHTML = `
+          <strong>Important Instructions:</strong><br>
+          • Please save or screenshot your Registration ID.<br>
+          • Your UPI payment will be manually verified by the HLF registration committee.<br>
+          • Present this Registration ID at the HLF reception counter on 18 October 2026 at Darul Huda Islamic University, Chemmad to collect your official delegate badge and festival kit.
+        `;
+      }
+    }
+
+    // Scroll to top of dialog
+    const inner = document.querySelector('.reg-dialog-inner');
+    if (inner) inner.scrollTop = 0;
+  }
+
+  async function copyRegistrationId() {
+    if (!activeRegistrationData || !activeRegistrationData.registration_id) return;
+    try {
+      await navigator.clipboard.writeText(activeRegistrationData.registration_id);
+      const btn = document.getElementById('success-copy-id-btn');
+      btn.textContent = 'Copied ✓';
+      setTimeout(() => { btn.textContent = '📋 Copy Registration ID'; }, 2000);
+    } catch (err) { }
+  }
+
+  // 9. Printable Registration Confirmation
+  function printRegistrationConfirmation() {
+    if (!activeRegistrationData) return;
+    const d = activeRegistrationData;
+    const printDate = formatAcknowledgementDate(d.created_at);
+
+    const printWindow = window.open('', '_blank', 'width=800,height=900');
+    if (!printWindow) {
+      window.print();
+      return;
+    }
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>HLF 2026 Registration Confirmation - ${d.registration_id}</title>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&display=swap">
+        <style>
+          body {
+            font-family: 'Fira Code', monospace;
+            padding: 40px;
+            color: #17332d;
+            background: #fff;
+            max-width: 650px;
+            margin: auto;
+          }
+          .ticket {
+            border: 2px dashed #12907a;
+            border-radius: 20px;
+            padding: 30px;
+            background: #fffef5;
+          }
+          .hdr {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #17332d;
+            padding-bottom: 16px;
+            margin-bottom: 20px;
+          }
+          .logo {
+            font-size: 24px;
+            font-weight: 700;
+          }
+          .logo span { color: #d0021b; }
+          .reg-badge {
+            background: #17332d;
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 99px;
+            font-size: 11px;
+            font-weight: 700;
+          }
+          .reg-id-box {
+            background: #f0eeb6;
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 20px 0;
+            border: 1px solid rgba(23,51,45,0.2);
+          }
+          .reg-id-val {
+            font-size: 32px;
+            font-weight: 700;
+            color: #d0021b;
+            letter-spacing: 2px;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+          }
+          td {
+            padding: 10px 4px;
+            border-bottom: 1px solid rgba(23,51,45,0.12);
+            font-size: 14px;
+          }
+          td.label {
+            color: #4b625b;
+            width: 40%;
+          }
+          .notice {
+            background: rgba(18,144,122,0.1);
+            border-left: 4px solid #12907a;
+            padding: 12px;
+            font-size: 12px;
+            color: #17332d;
+            margin-top: 20px;
+            line-height: 1.5;
+          }
+          .ftr {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 11px;
+            color: #4b625b;
+          }
+          @media print {
+            body { padding: 0; background: none; }
+            .no-print { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="ticket">
+          <div class="hdr">
+            <div>
+              <div class="logo">HLF<span>✦</span>2026</div>
+              <small>Hadith Literature Festival</small>
+            </div>
+            <div class="reg-badge">OFFICIAL REGISTRATION PASS</div>
+          </div>
+
+          <p style="margin: 0; color: #4b625b; font-size: 12px;">18–20 October 2026 · Darul Huda Islamic University, Chemmad, Kerala</p>
+
+          <div class="reg-id-box">
+            <small style="text-transform: uppercase; letter-spacing: 1px; color: #4b625b;">Registration Identification Number</small>
+            <div class="reg-id-val">${d.registration_id}</div>
+            <small style="color: #c07a00; font-weight: 700;">PAYMENT STATUS: ${d.payment_method === 'cash' ? 'AWAITING CASH COLLECTION BY ORGANIZER' : 'PENDING MANUAL VERIFICATION'}</small>
+          </div>
+
+          <table>
+            <tr><td class="label">Participant Name:</td><td><strong>${d.full_name}</strong></td></tr>
+            <tr><td class="label">Institution:</td><td>${d.institution}</td></tr>
+            <tr><td class="label">Mobile Number:</td><td>${d.mobile}</td></tr>
+            <tr><td class="label">Registration Fee:</td><td><strong>₹${d.registration_fee || 50}</strong></td></tr>
+            <tr><td class="label">Payment Method:</td><td><strong>${d.payment_method === 'cash' ? '💵 Cash to Organizer' : '📱 Online UPI'}</strong></td></tr>
+            <tr><td class="label">Payment Status:</td><td><strong style="color: #c07a00;">${d.payment_method === 'cash' ? 'AWAITING CASH COLLECTION' : 'PENDING VERIFICATION'}</strong></td></tr>
+            <tr><td class="label">Submission Date & Time:</td><td>${printDate}</td></tr>
+          </table>
+
+          <div class="notice">
+            <strong>Important Instructions:</strong><br>
+            ${d.payment_method === 'cash' 
+              ? '• <strong>Pay ₹50 directly to an authorized HLF organizer</strong> with your Registration ID.<br>• Your registration will be confirmed once the organizer records your cash payment.<br>'
+              : '• Your UPI payment will be manually verified by the HLF registration committee.<br>'
+            }
+            • Please present this slip along with a valid ID at the registration desk.<br>
+            • Registration badge & festival kit will be handed over upon entry at DHIU Chemmad.<br>
+            • For inquiries, contact: hadithliteraturefestival@gmail.com | +91 73065 54055
+          </div>
+
+          <div class="ftr">
+            Department of Hadith and Related Sciences · Darul Huda Islamic University<br>
+            HLF 2026 — Knowledge ✦ Culture ✦ Conversation
+          </div>
+        </div>
+        <div style="text-align: center; margin-top: 20px;" class="no-print">
+          <button onclick="window.print()" style="padding: 10px 20px; font-weight: bold; cursor: pointer; border-radius: 99px; background: #d0021b; color: #fff; border: 0;">Print / Save as PDF</button>
+        </div>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+    setTimeout(() => {
+      printWindow.focus();
+    }, 250);
+  }
+
+  // =============================================================
+  // CONTRIBUTIONS & DONATIONS SYSTEM (SCREENSHOT & CUSTOM CONTRIBUTION)
+  // =============================================================
+
+  // Robust date formatter ensuring valid, elegant HLF date display
+  function formatAcknowledgementDate(dateVal) {
+    let d;
+    if (!dateVal) {
+      d = new Date();
+    } else if (dateVal instanceof Date) {
+      d = isNaN(dateVal.getTime()) ? new Date() : dateVal;
+    } else {
+      d = new Date(dateVal);
+      if (isNaN(d.getTime())) {
+        d = new Date();
+      }
+    }
+
+    const day = d.getDate();
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    const month = months[d.getMonth()];
+    const year = d.getFullYear();
+
+    let hours = d.getHours();
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+
+    return `${day} ${month} ${year} · ${hours}:${minutes} ${ampm}`;
+  }
+
+  // Helper to validate custom contribution amount: must be positive whole number >= 1
+  function isValidCustomAmount(val) {
+    if (val === null || val === undefined) return false;
+    const s = String(val).trim();
+    if (!/^[1-9]\d*$/.test(s)) return false;
+    const n = Number(s);
+    return Number.isSafeInteger(n) && n >= 1;
+  }
+
+  // 10. Inject Contribution Modal into Document
+  function injectContributionModal() {
+    if (document.getElementById('contrib-dialog')) return;
+
+    const paymentCfg = getPaymentConfig();
+
+    const dialog = document.createElement('dialog');
+    dialog.id = 'contrib-dialog';
+    dialog.className = 'reg-dialog glass';
+    dialog.innerHTML = `
+      <div class="reg-dialog-inner">
+        <!-- Close Button -->
+        <button type="button" class="reg-close-btn" id="contrib-close-x" aria-label="Close">×</button>
+
+        <!-- STEP 1: CONTRIBUTOR DETAILS -->
+        <div id="contrib-step1-view">
+          <div class="reg-dialog-header">
+            <p class="tag"><b>[CONTRIBUTION]</b> ✦ HLF 2026</p>
+            <h2 class="reg-title">Support the Festival</h2>
+            <p class="reg-subtitle">Hadith Literature Festival · 18–20 October 2026 · Chemmad, Kerala</p>
+            
+            <div class="reg-fee-badge" style="background: linear-gradient(135deg, rgba(18, 144, 122, 0.15), rgba(47, 93, 147, 0.15)); border-color: var(--teal);">
+              <span class="fee-label" id="contrib-tier-badge">TIER</span>
+              <span class="fee-val" id="contrib-amount-badge" style="color: var(--teal);">₹99</span>
+              <span class="fee-desc" id="contrib-desc-badge">Minimal Contribution</span>
+            </div>
+          </div>
+
+          <!-- Step Progress Tracker -->
+          <div class="reg-step-tracker">
+            <div class="reg-step-pill active" id="contrib-tracker-step-1">
+              <span class="step-dot">1</span>
+              <span>Contributor Details</span>
+            </div>
+            <span class="reg-step-arrow">→</span>
+            <div class="reg-step-pill" id="contrib-tracker-step-2">
+              <span class="step-dot">2</span>
+              <span id="contrib-step2-pill-text">UPI Payment</span>
+            </div>
+            <span class="reg-step-arrow">→</span>
+            <div class="reg-step-pill" id="contrib-tracker-step-3">
+              <span class="step-dot">3</span>
+              <span>Confirmation</span>
+            </div>
+          </div>
+
+          <form id="hlf-contrib-step1-form" class="hlf-contrib-form" novalidate onsubmit="return false;">
+            <!-- SECTION 1: CONTRIBUTOR DETAILS -->
+            <div class="reg-form-section">
+              <h3 class="reg-section-title"><span class="step">1</span> Contributor Details</h3>
+              
+              <!-- Custom Contribution Amount Input (shown when Custom tier chosen) -->
+              <div id="contrib-custom-amount-wrap" class="contrib-custom-box" style="display: none; margin-bottom: 16px; background: rgba(18,144,122,0.06); border: 1.5px solid var(--teal); border-radius: 12px; padding: 14px;">
+                <label class="reg-label" for="contrib-custom-amount-input" style="font-weight: 700; color: var(--teal);">Custom Contribution Amount (₹) <span class="req">*</span></label>
+                <div style="position: relative; margin-top: 6px;">
+                  <span style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-weight: 700; font-size: 1.2rem; color: var(--teal);">₹</span>
+                  <input type="number" id="contrib-custom-amount-input" class="reg-input" placeholder="Enter amount (min ₹1)" min="1" step="1" style="padding-left: 36px; font-size: 1.15rem; font-weight: 700;">
+                </div>
+                <small style="color: var(--mute); font-size: 11px; display: block; margin-top: 6px;">Enter your desired contribution amount. Minimum ₹1. Whole rupees only.</small>
+              </div>
+
+              <div class="reg-grid">
+                <div class="reg-field reg-col-2">
+                  <label class="reg-label" for="contrib-fullname">Full Name <span class="req">*</span></label>
+                  <input type="text" id="contrib-fullname" class="reg-input" placeholder="e.g. Sayyid Ahmed" required autocomplete="name">
+                </div>
+
+                <div class="reg-field">
+                  <label class="reg-label" for="contrib-mobile">Mobile Number <span class="req">*</span></label>
+                  <input type="tel" id="contrib-mobile" class="reg-input" placeholder="10-digit mobile number" maxlength="10" required autocomplete="tel">
+                </div>
+
+                <div class="reg-field">
+                  <label class="reg-label" for="contrib-email">Email Address <span class="opt">(Optional)</span></label>
+                  <input type="email" id="contrib-email" class="reg-input" placeholder="name@example.com" autocomplete="email">
+                </div>
+              </div>
+            </div>
+
+            <!-- Error Banners Step 1 -->
+            <div id="contrib-error-banner-1" class="reg-error-msg" role="alert" style="display: none;"></div>
+            <div id="contrib-error-banner" class="reg-error-msg" role="alert" style="display: none;"></div>
+
+            <!-- Proceed Button Step 1 -->
+            <button type="button" id="contrib-step1-proceed-btn" class="btn p" style="width: 100%; justify-content: center; font-size: 1.05rem; padding: 16px;">
+              <span id="contrib-step1-proceed-btn-text">Proceed to ₹99 UPI Payment →</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- STEP 2: UPI PAYMENT & PROOF SECTION -->
+        <div id="contrib-step2-view" style="display: none;">
+          <div class="reg-dialog-header">
+            <p class="tag"><b>[STEP 2/2]</b> ✦ UPI PAYMENT & PROOF</p>
+            <h2 class="reg-title">Complete <span id="contrib-step2-header-amount">₹99</span> Payment</h2>
+            <p class="reg-subtitle">Scan QR or pay via any UPI app and upload the transaction screenshot</p>
+          </div>
+
+          <!-- Step Progress Tracker -->
+          <div class="reg-step-tracker">
+            <div class="reg-step-pill completed">
+              <span class="step-dot">✓</span>
+              <span>Details Saved</span>
+            </div>
+            <span class="reg-step-arrow">→</span>
+            <div class="reg-step-pill active">
+              <span class="step-dot">2</span>
+              <span id="contrib-step2-active-pill-text">₹99 UPI Payment</span>
+            </div>
+            <span class="reg-step-arrow">→</span>
+            <div class="reg-step-pill">
+              <span class="step-dot">3</span>
+              <span>Confirmation</span>
+            </div>
+          </div>
+
+          <!-- Contributor Summary Card -->
+          <div class="reg-allocated-box" id="contrib-summary-card" style="background: linear-gradient(135deg, rgba(18, 144, 122, 0.08), rgba(47, 93, 147, 0.08)); border: 1.5px solid var(--teal); margin-bottom: 20px;">
+            <div class="alloc-left">
+              <span class="alloc-label" style="color: var(--teal); font-weight: 700;">CONTRIBUTOR</span>
+              <span style="font-size: 1.15rem; font-weight: 700; color: var(--ink);" id="contrib-summary-name">—</span>
+              <span style="font-size: 12px; color: var(--mute);" id="contrib-summary-mobile">—</span>
+            </div>
+            <div style="text-align: right; display: flex; flex-direction: column; gap: 2px;">
+              <span class="alloc-label" id="contrib-summary-tier">MINIMAL CONTRIBUTION</span>
+              <span style="font-size: 1.5rem; font-weight: 800; color: var(--teal);" id="contrib-summary-amount">₹99</span>
+            </div>
+          </div>
+
+          <!-- UPI Payment Card -->
+          <div class="reg-pay-card">
+            <div class="reg-qr-wrap">
+              <div class="reg-qr-box" id="contrib-qr-container">
+                <div id="contrib-qr-canvas"></div>
+                ${paymentCfg.qrImagePath ? `<img id="contrib-qr-img" src="${paymentCfg.qrImagePath}" alt="HLF UPI QR" style="display:none;" onerror="this.style.display='none'; document.getElementById('contrib-qr-canvas').style.display='block';">` : ''}
+              </div>
+              <span style="font-size: 11px; color: var(--mute);">Scan with any UPI App</span>
+            </div>
+
+            <div class="reg-pay-info">
+              <div class="upi-details">
+                <span class="upi-label">Contribution Amount</span>
+                <span style="font-size: 1.4rem; font-weight: 700; color: var(--teal);" id="contrib-pay-amount">₹99.00</span>
+              </div>
+              <div class="upi-details">
+                <span class="upi-label">UPI ID</span>
+                <span class="upi-val" id="contrib-upi-id-text">${paymentCfg.upiId}</span>
+              </div>
+              <div class="upi-details">
+                <span class="upi-label">Payee Name</span>
+                <span id="contrib-payee-name-text" style="font-size: 13px; font-weight: 500; color: var(--ink);">${paymentCfg.payeeName}</span>
+              </div>
+
+              <div class="reg-pay-actions">
+                <button type="button" class="reg-btn-sm" id="contrib-copy-upi-btn" aria-label="Copy official UPI ID">
+                  <span>📋</span> <span id="contrib-copy-text">Copy UPI ID</span>
+                </button>
+                <a href="#" class="reg-btn-sm primary" id="contrib-pay-intent-btn">
+                  <span>⚡</span> <span id="contrib-intent-btn-text">Pay via UPI App</span>
+                </a>
+              </div>
+              <div id="contrib-copy-feedback" class="copy-feedback-msg" style="display: none;" role="status"></div>
+
+              <div class="reg-payment-disclaimer" id="contrib-payment-disclaimer">
+                <div class="disclaimer-header">
+                  <span class="disclaimer-icon">ℹ️</span>
+                  <strong>Payment Help</strong>
+                </div>
+                <p class="disclaimer-text">
+                  If you are unable to complete your payment using the UPI payment button, or your UPI app displays a warning or payment error, you can copy our official UPI ID and pay manually from your preferred UPI app. Open Google Pay, Paytm, PhonePe, or another supported UPI app, choose the option to pay using a UPI ID, and enter the copied ID. Before paying, verify that the displayed recipient name and amount are correct. If the warning persists or the recipient details do not match, do not proceed; contact the HLF organizers for assistance.
+                </p>
+              </div>
+
+              <div class="reg-payment-notice">
+                <strong>How to complete your contribution:</strong><br>
+                1. Tap <strong>Pay via UPI App</strong> or scan the QR code using Google Pay, PhonePe, Paytm, BHIM, etc.<br>
+                2. Or tap <strong>Copy UPI ID</strong> to pay manually: open your UPI app, paste the UPI ID, enter the exact amount (<strong id="contrib-manual-amount">₹99</strong>), and verify the recipient name before paying.<br>
+                3. Complete your payment of <strong id="contrib-notice-amount">₹99</strong>.<br>
+                4. Take a screenshot showing your completed payment receipt.<br>
+                5. Upload the screenshot below and complete your contribution.
+              </div>
+            </div>
+          </div>
+
+          <form id="hlf-contrib-step2-form" novalidate onsubmit="return false;">
+            <!-- Payment Transaction Screenshot Upload -->
+            <div class="reg-field" style="margin-top: 18px; margin-bottom: 16px;">
+              <label class="reg-label">Payment Transaction Screenshot <span class="req">*</span></label>
+              <p style="font-size: 11px; color: var(--mute); margin: 0 0 10px;">Upload a screenshot showing your completed UPI payment receipt.</p>
+              
+              <div class="reg-screenshot-zone" id="contrib-screenshot-zone">
+                <input type="file" id="contrib-screenshot-file" accept="image/jpeg,image/png,image/webp" style="display: none;">
+                <div id="contrib-screenshot-prompt">
+                  <div style="font-size: 32px; margin-bottom: 6px;">📸</div>
+                  <div style="font-size: 13px; font-weight: 600; color: var(--teal);">Click or drag & drop payment screenshot</div>
+                  <div style="font-size: 11px; color: var(--mute); margin-top: 4px;">Supports JPG, PNG, WEBP (Max 5 MB)</div>
+                </div>
+                
+                <div id="contrib-screenshot-preview" style="display: none;" class="reg-screenshot-preview">
+                  <img id="contrib-screenshot-preview-img" src="" alt="Payment Screenshot" class="reg-screenshot-thumb">
+                  <div class="reg-screenshot-meta">
+                    <div id="contrib-screenshot-filename" class="name">—</div>
+                    <div id="contrib-screenshot-filesize" class="size">—</div>
+                    <div style="display: flex; gap: 8px; margin-top: 6px;">
+                      <button type="button" class="reg-btn-sm" id="contrib-screenshot-change-btn">Change</button>
+                      <button type="button" class="reg-btn-sm danger" id="contrib-screenshot-remove-btn">Remove</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Error Banner Step 2 -->
+            <div id="contrib-error-banner-2" class="reg-error-msg" role="alert" style="display: none;"></div>
+
+            <!-- Navigation Buttons: Back to Details + Submit Contribution -->
+            <div class="reg-nav-actions">
+              <button type="button" class="btn" id="contrib-step2-back-btn" style="flex: 0 0 auto;">
+                ← Back to Details
+              </button>
+              <button type="submit" id="contrib-submit-btn" class="btn p">
+                <span id="contrib-submit-btn-text">Submit Contribution (₹99) ✦</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- STAGE 3: CONTRIBUTION ACKNOWLEDGEMENT VIEW -->
+        <div id="contrib-success-view" class="contrib-ack-view" style="display: none;">
+          <div class="contrib-ack-card">
+            <!-- Header with HLF Branding -->
+            <div class="contrib-ack-header">
+              <div class="contrib-ack-logo">
+                <span class="brand-text">HLF<span class="star">✦</span>2026</span>
+                <span class="sub-text">HADITH LITERATURE FESTIVAL</span>
+              </div>
+              <div class="contrib-ack-title-badge">CONTRIBUTION ACKNOWLEDGEMENT</div>
+              <div class="contrib-ack-venue">
+                18–20 OCTOBER 2026<br>
+                <span>Darul Huda Islamic University · Chemmad, Kerala</span>
+              </div>
+            </div>
+
+            <div class="contrib-ack-divider"></div>
+
+            <!-- With Gratitude Section -->
+            <div class="contrib-ack-gratitude">
+              <span class="gratitude-tag">WITH GRATITUDE</span>
+              <h3 class="gratitude-name">Thank you, <span id="contrib-ack-name">—</span></h3>
+              <p class="gratitude-desc">Your generous contribution supports the Hadith Literature Festival 2026.</p>
+            </div>
+
+            <div class="contrib-ack-divider"></div>
+
+            <!-- Details Section -->
+            <div class="contrib-ack-details">
+              <span class="details-heading">CONTRIBUTION DETAILS</span>
+              
+              <div class="contrib-detail-row">
+                <span class="detail-label">Contribution Type</span>
+                <span class="detail-val" id="contrib-ack-type">—</span>
+              </div>
+              <div class="contrib-detail-row">
+                <span class="detail-label">Contribution Amount</span>
+                <span class="detail-val highlight" id="contrib-ack-amount">₹—</span>
+              </div>
+              <div class="contrib-detail-row">
+                <span class="detail-label">Payment Method</span>
+                <span class="detail-val">UPI</span>
+              </div>
+              <div class="contrib-detail-row">
+                <span class="detail-label">Payment Proof</span>
+                <span class="detail-val status-ok">Submitted ✓</span>
+              </div>
+              <div class="contrib-detail-row">
+                <span class="detail-label">Submitted On</span>
+                <span class="detail-val" id="contrib-ack-date">—</span>
+              </div>
+            </div>
+
+            <div class="contrib-ack-divider"></div>
+
+            <!-- Heartfelt Gratitude Note -->
+            <div class="contrib-ack-note">
+              <strong>WITH HEARTFELT GRATITUDE</strong>
+              <p>Your support helps us create meaningful spaces for learning, scholarship and academic conversation.</p>
+            </div>
+
+            <div class="contrib-ack-footer">
+              <p><strong>Department of Hadith and Related Sciences</strong><br>
+              Darul Huda Islamic University · Chemmad, Kerala</p>
+              <p class="contact-line">hadithliteraturefestival@gmail.com · +91 73065 54055</p>
+            </div>
+          </div>
+
+          <div class="contrib-ack-actions">
+            <button type="button" class="btn p" id="contrib-print-btn">🖨️ Print / Save Acknowledgement</button>
+            <button type="button" class="btn" id="contrib-close-btn">Done / Return to Site</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(dialog);
+
+    // Bind Dialog Close Events
+    document.getElementById('contrib-close-x').onclick = closeContributionModal;
+    document.getElementById('contrib-close-btn').onclick = closeContributionModal;
+    document.getElementById('contrib-print-btn').onclick = printContributionConfirmation;
+
+    // Close when clicking dialog backdrop
+    dialog.addEventListener('click', (e) => {
+      if (e.target !== dialog) return;
+      const rect = dialog.getBoundingClientRect();
+      const isInDialog = (rect.top <= e.clientY && e.clientY <= rect.top + rect.height &&
+        rect.left <= e.clientX && e.clientX <= rect.left + rect.width);
+      if (!isInDialog) {
+        closeContributionModal();
+      }
+    });
+
+    dialog.addEventListener('close', () => { document.body.style.overflow = ''; });
+    dialog.addEventListener('cancel', () => { document.body.style.overflow = ''; });
+
+    // Copy UPI ID button with feedback and fallback
+    document.getElementById('contrib-copy-upi-btn').onclick = async (e) => {
+      if (e && e.preventDefault) e.preventDefault();
+      if (e && e.stopPropagation) e.stopPropagation();
+      await copyUpiIdToClipboard(
+        document.getElementById('contrib-copy-upi-btn'),
+        document.getElementById('contrib-copy-text'),
+        document.getElementById('contrib-copy-feedback')
+      );
+    };
+
+    // Intent button click saves draft before external app launch
+    const contribIntentBtn = document.getElementById('contrib-pay-intent-btn');
+    if (contribIntentBtn) {
+      contribIntentBtn.onclick = () => {
+        saveContributionDraft(2);
+      };
+    }
+
+    // Form submission handlers & button clicks
+    const step1Form = document.getElementById('hlf-contrib-step1-form');
+    if (step1Form) {
+      step1Form.onsubmit = (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        handleContributionStep1Proceed(e);
+        return false;
+      };
+    }
+    const step1ProceedBtn = document.getElementById('contrib-step1-proceed-btn');
+    if (step1ProceedBtn) {
+      step1ProceedBtn.onclick = (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        handleContributionStep1Proceed(e);
+      };
+    }
+
+    const step2Form = document.getElementById('hlf-contrib-step2-form');
+    if (step2Form) {
+      step2Form.onsubmit = (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        handleContributionSubmit(e);
+        return false;
+      };
+    }
+
+    // Back to Step 1 button (preserves all entered details)
+    const backBtn = document.getElementById('contrib-step2-back-btn');
+    if (backBtn) {
+      backBtn.onclick = (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        handleContributionStep2Back();
+        saveContributionDraft(1);
+      };
+    }
+
+    // Screenshot upload setup
+    setupContributionScreenshotUpload();
+
+    // Live two-way sync for Contributor Details
+    const nameInput = document.getElementById('contrib-fullname');
+    const mobileInput = document.getElementById('contrib-mobile');
+    const emailInput = document.getElementById('contrib-email');
+    if (nameInput) {
+      nameInput.addEventListener('input', () => {
+        if (activeContributionData) activeContributionData.fullName = nameInput.value;
+      });
+    }
+    if (mobileInput) {
+      mobileInput.addEventListener('input', () => {
+        if (activeContributionData) activeContributionData.mobile = mobileInput.value.replace(/[\s-]/g, '');
+      });
+    }
+    if (emailInput) {
+      emailInput.addEventListener('input', () => {
+        if (activeContributionData) activeContributionData.email = emailInput.value.trim();
+      });
+    }
+
+    // Live update on custom amount input
+    const customAmtInput = document.getElementById('contrib-custom-amount-input');
+    if (customAmtInput) {
+      customAmtInput.addEventListener('input', () => {
+        if (!activeContributionData || !activeContributionData.isCustom) return;
+        const raw = customAmtInput.value.trim();
+        if (isValidCustomAmount(raw)) {
+          const num = parseInt(raw, 10);
+          activeContributionData.amount = num;
+          updateContributionStep1UI(num, 'Custom Contribution', true);
+          clearContribErrors();
+        } else {
+          activeContributionData.amount = null;
+          updateContributionStep1UI(null, 'Custom Contribution', true);
+          const amtBadge = document.getElementById('contrib-amount-badge');
+          if (amtBadge) amtBadge.textContent = raw ? `₹${raw}` : '₹—';
+        }
+      });
+    }
+  }
+
+  // Helper to switch view steps in Contribution Modal
+  function showContribStep(stepNum) {
+    const s1 = document.getElementById('contrib-step1-view');
+    const s2 = document.getElementById('contrib-step2-view');
+    const s3 = document.getElementById('contrib-success-view');
+
+    if (s1) s1.style.display = stepNum === 1 ? 'block' : 'none';
+    if (s2) s2.style.display = stepNum === 2 ? 'block' : 'none';
+    if (s3) s3.style.display = stepNum === 3 ? 'block' : 'none';
+
+    clearContribErrors();
+
+    const inner = document.querySelector('#contrib-dialog .reg-dialog-inner');
+    if (inner) inner.scrollTop = 0;
+  }
+
+  // Helper to update Contribution Step 1 UI
+  function updateContributionStep1UI(amount, tierName, isCustom) {
+    const tierBadge = document.getElementById('contrib-tier-badge');
+    const amountBadge = document.getElementById('contrib-amount-badge');
+    const descBadge = document.getElementById('contrib-desc-badge');
+    const step2Pill = document.getElementById('contrib-step2-pill-text');
+    const proceedBtnText = document.getElementById('contrib-step1-proceed-btn-text');
+
+    const hasValidAmount = amount !== null && amount !== undefined && isValidCustomAmount(amount);
+    const formatted = hasValidAmount ? Number(amount).toLocaleString('en-IN') : '—';
+    const cleanTier = isCustom ? 'Custom' : (tierName || 'Minimal Contribution');
+
+    if (tierBadge) tierBadge.textContent = isCustom ? 'CUSTOM' : cleanTier.toUpperCase();
+    if (amountBadge) amountBadge.textContent = hasValidAmount ? `₹${formatted}` : '₹—';
+    if (descBadge) descBadge.textContent = isCustom ? 'Custom Contribution' : cleanTier;
+    if (step2Pill) step2Pill.textContent = hasValidAmount ? `₹${formatted} UPI Payment` : 'UPI Payment';
+    if (proceedBtnText) {
+      proceedBtnText.textContent = hasValidAmount
+        ? `Proceed to ₹${formatted} UPI Payment →`
+        : 'Proceed to UPI Payment →';
+    }
+  }
+
+  // Helper to update Contribution Step 2 UI
+  function updateContributionStep2UI(amount, tierName, isCustom) {
+    const hasValidAmount = amount !== null && amount !== undefined && isValidCustomAmount(amount);
+    const formatted = hasValidAmount ? Number(amount).toLocaleString('en-IN') : '—';
+    const cleanTier = isCustom ? 'Custom Contribution' : (tierName || 'Minimal Contribution');
+
+    const headerAmount = document.getElementById('contrib-step2-header-amount');
+    const activePill = document.getElementById('contrib-step2-active-pill-text');
+    const summaryName = document.getElementById('contrib-summary-name');
+    const summaryMobile = document.getElementById('contrib-summary-mobile');
+    const summaryTier = document.getElementById('contrib-summary-tier');
+    const summaryAmount = document.getElementById('contrib-summary-amount');
+    const payAmount = document.getElementById('contrib-pay-amount');
+    const noticeAmount = document.getElementById('contrib-notice-amount');
+    const intentBtnText = document.getElementById('contrib-intent-btn-text');
+    const submitBtnText = document.getElementById('contrib-submit-btn-text');
+
+    if (headerAmount) headerAmount.textContent = hasValidAmount ? `₹${formatted}` : '₹—';
+    if (activePill) activePill.textContent = hasValidAmount ? `₹${formatted} UPI Payment` : 'UPI Payment';
+    if (summaryName) summaryName.textContent = (activeContributionData && activeContributionData.fullName) || '—';
+    if (summaryMobile) summaryMobile.textContent = (activeContributionData && activeContributionData.mobile) ? `+91 ${activeContributionData.mobile}` : '—';
+    if (summaryTier) summaryTier.textContent = cleanTier.toUpperCase();
+    if (summaryAmount) summaryAmount.textContent = hasValidAmount ? `₹${formatted}` : '₹—';
+    if (payAmount) payAmount.textContent = hasValidAmount ? `₹${formatted}` : '₹—';
+    if (noticeAmount) noticeAmount.textContent = hasValidAmount ? `₹${formatted}` : 'your contribution amount';
+    const manualAmount = document.getElementById('contrib-manual-amount');
+    if (manualAmount) manualAmount.textContent = hasValidAmount ? `₹${formatted}` : 'your contribution amount';
+    if (intentBtnText) intentBtnText.textContent = hasValidAmount ? `Pay ₹${formatted} via UPI App` : 'Pay via UPI App';
+    if (submitBtnText) submitBtnText.textContent = hasValidAmount ? `Submit Contribution (₹${formatted}) ✦` : 'Submit Contribution ✦';
+
+    renderContributionUpi(hasValidAmount ? Number(amount) : null, cleanTier);
+  }
+
+  // Helper to update Contribution UI across modal (backward compatible)
+  function updateContributionUI(amount, tierName, isCustom) {
+    updateContributionStep1UI(amount, tierName, isCustom);
+    updateContributionStep2UI(amount, tierName, isCustom);
+  }
+
+  // Setup screenshot upload for contributions
+  function setupContributionScreenshotUpload() {
+    const zone = document.getElementById('contrib-screenshot-zone');
+    const fileInput = document.getElementById('contrib-screenshot-file');
+    const promptBox = document.getElementById('contrib-screenshot-prompt');
+    const previewBox = document.getElementById('contrib-screenshot-preview');
+    const previewImg = document.getElementById('contrib-screenshot-preview-img');
+    const filenameEl = document.getElementById('contrib-screenshot-filename');
+    const filesizeEl = document.getElementById('contrib-screenshot-filesize');
+    const changeBtn = document.getElementById('contrib-screenshot-change-btn');
+    const removeBtn = document.getElementById('contrib-screenshot-remove-btn');
+
+    if (!zone || !fileInput) return;
+
+    zone.onclick = (e) => {
+      if (e.target.closest('#contrib-screenshot-remove-btn') || e.target.closest('#contrib-screenshot-change-btn')) {
+        return;
+      }
+      fileInput.click();
+    };
+
+    if (changeBtn) {
+      changeBtn.onclick = (e) => {
+        e.stopPropagation();
+        fileInput.click();
+      };
+    }
+
+    if (removeBtn) {
+      removeBtn.onclick = (e) => {
+        e.stopPropagation();
+        resetContribScreenshot();
+      };
+    }
+
+    zone.ondragover = (e) => {
+      e.preventDefault();
+      zone.classList.add('dragover');
+    };
+    zone.ondragleave = () => {
+      zone.classList.remove('dragover');
+    };
+    zone.ondrop = (e) => {
+      e.preventDefault();
+      zone.classList.remove('dragover');
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        processContribFile(e.dataTransfer.files[0]);
+      }
+    };
+
+    fileInput.onchange = (e) => {
+      if (e.target.files && e.target.files[0]) {
+        processContribFile(e.target.files[0]);
+      }
+    };
+
+    function processContribFile(file) {
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+      if (!allowedTypes.includes(file.type.toLowerCase())) {
+        showContribError(2, 'Please upload a valid image file (JPG, PNG, or WEBP).');
+        resetContribScreenshot();
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        showContribError(2, 'Image file size exceeds 5 MB. Please select a smaller screenshot.');
+        resetContribScreenshot();
+        return;
+      }
+
+      clearContribErrors();
+      selectedContribScreenshotFile = file;
+
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        previewImg.src = ev.target.result;
+        filenameEl.textContent = file.name;
+        filesizeEl.textContent = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+        promptBox.style.display = 'none';
+        previewBox.style.display = 'flex';
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  function resetContribScreenshot() {
+    selectedContribScreenshotFile = null;
+    const fileInput = document.getElementById('contrib-screenshot-file');
+    const previewImg = document.getElementById('contrib-screenshot-preview-img');
+    const filenameEl = document.getElementById('contrib-screenshot-filename');
+    const filesizeEl = document.getElementById('contrib-screenshot-filesize');
+    const previewBox = document.getElementById('contrib-screenshot-preview');
+    const promptBox = document.getElementById('contrib-screenshot-prompt');
+
+    if (fileInput) fileInput.value = '';
+    if (previewImg) previewImg.src = '';
+    if (filenameEl) filenameEl.textContent = '—';
+    if (filesizeEl) filesizeEl.textContent = '—';
+    if (previewBox) previewBox.style.display = 'none';
+    if (promptBox) promptBox.style.display = 'block';
+  }
+
+  // 11. Connect all Contribution buttons
+  function setupContributionButtons() {
+    window.pay = (amount, label) => openContributionModal(amount, label);
+
+    document.querySelectorAll('#tiers button, #sp button, .tier button').forEach(btn => {
+      const origClick = btn.getAttribute('onclick');
+      if (origClick && origClick.includes('pay(')) {
+        btn.removeAttribute('onclick');
+        btn.onclick = (e) => {
+          e.preventDefault();
+          const match = origClick.match(/pay\(\s*['"]?([a-zA-Z0-9]+)['"]?\s*,\s*['"]([^'"]+)['"]\s*\)/);
+          if (match) {
+            openContributionModal(match[1], match[2]);
+          } else {
+            const numMatch = origClick.match(/pay\(\s*(\d+)/);
+            if (numMatch) openContributionModal(numMatch[1], 'Festival Contribution');
+          }
+        };
+      }
+    });
+
+    // Wire up all dedicated contribute CTA buttons to default to Custom Contribution
+    document.querySelectorAll('.btn-contribute-cta').forEach(btn => {
+      btn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        openContributionModal('custom', 'Custom Contribution');
+      };
+    });
+  }
+
+  // 12. Open Contribution Modal
+  function openContributionModal(amount, tierName, isRestore = false) {
+    const dialog = document.getElementById('contrib-dialog');
+    if (!dialog) {
+      injectContributionModal();
+    }
+    const d = document.getElementById('contrib-dialog');
+    if (!d) return;
+
+    // Check for saved draft details
+    const savedDraft = restoreContributionDraft();
+
+    // Default to 'custom' if called without an explicit amount/tier (e.g. from nav or hero Contribute button)
+    if (amount === undefined && tierName === undefined) {
+      if (savedDraft && savedDraft.amount) {
+        amount = savedDraft.amount;
+        tierName = savedDraft.tierName;
+      } else {
+        amount = 'custom';
+        tierName = 'Custom Contribution';
+      }
+    }
+
+    const isCustom = amount === 'custom' || (tierName && String(tierName).toLowerCase().includes('custom'));
+    const customWrap = document.getElementById('contrib-custom-amount-wrap');
+    const customInput = document.getElementById('contrib-custom-amount-input');
+    const nameInput = document.getElementById('contrib-fullname');
+    const mobileInput = document.getElementById('contrib-mobile');
+    const emailInput = document.getElementById('contrib-email');
+
+    let currentAmount;
+    let currentTier;
+
+    if (isCustom) {
+      currentTier = 'Custom Contribution';
+      if (typeof amount === 'number' && isValidCustomAmount(amount)) {
+        currentAmount = amount;
+        if (customInput) customInput.value = String(amount);
+      } else if (typeof amount === 'string' && isValidCustomAmount(amount)) {
+        currentAmount = parseInt(amount, 10);
+        if (customInput) customInput.value = String(currentAmount);
+      } else {
+        currentAmount = (savedDraft && savedDraft.amount) ? savedDraft.amount : null;
+        if (customInput) customInput.value = currentAmount ? String(currentAmount) : '';
+      }
+      if (customWrap) customWrap.style.display = 'block';
+      if (customInput) {
+        customInput.required = true;
+        customInput.disabled = false;
+      }
+    } else {
+      currentTier = tierName || 'Minimal Contribution';
+      currentAmount = Number(amount) || 99;
+      if (customWrap) customWrap.style.display = 'none';
+      if (customInput) {
+        customInput.value = '';
+        customInput.required = false;
+      }
+    }
+
+    clearContribErrors();
+    resetContribScreenshot();
+
+    // Preserve any draft or existing inputs so the user never re-types needlessly
+    const restoredName = (nameInput && nameInput.value) || (savedDraft?.formData?.fullName) || '';
+    const restoredMobile = (mobileInput && mobileInput.value) || (savedDraft?.formData?.mobile) || '';
+    const restoredEmail = (emailInput && emailInput.value) || (savedDraft?.formData?.email) || '';
+
+    if (nameInput) nameInput.value = restoredName;
+    if (mobileInput) mobileInput.value = restoredMobile;
+    if (emailInput) emailInput.value = restoredEmail;
+
+    activeContributionData = {
+      amount: currentAmount,
+      tierName: currentTier,
+      isCustom: isCustom,
+      fullName: restoredName,
+      mobile: restoredMobile,
+      email: restoredEmail
+    };
+
+    if (isRestore && savedDraft && savedDraft.step === 2 && currentAmount) {
+      updateContributionStep2UI(currentAmount, currentTier, isCustom);
+      showContribStep(2);
+    } else {
+      updateContributionStep1UI(currentAmount, currentTier, isCustom);
+      showContribStep(1);
+    }
+
+    // Lock page background scrolling
+    document.body.style.overflow = 'hidden';
+
+    if (typeof d.showModal === 'function') {
+      d.showModal();
+    } else {
+      d.setAttribute('open', '');
+    }
+
+    if (isCustom && customInput && !isRestore) {
+      setTimeout(() => customInput.focus(), 80);
+    }
+  }
+
+  function closeContributionModal() {
+    const dialog = document.getElementById('contrib-dialog');
+    if (!dialog) return;
+
+    document.body.style.overflow = '';
+    if (typeof dialog.close === 'function') {
+      dialog.close();
+    } else {
+      dialog.removeAttribute('open');
+    }
+
+    // Only clean session when user has completed submission; preserve in-progress draft!
+    if (activeContributionData && activeContributionData.submitted_final) {
+      clearContributionDraft();
+      activeContributionData = null;
+      selectedContribScreenshotFile = null;
+      resetContribScreenshot();
+      clearContribErrors();
+      showContribStep(1);
+    }
+  }
+
+  // 13. Render Contribution UPI Intent & QR
+  function renderContributionUpi(amount, tierName) {
+    const paymentCfg = getPaymentConfig();
+
+    const hasAmount = amount !== null && amount !== undefined && !isNaN(Number(amount)) && Number(amount) >= 1;
+    const upiQuery = hasAmount
+      ? `pa=${encodeURIComponent(paymentCfg.upiId)}&pn=${encodeURIComponent(paymentCfg.payeeName)}&am=${amount}&cu=INR&tn=${encodeURIComponent('HLF Contribution - ' + tierName)}`
+      : `pa=${encodeURIComponent(paymentCfg.upiId)}&pn=${encodeURIComponent(paymentCfg.payeeName)}&cu=INR&tn=${encodeURIComponent('HLF Contribution - ' + tierName)}`;
+    const upiIntentUrl = `upi://pay?${upiQuery}`;
+
+    const intentBtn = document.getElementById('contrib-pay-intent-btn');
+    if (intentBtn) {
+      intentBtn.href = upiIntentUrl;
+      intentBtn.removeAttribute('target');
+      intentBtn.removeAttribute('rel');
+    }
+
+    const upiTxt = document.getElementById('contrib-upi-id-text');
+    if (upiTxt) {
+      upiTxt.textContent = paymentCfg.upiId;
+    }
+
+    const payeeTxt = document.getElementById('contrib-payee-name-text');
+    if (payeeTxt) {
+      payeeTxt.textContent = paymentCfg.payeeName;
+    }
+
+    const qrCanvas = document.getElementById('contrib-qr-canvas');
+    if (qrCanvas && window.QRCode) {
+      qrCanvas.innerHTML = '';
+      try {
+        new window.QRCode(qrCanvas, {
+          text: upiIntentUrl,
+          width: 140,
+          height: 140,
+          colorDark: '#0b2a22',
+          colorLight: '#ffffff',
+          correctLevel: window.QRCode.CorrectLevel.M
+        });
+      } catch (e) {
+        console.warn('QR code generation error:', e);
+      }
+    }
+  }
+
+  // 14. Handle Step 1 Proceed (Validates Contributor Details -> Transitions to Step 2)
+  function handleContributionStep1Proceed(e) {
+    if (e && e.preventDefault) e.preventDefault();
+
+    clearContribErrors();
+
+    if (!activeContributionData) {
+      showContribError(1, 'Please select a contribution tier.');
+      return;
+    }
+
+    const nameInput = document.getElementById('contrib-fullname');
+    const mobileInput = document.getElementById('contrib-mobile');
+    const emailInput = document.getElementById('contrib-email');
+    const customInput = document.getElementById('contrib-custom-amount-input');
+
+    const fullName = nameInput ? nameInput.value.trim() : '';
+    const mobile = mobileInput ? mobileInput.value.trim() : '';
+    const email = emailInput ? emailInput.value.trim() : '';
+
+    // Validation 1: Full Name >= 2 characters
+    if (!fullName || fullName.length < 2) {
+      showContribError(1, 'Please enter your full name (minimum 2 characters).');
+      if (nameInput) nameInput.focus();
+      return;
+    }
+
+    // Validation 2: Indian 10-digit mobile number
+    const mobileClean = mobile.replace(/[\s-]/g, '');
+    const mobileRegex = /^[6-9]\d{9}$/;
+    if (!mobileRegex.test(mobileClean)) {
+      showContribError(1, 'Please enter a valid 10-digit Indian mobile number.');
+      if (mobileInput) mobileInput.focus();
+      return;
+    }
+
+    // Validation 3: Email optional, but if entered must be valid
+    if (email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        showContribError(1, 'Please enter a valid email address.');
+        if (emailInput) emailInput.focus();
+        return;
+      }
+    }
+
+    // Validation 4: Custom Contribution Amount if custom tier
+    let finalAmount = activeContributionData.amount;
+    if (activeContributionData.isCustom) {
+      const rawVal = customInput ? customInput.value.trim() : '';
+      if (!isValidCustomAmount(rawVal)) {
+        showContribError(1, 'Please enter a valid contribution amount (minimum ₹1).');
+        if (customInput) customInput.focus();
+        return;
+      }
+      finalAmount = parseInt(rawVal, 10);
+      activeContributionData.amount = finalAmount;
+    } else {
+      finalAmount = Number(activeContributionData.amount) || 99;
+    }
+
+    // Save canonically to activeContributionData WITHOUT clearing DOM inputs
+    activeContributionData.fullName = fullName;
+    activeContributionData.mobile = mobileClean;
+    activeContributionData.email = email;
+    activeContributionData.amount = finalAmount;
+
+    // Populate Step 2 UI elements
+    updateContributionStep2UI(finalAmount, activeContributionData.tierName, activeContributionData.isCustom);
+
+    // Save draft state so user can return after launching UPI app
+    saveContributionDraft(2);
+
+    // Switch view to Step 2
+    showContribStep(2);
+  }
+
+  // Handle Step 2 Back to Details Navigation
+  function handleContributionStep2Back() {
+    clearContribErrors();
+    if (activeContributionData) {
+      const nameInput = document.getElementById('contrib-fullname');
+      const mobileInput = document.getElementById('contrib-mobile');
+      const emailInput = document.getElementById('contrib-email');
+      const customInput = document.getElementById('contrib-custom-amount-input');
+
+      if (nameInput && activeContributionData.fullName) {
+        nameInput.value = activeContributionData.fullName;
+      }
+      if (mobileInput && activeContributionData.mobile) {
+        mobileInput.value = activeContributionData.mobile;
+      }
+      if (emailInput && activeContributionData.email !== undefined) {
+        emailInput.value = activeContributionData.email || '';
+      }
+      if (customInput && activeContributionData.isCustom && activeContributionData.amount) {
+        customInput.value = String(activeContributionData.amount);
+      }
+    }
+    // Return to Step 1. All input values are guaranteed intact!
+    showContribStep(1);
+  }
+
+  // 15. Handle Contribution Submit (Payment Screenshot & Final Submission)
+  async function handleContributionSubmit(e) {
+    if (e && e.preventDefault) e.preventDefault();
+
+    clearContribErrors();
+
+    if (!activeContributionData || !activeContributionData.amount) {
+      showContribError(2, 'Contribution session expired. Please return to Step 1 and try again.');
+      return;
+    }
+
+    // Validate screenshot file
+    if (!selectedContribScreenshotFile) {
+      showContribError(2, 'Please upload your payment transaction screenshot before submitting your contribution.');
+      return;
+    }
+
+    const submitBtn = document.getElementById('contrib-submit-btn');
+    const origBtnHtml = submitBtn ? submitBtn.innerHTML : 'Submit Contribution ✦';
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="reg-spinner"></span> Uploading Proof & Submitting...';
+    }
+
+    try {
+      const sb = window.getSupabase ? window.getSupabase() : null;
+      if (!sb) {
+        throw new Error('Supabase client could not be initialized. Please check network connection.');
+      }
+
+      // Step 1: Allocate contribution ID using RPC
+      let contribId = null;
+      try {
+        const { data: allocData, error: allocErr } = await sb.rpc('allocate_contribution_id');
+        if (!allocErr && allocData && allocData.contribution_id) {
+          contribId = allocData.contribution_id;
+        }
+      } catch (allocEx) {
+        console.warn('RPC allocate_contribution_id error:', allocEx);
+      }
+
+      if (!contribId) {
+        contribId = 'HLFC-' + String(Math.floor(1000 + Math.random() * 9000));
+      }
+
+      // Step 2: Upload Screenshot to hlf-contribution-payment-proofs bucket (pure INSERT without upsert)
+      const fileExt = (selectedContribScreenshotFile.name.split('.').pop() || 'png').toLowerCase();
+      const fileTimestamp = Date.now();
+      const filePath = `contributions/${contribId}/payment-proof-${fileTimestamp}.${fileExt}`;
+
+      const { data: uploadData, error: uploadErr } = await sb.storage
+        .from('hlf-contribution-payment-proofs')
+        .upload(filePath, selectedContribScreenshotFile, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadErr) {
+        console.error('Contribution screenshot upload error:', uploadErr);
+        throw new Error('Payment screenshot upload failed: ' + uploadErr.message);
+      }
+
+      const { data: publicUrlData } = sb.storage.from('hlf-contribution-payment-proofs').getPublicUrl(filePath);
+      const screenshotUrl = publicUrlData ? publicUrlData.publicUrl : null;
+
+      // Step 3: Call submit_contribution RPC
+      const tierName = activeContributionData.isCustom ? 'Custom' : activeContributionData.tierName;
+      const { data, error } = await sb.rpc('submit_contribution', {
+        p_full_name: activeContributionData.fullName,
+        p_mobile: activeContributionData.mobile,
+        p_amount: Number(activeContributionData.amount),
+        p_contribution_type: tierName,
+        p_payment_screenshot_path: filePath,
+        p_payment_screenshot_url: screenshotUrl,
+        p_contribution_id: contribId,
+        p_email: activeContributionData.email || null,
+        p_transaction_id: null
+      });
+
+      if (error) {
+        console.error('Contribution RPC error:', error);
+        throw new Error('Contribution submission failed: ' + error.message);
+      }
+
+      if (!data || !data.success) {
+        throw new Error('Unexpected response from contribution service.');
+      }
+
+      // Record contribution data internally for receipt
+      activeContributionData = {
+        contribution_id: data.contribution_id || contribId,
+        full_name: data.full_name || activeContributionData.fullName,
+        amount: data.amount || activeContributionData.amount,
+        contribution_type: data.contribution_type || tierName,
+        mobile: activeContributionData.mobile,
+        email: activeContributionData.email,
+        payment_screenshot_path: filePath,
+        payment_screenshot_url: screenshotUrl,
+        payment_status: 'SUBMITTED',
+        created_at: data.created_at || new Date().toISOString(),
+        submitted_final: true
+      };
+
+      // Clear draft upon completed submission
+      clearContributionDraft();
+
+      displayContributionSuccessView(activeContributionData);
+
+    } catch (err) {
+      console.error('Contribution submit error:', err);
+      showContribError(2, err.message || 'An error occurred while submitting your contribution. Please try again.');
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = origBtnHtml;
+      }
+    }
+  }
+
+  function showContribError(stepNum, msg) {
+    if (typeof stepNum === 'string') {
+      msg = stepNum;
+      stepNum = 1;
+    }
+    const errId = stepNum === 2 ? 'contrib-error-banner-2' : 'contrib-error-banner-1';
+    const errBanner = document.getElementById(errId) || document.getElementById('contrib-error-banner');
+    if (errBanner) {
+      errBanner.textContent = msg;
+      errBanner.style.display = 'block';
+      errBanner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    // Also set legacy contrib-error-banner if on step 1
+    const legacyBanner = document.getElementById('contrib-error-banner');
+    if (legacyBanner && legacyBanner !== errBanner) {
+      legacyBanner.textContent = msg;
+      legacyBanner.style.display = 'block';
+    }
+  }
+
+  function clearContribErrors() {
+    ['contrib-error-banner-1', 'contrib-error-banner-2', 'contrib-error-banner'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.style.display = 'none'; el.textContent = ''; }
+    });
+  }
+
+  // 16. Display Redesigned Official HLF Acknowledgement Screen
+  function displayContributionSuccessView(data) {
+    showContribStep(3);
+
+    const nameEl = document.getElementById('contrib-ack-name');
+    const typeEl = document.getElementById('contrib-ack-type');
+    const amtEl = document.getElementById('contrib-ack-amount');
+    const dateEl = document.getElementById('contrib-ack-date');
+
+    if (nameEl) nameEl.textContent = data.full_name;
+    if (typeEl) typeEl.textContent = data.contribution_type;
+    if (amtEl) amtEl.textContent = `₹${Number(data.amount).toLocaleString('en-IN')}`;
+    if (dateEl) dateEl.textContent = formatAcknowledgementDate(data.created_at);
+
+    const inner = document.querySelector('#contrib-dialog .reg-dialog-inner');
+    if (inner) inner.scrollTop = 0;
+  }
+
+  // 16. Printable Contribution Confirmation Receipt (Polished Official Festival Acknowledgement)
+  function printContributionConfirmation() {
+    if (!activeContributionData) return;
+    const d = activeContributionData;
+    const printDate = formatAcknowledgementDate(d.created_at);
+
+    const printWindow = window.open('', '_blank', 'width=800,height=900');
+    if (!printWindow) {
+      window.print();
+      return;
+    }
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="utf-8">
+        <title>HLF 2026 Contribution Acknowledgement - ${d.full_name}</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap">
+        <style>
+          @page {
+            size: A4 portrait;
+            margin: 15mm;
+          }
+          * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          body {
+            font-family: 'Fira Code', monospace;
+            padding: 30px;
+            color: #17332d;
+            background: #fff;
+            max-width: 680px;
+            margin: auto;
+          }
+          .ack-ticket {
+            border: 2px solid #12907a;
+            border-radius: 16px;
+            padding: 36px;
+            background: #fffefb;
+            position: relative;
+          }
+          .ack-header {
+            text-align: center;
+            border-bottom: 2px solid #17332d;
+            padding-bottom: 20px;
+            margin-bottom: 24px;
+          }
+          .ack-logo-title {
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: #17332d;
+          }
+          .ack-logo-title span { color: #d0021b; }
+          .ack-logo-sub {
+            display: block;
+            font-size: 11px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: #4b625b;
+            margin-top: 4px;
+          }
+          .ack-badge {
+            display: inline-block;
+            background: #12907a;
+            color: #fff;
+            padding: 6px 18px;
+            border-radius: 99px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin: 14px 0 8px;
+          }
+          .ack-dates {
+            font-size: 12px;
+            color: #4b625b;
+            line-height: 1.4;
+          }
+          .ack-section {
+            margin: 22px 0;
+            padding: 16px 0;
+            border-bottom: 1px solid rgba(23, 51, 45, 0.12);
+          }
+          .ack-tag {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: #12907a;
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: 6px;
+          }
+          .ack-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #17332d;
+            margin: 0 0 6px;
+          }
+          .ack-desc {
+            font-size: 13px;
+            color: #4b625b;
+            margin: 0;
+            line-height: 1.5;
+          }
+          .ack-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+          }
+          .ack-table td {
+            padding: 10px 4px;
+            border-bottom: 1px dashed rgba(23, 51, 45, 0.15);
+            font-size: 13px;
+          }
+          .ack-table td.lbl {
+            color: #4b625b;
+            width: 44%;
+          }
+          .ack-table td.val {
+            font-weight: 600;
+            color: #17332d;
+          }
+          .ack-table td.val.amount {
+            color: #12907a;
+            font-size: 18px;
+            font-weight: 800;
+          }
+          .ack-table td.val.status {
+            color: #12907a;
+          }
+          .ack-gratitude-box {
+            background: rgba(18, 144, 122, 0.08);
+            border-left: 4px solid #12907a;
+            padding: 14px 18px;
+            border-radius: 6px;
+            margin: 20px 0;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #17332d;
+          }
+          .ack-footer {
+            text-align: center;
+            font-size: 11px;
+            color: #4b625b;
+            margin-top: 24px;
+            line-height: 1.6;
+          }
+          .ack-footer strong {
+            color: #17332d;
+          }
+          @media print {
+            body { padding: 0; background: none; }
+            .no-print { display: none !important; }
+            .ack-ticket { border-color: #17332d; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="ack-ticket">
+          <div class="ack-header">
+            <div class="ack-logo-title">HLF<span>✦</span>2026</div>
+            <span class="ack-logo-sub">Hadith Literature Festival</span>
+            <div><span class="ack-badge">CONTRIBUTION ACKNOWLEDGEMENT</span></div>
+            <div class="ack-dates">
+              <strong>18–20 OCTOBER 2026</strong><br>
+              Darul Huda Islamic University · Chemmad, Kerala
+            </div>
+          </div>
+
+          <div class="ack-section">
+            <span class="ack-tag">WITH GRATITUDE</span>
+            <h2 class="ack-name">Thank you, ${d.full_name}</h2>
+            <p class="ack-desc">Your generous contribution supports the Hadith Literature Festival 2026.</p>
+          </div>
+
+          <table class="ack-table">
+            <tr>
+              <td class="lbl">Contribution Type:</td>
+              <td class="val">${d.contribution_type}</td>
+            </tr>
+            <tr>
+              <td class="lbl">Contribution Amount:</td>
+              <td class="val amount">₹${Number(d.amount).toLocaleString('en-IN')}</td>
+            </tr>
+            <tr>
+              <td class="lbl">Payment Method:</td>
+              <td class="val">UPI</td>
+            </tr>
+            <tr>
+              <td class="lbl">Payment Proof:</td>
+              <td class="val status">Submitted ✓</td>
+            </tr>
+            <tr>
+              <td class="lbl">Submitted On:</td>
+              <td class="val">${printDate}</td>
+            </tr>
+          </table>
+
+          <div class="ack-gratitude-box">
+            <strong style="color: #12907a; letter-spacing: 1px; display: block; margin-bottom: 4px;">WITH HEARTFELT GRATITUDE</strong>
+            Your support helps us create meaningful spaces for learning, scholarship and academic conversation at Darul Huda Islamic University.
+          </div>
+
+          <div class="ack-footer">
+            <strong>Department of Hadith and Related Sciences</strong><br>
+            Darul Huda Islamic University · Chemmad, Kerala<br>
+            hadithliteraturefestival@gmail.com · +91 73065 54055
+          </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 24px;" class="no-print">
+          <button onclick="window.print()" style="padding: 12px 28px; font-weight: bold; font-family: 'Fira Code', monospace; cursor: pointer; border-radius: 99px; background: #12907a; color: #fff; border: 0; font-size: 14px; box-shadow: 0 4px 12px rgba(18,144,122,0.3);">🖨️ Print / Save as PDF</button>
+        </div>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+    setTimeout(() => {
+      printWindow.focus();
+    }, 250);
+  }
+
+  // 17. Dynamic Data Sync with Supabase (Featured Image, Gallery, Poster, Schedule, Updates, Settings)
+  async function loadSupabaseData() {
+    try {
+      const sb = window.getSupabase ? window.getSupabase() : null;
+      if (!sb) return;
+
+      // A. Dynamic Featured Image & Public Gallery Sync
+      try {
+        // 1. Featured image for Landing Page
+        const { data: featuredData } = await sb.from('gallery_items')
+          .select('*')
+          .eq('published', true)
+          .eq('featured', true)
+          .limit(1);
+
+        if (featuredData && featuredData.length > 0 && featuredData[0].image_url) {
+          const featUrl = featuredData[0].image_url;
+          const pst = document.querySelector('.pst');
+          const hbg = document.querySelector('.hbg');
+          if (pst) pst.src = featUrl;
+          if (hbg) hbg.style.backgroundImage = 'url(' + featUrl + ')';
+        } else {
+          // Fallback to active poster
+          const { data: posterData } = await sb.from('posters').select('*').eq('is_active', true).limit(1);
+          if (posterData && posterData.length > 0 && posterData[0].image_url) {
+            const pUrl = posterData[0].image_url;
+            const pst = document.querySelector('.pst');
+            const hbg = document.querySelector('.hbg');
+            if (pst) pst.src = pUrl;
+            if (hbg) hbg.style.backgroundImage = 'url(' + pUrl + ')';
+          }
+        }
+
+        // 2. Published Gallery items for Public Gallery Section
+        const { data: galleryData } = await sb.from('gallery_items')
+          .select('*')
+          .eq('published', true)
+          .order('display_order', { ascending: true })
+          .order('created_at', { ascending: false });
+
+        if (galleryData && galleryData.length > 0 && typeof window.MEDIA !== 'undefined') {
+          const dynMedia = galleryData.map(item => ({
+            type: 'image',
+            src: item.image_url,
+            cat: item.category || 'Events',
+            title: item.title,
+            desc: item.description || '',
+            span: item.featured ? 2 : 1
+          }));
+
+          // Replace in-memory MEDIA
+          window.MEDIA.splice(0, window.MEDIA.length, ...dynMedia);
+
+          // Update gallery category chips and re-render
+          const categories = ['All', 'Events', 'Sessions', 'Guests', 'Moments'];
+          const gchipsEl = document.getElementById('gchips');
+          if (gchipsEl && typeof window.chips === 'function' && typeof window.gal === 'function') {
+            window.chips(gchipsEl, categories, window.gal);
+            window.gal('All');
+          }
+        }
+      } catch (err) {
+        console.warn('Could not sync dynamic gallery:', err);
+      }
+
+      // B. Dynamic Schedule Items — Synchronize with Master Programme Management System
+      try {
+        if (typeof window.loadScheduleFromDatabase === 'function') {
+          await window.loadScheduleFromDatabase();
+        }
+      } catch (err) {
+        console.warn('Could not sync dynamic schedule:', err);
+      }
+
+      // C. Dynamic Event Updates
+      try {
+        const { data: updateData } = await sb.from('event_updates')
+          .select('*')
+          .eq('is_published', true)
+          .order('created_at', { ascending: false });
+
+        if (updateData && updateData.length > 0 && typeof window.POSTS !== 'undefined') {
+          const colors = ["--red", "--teal", "--amb", "--yel", "--blue", "--grn"];
+          const dynPosts = updateData.map((u, i) => ({
+            cat: u.category || "Update",
+            title: u.title,
+            text: u.description,
+            date: u.date,
+            c: colors[i % colors.length],
+            wide: i === 0 ? 1 : 0,
+            img: u.image_url ? null : (i === 0 ? "poster" : null)
+          }));
+          window.POSTS.splice(0, window.POSTS.length, ...dynPosts);
+          const cats = ["All", ...new Set(window.POSTS.map(p => p.cat))];
+          const chipsEl = document.getElementById('chips');
+          if (chipsEl && typeof window.chips === 'function' && typeof window.feed === 'function') {
+            window.chips(chipsEl, cats, window.feed);
+            window.feed("All");
+          }
+        }
+      } catch (err) {
+        console.warn('Could not sync event updates:', err);
+      }
+
+      // D. Dynamic Festival Settings
+      try {
+        const { data: settingsData } = await sb.from('festival_settings').select('*').eq('id', 'general').single();
+        if (settingsData && window.HLF_CONFIG) {
+          if (settingsData.upi_id) window.HLF_CONFIG.payment.upiId = settingsData.upi_id;
+          if (settingsData.upi_payee_name) window.HLF_CONFIG.payment.payeeName = settingsData.upi_payee_name;
+          if (settingsData.upi_qr_image_url) window.HLF_CONFIG.payment.qrImagePath = settingsData.upi_qr_image_url;
+          renderUpiPaymentControls(activeRegistrationData ? activeRegistrationData.registration_id : null);
+          if (activeContributionData && activeContributionData.amount) {
+            renderContributionUpi(activeContributionData.amount, activeContributionData.tierName || 'Supporter');
+          }
+          await syncSeatAvailability();
+        }
+      } catch (err) {
+        console.warn('Could not sync festival settings:', err);
+      }
+
+    } catch (globalErr) {
+      console.warn('Supabase global sync error:', globalErr);
+    }
+  }
+
+  // Expose helpers globally
+  window.openRegistrationModal = openRegistrationModal;
+  window.closeRegistrationModal = closeRegistrationModal;
+  window.openContributionModal = openContributionModal;
+  window.closeContributionModal = closeContributionModal;
+  window.loadSupabaseData = loadSupabaseData;
+  window.bootHLFInteractions = bootHLFInteractions;
+  window.syncSeatAvailability = syncSeatAvailability;
+  window.renderSeatAvailabilityUI = renderSeatAvailabilityUI;
+  window.getSeatAvailabilityData = () => activeSeatData;
+
+  // Delegated click handler: Guaranteed to intercept all .reg and .btn-contribute-cta clicks anywhere in document
+  document.addEventListener('click', function (e) {
+    const seatRegButton = e.target.closest('#seat-reg-cta');
+    if (seatRegButton) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (activeSeatData && activeSeatData.is_full) {
+        alert('All 30 programme seats are booked for HLF 2026. Delegate registration is currently at full capacity.');
+        return;
+      }
+      openRegistrationModal();
+      return;
+    }
+
+    const contributeButton = e.target.closest('.btn-contribute-cta');
+    if (contributeButton) {
+      e.preventDefault();
+      e.stopPropagation();
+      openContributionModal('custom', 'Custom Contribution');
+      return;
+    }
+
+    const registerButton = e.target.closest('.reg');
+    if (!registerButton) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (activeSeatData && activeSeatData.is_full && (!activeRegistrationData || !activeRegistrationData.registration_id)) {
+      alert('All programme seats are currently booked for HLF 2026. Delegate registration is closed.');
+      return;
+    }
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (typeof window.openRegistrationModal === 'function') {
+      window.openRegistrationModal();
+    } else {
+      console.error('HLF registration handler unavailable');
+    }
+  });
+
+  // URL Hash change listener
+  window.addEventListener('hashchange', () => {
+    if (window.location.hash === '#register') {
+      openRegistrationModal();
+    }
+  });
+
+  // Safe DOM ready bootstrap
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootHLFInteractions, { once: true });
+  } else {
+    bootHLFInteractions();
+  }
+})();

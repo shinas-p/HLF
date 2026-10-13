@@ -1,0 +1,2757 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>HLF 2026 — Hadith Literature Festival</title>
+  <meta name="description"
+    content="Hadith Literature Festival, 18–20 October 2026, Darul Huda Islamic University, Chemmad.">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&display=swap">
+  <link rel="icon" type="image/png" href="assets/images/logo/favicon.png">
+  <link rel="apple-touch-icon" href="assets/images/logo/favicon.png">
+  <link rel="stylesheet" href="css/registration.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/site-images.js"></script>
+  <script src="js/registration.js" defer></script>
+  <script src="js/quiz.js" defer></script>
+  <script>try { var t = localStorage.getItem('hlf-theme') || (matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light'); document.documentElement.dataset.theme = t } catch (e) { } document.documentElement.classList.add('js')</script>
+  <style>
+    :root {
+      --bg: #fbf7d6;
+      --bg2: #f0eeb6;
+      --ink: #17332d;
+      --mute: #4b625b;
+      --card: rgba(255, 255, 255, .55);
+      --line: rgba(23, 51, 45, .18);
+      --red: #d0021b;
+      --amb: #c07a00;
+      --teal: #12907a;
+      --yel: #d9c42a;
+      --blue: #2f5d93;
+      --grn: #5fa83a;
+      --on: #fff;
+      box-sizing: border-box;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px)
+    }
+
+    @media(prefers-color-scheme:dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #06130f;
+        --bg2: #0b211b;
+        --ink: #f6f3d4;
+        --mute: #a9bdb4;
+        --card: rgba(255, 255, 255, .06);
+        --line: rgba(246, 243, 212, .15);
+        --red: #ff4258;
+        --amb: #f2a62c;
+        --teal: #2fd1b3;
+        --yel: #f0dd3c;
+        --blue: #5b94d6;
+        --grn: #8bd45a;
+        --on: #06130f
+      }
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #06130f;
+      --bg2: #0b211b;
+      --ink: #f6f3d4;
+      --mute: #a9bdb4;
+      --card: rgba(255, 255, 255, .06);
+      --line: rgba(246, 243, 212, .15);
+      --red: #ff4258;
+      --amb: #f2a62c;
+      --teal: #2fd1b3;
+      --yel: #f0dd3c;
+      --blue: #5b94d6;
+      --grn: #8bd45a;
+      --on: #06130f
+    }
+
+    *,
+    *:before,
+    *:after {
+      box-sizing: inherit
+    }
+
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: env(safe-area-inset-top, 0px)
+    }
+
+    html,
+    body {
+      margin: 0
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font: 400 15px/1.7 'Fira Code', ui-monospace, Menlo, monospace;
+      font-feature-settings: "calt" 0;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased
+    }
+
+    body:before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background: linear-gradient(var(--line) 1px, transparent 1px) 0 0/56px 56px, linear-gradient(90deg, var(--line) 1px, transparent 1px) 0 0/56px 56px;
+      opacity: .35;
+      mask: radial-gradient(ellipse at 50% 30%, #000, transparent 75%);
+      -webkit-mask: radial-gradient(ellipse at 50% 30%, #000, transparent 75%)
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none
+    }
+
+    button {
+      font: inherit;
+      cursor: pointer;
+      color: inherit
+    }
+
+    h1,
+    h2,
+    h3 {
+      margin: 0;
+      font-weight: 700;
+      line-height: .95;
+      letter-spacing: -.04em
+    }
+
+    section {
+      padding: clamp(72px, 11vw, 140px) 0;
+      position: relative
+    }
+
+    .w {
+      width: min(1200px, 100% - 40px);
+      margin: auto
+    }
+
+    .tag {
+      font-size: 12px;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--mute)
+    }
+
+    .tag b {
+      color: var(--red)
+    }
+
+    .big {
+      font-size: clamp(2.4rem, 7vw, 5.6rem)
+    }
+
+    .r {
+      color: var(--red)
+    }
+
+    .a {
+      color: var(--amb)
+    }
+
+    .t {
+      color: var(--teal)
+    }
+
+    .y {
+      color: var(--yel)
+    }
+
+    .bl {
+      color: var(--blue)
+    }
+
+    .glass {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px)
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 24px;
+      border-radius: 99px;
+      font-weight: 700;
+      border: 1px solid var(--line);
+      background: var(--card);
+      transition: .3s
+    }
+
+    .btn:hover {
+      transform: translateY(-3px)
+    }
+
+    .btn.p {
+      background: linear-gradient(120deg, var(--red), var(--amb));
+      color: #fff;
+      border: 0;
+      box-shadow: 0 10px 40px -10px var(--red)
+    }
+
+    .btn:disabled {
+      opacity: .45;
+      pointer-events: none
+    }
+
+    /* Premium Animated Contribute Button System */
+    .btn-contribute-cta {
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+      background: linear-gradient(125deg, #d0021b 0%, #dc2e12 42%, #c07a00 100%);
+      color: #ffffff !important;
+      font-weight: 700;
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      border-radius: 99px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+      cursor: pointer;
+      box-shadow: 0 4px 18px -2px rgba(208, 2, 27, 0.45), 0 2px 8px -1px rgba(192, 122, 0, 0.35);
+      transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.25s ease;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    :root[data-theme="dark"] .btn-contribute-cta {
+      background: linear-gradient(125deg, #ff4258 0%, #e6391d 45%, #f2a62c 100%);
+      box-shadow: 0 4px 22px -2px rgba(255, 66, 88, 0.5), 0 2px 10px -1px rgba(242, 166, 44, 0.4);
+      border-color: rgba(255, 255, 255, 0.32);
+    }
+
+    .btn-contribute-cta:hover {
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 0 8px 28px -2px rgba(208, 2, 27, 0.7), 0 4px 16px 0 rgba(192, 122, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.45);
+      border-color: rgba(255, 255, 255, 0.5);
+      color: #ffffff !important;
+    }
+
+    :root[data-theme="dark"] .btn-contribute-cta:hover {
+      box-shadow: 0 8px 32px -2px rgba(255, 66, 88, 0.75), 0 4px 18px 0 rgba(242, 166, 44, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.5);
+    }
+
+    .btn-contribute-cta:active {
+      transform: translateY(-1px) scale(0.99);
+    }
+
+    /* Text and icon remain crisp and sharp above the sweeping shine */
+    .btn-contribute-cta>* {
+      position: relative;
+      z-index: 2;
+      color: #ffffff !important;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    .btn-contribute-cta .btn-sparkle {
+      color: #fff6c9 !important;
+      font-size: 1.05em;
+      line-height: 1;
+      display: inline-block;
+      transform: translateY(-0.5px);
+      filter: drop-shadow(0 0 4px rgba(255, 246, 201, 0.65));
+    }
+
+    /* Continuous glossy light reflection sweeping across button surface */
+    .btn-contribute-cta::after {
+      content: "";
+      position: absolute;
+      top: -60%;
+      left: -70%;
+      width: 60%;
+      height: 220%;
+      background: linear-gradient(90deg,
+          rgba(255, 255, 255, 0) 0%,
+          rgba(255, 255, 255, 0.08) 25%,
+          rgba(255, 255, 255, 0.68) 50%,
+          rgba(255, 255, 255, 0.08) 75%,
+          rgba(255, 255, 255, 0) 100%);
+      transform: translateX(-120%) skewX(-24deg);
+      pointer-events: none;
+      z-index: 1;
+      animation: contributeGlossyShine 3.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+
+    @keyframes contributeGlossyShine {
+      0% {
+        transform: translateX(-120%) skewX(-24deg);
+        opacity: 0;
+      }
+
+      5% {
+        opacity: 1;
+      }
+
+      38% {
+        opacity: 1;
+      }
+
+      48% {
+        transform: translateX(380%) skewX(-24deg);
+        opacity: 0;
+      }
+
+      100% {
+        transform: translateX(380%) skewX(-24deg);
+        opacity: 0;
+      }
+    }
+
+    /* Hero button container & styles */
+    .hero-actions {
+      display: inline-flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .hero-contrib {
+      font-size: 15px;
+      padding: 14px 26px;
+    }
+
+    .hero-reg {
+      font-size: 15px;
+      padding: 14px 24px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      color: var(--ink);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .hero-reg:hover {
+      border-color: var(--red);
+      color: var(--ink);
+    }
+
+    /* Nav CTA styles — Dominant Call-to-Action */
+    nav .btn-contribute-cta.nav-contrib {
+      padding: 10px 22px;
+      font-size: 14.5px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      line-height: 1.25;
+      flex-shrink: 0;
+      box-shadow: 0 4px 20px -2px rgba(208, 2, 27, 0.48), 0 2px 10px -1px rgba(192, 122, 0, 0.38);
+    }
+
+    nav .btn-contribute-cta.nav-contrib:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 6px 26px -2px rgba(208, 2, 27, 0.7), 0 3px 14px 0 rgba(192, 122, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.45);
+    }
+
+    :root[data-theme="dark"] nav .btn-contribute-cta.nav-contrib {
+      box-shadow: 0 4px 22px -2px rgba(255, 66, 88, 0.55), 0 2px 10px -1px rgba(242, 166, 44, 0.42);
+    }
+
+    /* nav */
+    nav {
+      position: fixed;
+      top: calc(12px + env(safe-area-inset-top, 0px));
+      left: 50%;
+      translate: -50% 0;
+      width: min(1200px, 100% - 24px);
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 8px 10px 8px 18px;
+      border-radius: 99px
+    }
+
+    nav .lg {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      letter-spacing: -.03em;
+      font-size: 20px;
+      margin-right: auto
+    }
+
+    nav .lg i {
+      color: var(--red);
+      font-style: normal
+    }
+
+    nav .ls {
+      display: flex;
+      gap: 4px
+    }
+
+    nav .ls a {
+      padding: 8px 13px;
+      border-radius: 99px;
+      font-size: 14px;
+      color: var(--mute)
+    }
+
+    nav .ls a:hover,
+    nav .ls a.on {
+      color: var(--ink);
+      background: var(--line)
+    }
+
+    #th,
+    #mb {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid var(--line);
+      background: none
+    }
+
+    #mb {
+      display: none
+    }
+
+    nav .btn {
+      padding: 10px 18px;
+      font-size: 14px
+    }
+
+    /* hero */
+    #home {
+      min-height: 100svh;
+      display: grid;
+      align-items: center;
+      padding-top: 130px;
+      overflow: hidden
+    }
+
+    .aur {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(90px);
+      opacity: .4;
+      z-index: -1;
+      animation: fl 14s ease-in-out infinite alternate
+    }
+
+    @keyframes fl {
+      to {
+        transform: translate(60px, -40px) scale(1.2)
+      }
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 30px;
+      align-items: center
+    }
+
+    h1 {
+      font-size: clamp(3.2rem, 10.5vw, 8.6rem)
+    }
+
+    h1 span {
+      display: block
+    }
+
+    .orb {
+      display: flex;
+      gap: 12px;
+      margin: 30px 0 8px
+    }
+
+    .orb b {
+      width: 62px;
+      height: 62px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 24px;
+      color: #fff;
+      box-shadow: 0 0 18px -4px rgba(255, 255, 255, 0.25);
+      aspect-ratio: 1/1;
+      flex-shrink: 0
+    }
+
+    .tl {
+      font-size: clamp(1rem, 2vw, 1.2rem);
+      max-width: 30ch;
+      color: var(--mute);
+      margin: 18px 0 28px
+    }
+
+    .cd {
+      display: flex;
+      gap: 10px;
+      margin-top: 34px
+    }
+
+    .cd div {
+      padding: 12px 14px;
+      text-align: center;
+      min-width: 70px
+    }
+
+    .cd b {
+      display: block;
+      font-size: 26px;
+      letter-spacing: -.04em
+    }
+
+    .cd small {
+      font-size: 10px;
+      letter-spacing: .2em;
+      color: var(--mute)
+    }
+
+    .ring {
+      width: 100%;
+      max-width: 520px;
+      margin: auto;
+      aspect-ratio: 1
+    }
+
+    .ring circle {
+      fill: none;
+      stroke-width: 9;
+      stroke-linecap: round;
+      transform-origin: 50% 50%;
+      animation: sp linear infinite
+    }
+
+    @keyframes sp {
+      to {
+        transform: rotate(360deg)
+      }
+    }
+
+    .mq {
+      overflow: hidden;
+      border-block: 1px solid var(--line);
+      background: var(--teal);
+      color: var(--on);
+      padding: 16px 0;
+      white-space: nowrap
+    }
+
+    .mq div {
+      display: inline-block;
+      animation: mq 28s linear infinite;
+      font-weight: 700;
+      letter-spacing: .18em
+    }
+
+    .mq span {
+      margin: 0 26px
+    }
+
+    @keyframes mq {
+      to {
+        transform: translateX(-50%)
+      }
+    }
+
+    /* feed */
+    .hd {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 30px;
+      flex-wrap: wrap;
+      margin-bottom: 44px
+    }
+
+    .hd p {
+      max-width: 36ch;
+      color: var(--mute);
+      margin: 0
+    }
+
+    .chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 28px
+    }
+
+    .chips button {
+      padding: 9px 16px;
+      border-radius: 99px;
+      border: 1px solid var(--line);
+      background: none;
+      font-size: 13px
+    }
+
+    .chips button.on {
+      background: var(--ink);
+      color: var(--bg)
+    }
+
+    .feed {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 18px
+    }
+
+    .card {
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      grid-column: span 2;
+      min-height: 280px;
+      transition: .4s;
+      position: relative;
+      overflow: hidden
+    }
+
+    .card.wd {
+      grid-column: span 4
+    }
+
+    .card:hover {
+      transform: translateY(-6px);
+      border-color: var(--c)
+    }
+
+    .card:before {
+      content: "";
+      position: absolute;
+      inset: auto -20% -50% auto;
+      width: 260px;
+      height: 260px;
+      border-radius: 50%;
+      background: var(--c);
+      filter: blur(80px);
+      opacity: .28
+    }
+
+    .card .cat {
+      font-size: 11px;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--c);
+      border: 1px solid var(--c);
+      align-self: start;
+      padding: 4px 10px;
+      border-radius: 99px
+    }
+
+    .card h3 {
+      font-size: clamp(1.5rem, 3vw, 2.3rem);
+      margin-top: auto
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--mute);
+      font-size: 14px
+    }
+
+    .card time {
+      font-size: 12px;
+      letter-spacing: .15em;
+      color: var(--mute)
+    }
+
+    /* about */
+    .ab {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 50px
+    }
+
+    .ab p {
+      color: var(--mute);
+      margin: 0 0 18px
+    }
+
+    .ab .lead {
+      font-size: 1.4rem;
+      color: var(--ink);
+      font-weight: 700;
+      line-height: 1.3
+    }
+
+    .st {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      margin-top: 70px;
+      border-top: 1px solid var(--line)
+    }
+
+    .st div {
+      padding: 28px 0 0
+    }
+
+    .st b {
+      display: block;
+      font-size: clamp(2.6rem, 6vw, 4.8rem);
+      letter-spacing: -.05em;
+      line-height: 1
+    }
+
+    .st small {
+      color: var(--mute)
+    }
+
+    /* schedule */
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 18px
+    }
+
+    .tabs button {
+      padding: 18px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: var(--card);
+      text-align: left;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 4px
+    }
+
+    .tabs button.on {
+      background: linear-gradient(120deg, var(--red), var(--amb));
+      color: #fff;
+      border: 0
+    }
+
+    .day {
+      padding: clamp(24px, 4vw, 50px);
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 40px
+    }
+
+    .day .n {
+      font-size: clamp(5rem, 12vw, 9rem);
+      font-weight: 700;
+      line-height: .85;
+      letter-spacing: -.06em;
+      color: var(--red)
+    }
+
+    .it {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      gap: 20px;
+      padding: 18px 0;
+      border-bottom: 1px solid var(--line)
+    }
+
+    .it b {
+      color: var(--teal)
+    }
+
+    /* Database-driven Programme Cards */
+    .it.prog-item {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 24px;
+      padding: 22px 0;
+      border-bottom: 1px solid var(--line);
+      align-items: start;
+    }
+
+    .it.prog-item:last-child {
+      border-bottom: 0;
+    }
+
+    .prog-time-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .prog-time-badge {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--teal);
+      letter-spacing: -0.02em;
+      line-height: 1.3;
+    }
+
+    .prog-type-pill {
+      display: inline-flex;
+      align-items: center;
+      align-self: flex-start;
+      padding: 3px 8px;
+      border-radius: 99px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: rgba(18, 144, 122, 0.12);
+      color: var(--teal);
+      border: 1px solid rgba(18, 144, 122, 0.25);
+    }
+
+    .prog-body {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .prog-num-tag {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--red);
+    }
+
+    .prog-title {
+      font-size: clamp(1.2rem, 2.2vw, 1.45rem);
+      font-weight: 700;
+      line-height: 1.35;
+      margin: 0;
+      color: var(--ink);
+      word-break: break-word;
+    }
+
+    .prog-subject {
+      font-size: 1.02rem;
+      font-weight: 500;
+      color: var(--ink);
+      line-height: 1.5;
+      margin: 2px 0 4px 0;
+      white-space: pre-line;
+      opacity: 0.95;
+    }
+
+    .prog-meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--mute);
+      margin-top: 2px;
+    }
+
+    .prog-meta-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .prog-participants-box {
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .prog-role-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 6px 10px;
+      font-size: 13px;
+    }
+
+    .prog-role-label {
+      font-weight: 700;
+      color: var(--amb);
+      letter-spacing: 0.03em;
+      min-width: fit-content;
+    }
+
+    .prog-role-names {
+      color: var(--ink);
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .prog-person-chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 10px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 99px;
+      font-size: 12.5px;
+      line-height: 1.3;
+    }
+
+    .soon {
+      border: 1px dashed var(--line);
+      display: inline-block;
+      padding: 8px 14px;
+      border-radius: 99px;
+      font-size: 13px;
+      margin-top: 10px
+    }
+
+    .prog-state-card {
+      padding: 36px 24px;
+      text-align: center;
+      border-radius: 12px;
+      margin: 12px 0;
+      border: 1px dashed var(--line);
+    }
+
+    .prog-spinner {
+      width: 32px;
+      height: 32px;
+      margin: 0 auto 12px;
+      border: 3px solid rgba(18, 144, 122, 0.2);
+      border-top-color: var(--teal);
+      border-radius: 50%;
+      animation: progSpin 0.9s linear infinite;
+    }
+
+    @keyframes progSpin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* pay */
+    #contributions {
+      background: linear-gradient(180deg, transparent, var(--bg2) 20%, var(--bg2) 80%, transparent)
+    }
+
+    .tiers {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 14px
+    }
+
+    .tier {
+      padding: 26px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      border-top: 3px solid var(--c);
+      transition: .35s
+    }
+
+    .tier:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 50px -20px var(--c)
+    }
+
+    .tier h3 {
+      font-size: 1.5rem;
+      color: var(--c)
+    }
+
+    .tier small {
+      letter-spacing: .15em;
+      color: var(--mute);
+      font-size: 11px
+    }
+
+    .tier .am {
+      font-size: clamp(2rem, 3.4vw, 2.8rem);
+      font-weight: 700;
+      letter-spacing: -.05em;
+      margin: 14px 0
+    }
+
+    .tier button {
+      margin-top: auto;
+      border: 0;
+      background: var(--c);
+      color: var(--on);
+      padding: 12px;
+      border-radius: 12px;
+      font-weight: 700
+    }
+
+    .sp {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 20px
+    }
+
+    .sp .glass {
+      padding: 32px
+    }
+
+    .sp .am {
+      font-size: clamp(2.4rem, 5vw, 3.8rem);
+      font-weight: 700;
+      letter-spacing: -.05em;
+      margin: 12px 0 22px
+    }
+
+    .sub {
+      margin: 70px 0 22px;
+      font-size: clamp(1.8rem, 4vw, 3rem)
+    }
+
+    /* gallery */
+    .gal {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      grid-auto-rows: 180px;
+      gap: 14px
+    }
+
+    .gal figure {
+      margin: 0;
+      border-radius: 18px;
+      overflow: hidden;
+      position: relative;
+      cursor: pointer
+    }
+
+    .gal img,
+    .gal video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: .6s
+    }
+
+    .gal figure:hover img {
+      transform: scale(1.07)
+    }
+
+    .gal figcaption {
+      position: absolute;
+      inset: auto 0 0;
+      padding: 30px 14px 12px;
+      background: linear-gradient(transparent, #000a);
+      color: #fff;
+      font-size: 13px
+    }
+
+    .empty {
+      padding: 60px 30px;
+      text-align: center
+    }
+
+    .empty h3 {
+      font-size: clamp(1.8rem, 4vw, 3rem)
+    }
+
+    .empty p {
+      color: var(--mute)
+    }
+
+    /* contact */
+    .ct {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 50px;
+      align-items: start
+    }
+
+    .ln {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      padding: 18px 0;
+      border-bottom: 1px solid var(--line);
+      transition: .3s
+    }
+
+    .ln:hover {
+      padding-left: 10px;
+      color: var(--teal)
+    }
+
+    .ln small {
+      display: block;
+      font-size: 11px;
+      letter-spacing: .2em;
+      color: var(--mute)
+    }
+
+    .ln i {
+      font-style: normal;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 1px solid var(--line);
+      display: grid;
+      place-items: center
+    }
+
+    .qr {
+      padding: 34px;
+      text-align: center
+    }
+
+    .qb {
+      background: #fff;
+      padding: 18px;
+      border-radius: 16px;
+      display: inline-block;
+      line-height: 0;
+      margin-bottom: 16px
+    }
+
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 50px 0 40px;
+      color: var(--mute);
+      font-size: 14px
+    }
+
+    footer .w {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 30px
+    }
+
+    footer b {
+      color: var(--ink);
+      font-size: 20px
+    }
+
+    footer nav {
+      all: unset
+    }
+
+    footer .fl {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap
+    }
+
+    dialog {
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: var(--bg);
+      color: var(--ink);
+      padding: 30px;
+      width: min(440px, 100% - 30px)
+    }
+
+    dialog::backdrop {
+      background: #000a;
+      backdrop-filter: blur(6px)
+    }
+
+    dialog.lb {
+      width: min(1000px, 100% - 20px);
+      background: #000;
+      color: #fff;
+      padding: 14px
+    }
+
+    .lb img,
+    .lb video {
+      width: 100%;
+      max-height: 78vh;
+      object-fit: contain
+    }
+
+    .x {
+      float: right;
+      background: none;
+      border: 0;
+      font-size: 26px
+    }
+
+    .copy {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin: 14px 0;
+      padding: 12px;
+      border: 1px dashed var(--line);
+      border-radius: 12px;
+      font-size: 14px;
+      word-break: break-all
+    }
+
+    .copy button {
+      margin-left: auto
+    }
+
+    .js .rv {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity .9s, transform .9s cubic-bezier(.2, .7, .2, 1)
+    }
+
+    .js .rv.in {
+      opacity: 1;
+      transform: none
+    }
+
+    #glow {
+      position: fixed;
+      width: 420px;
+      height: 420px;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: -1;
+      background: radial-gradient(var(--teal), transparent 65%);
+      opacity: .14;
+      translate: -50% -50%
+    }
+
+    @media(max-width:900px) {
+      nav {
+        width: min(1200px, 100% - 16px);
+        gap: 10px;
+        padding: 8px 12px
+      }
+
+      nav .ls {
+        display: none
+      }
+
+      nav.o .ls {
+        display: flex;
+        position: absolute;
+        top: 64px;
+        left: 0;
+        right: 0;
+        flex-direction: column;
+        padding: 12px;
+        background: var(--bg);
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        z-index: 60
+      }
+
+      #mb {
+        display: block
+      }
+
+      nav .btn-contribute-cta.nav-contrib {
+        display: inline-flex;
+        padding: 9px 18px;
+        font-size: 13.5px
+      }
+
+      .hero,
+      .ab,
+      .ct,
+      .day {
+        grid-template-columns: 1fr
+      }
+
+      .ring {
+        max-width: 320px
+      }
+
+      .feed {
+        grid-template-columns: 1fr
+      }
+
+      .card,
+      .card.wd {
+        grid-column: auto
+      }
+
+      .st {
+        grid-template-columns: 1fr 1fr
+      }
+
+      .tiers {
+        grid-template-columns: 1fr 1fr
+      }
+
+      .sp {
+        grid-template-columns: 1fr
+      }
+
+      .it {
+        grid-template-columns: 1fr;
+        gap: 4px
+      }
+
+      .it.prog-item {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        padding: 16px 0;
+      }
+
+      .prog-time-wrap {
+        flex-direction: row;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px 12px;
+      }
+
+      .day {
+        gap: 10px
+      }
+    }
+
+    @media(max-width:600px) {
+
+      html,
+      body {
+        overflow-x: hidden;
+        max-width: 100vw;
+        position: relative
+      }
+
+      nav {
+        width: calc(100% - 16px);
+        gap: 6px;
+        padding: 6px 10px;
+        align-items: center;
+      }
+
+      nav .lg {
+        font-size: 15px;
+        gap: 7px;
+        display: inline-flex;
+        align-items: center;
+        flex-shrink: 0;
+        white-space: nowrap;
+        margin-right: auto;
+      }
+
+      nav .lg span {
+        display: inline-flex;
+        align-items: center;
+        white-space: nowrap;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        line-height: 1;
+      }
+
+      nav .lg i {
+        color: var(--red);
+        font-style: normal;
+        padding: 0 1px;
+      }
+
+      nav .lg .lgi {
+        height: 32px;
+        width: auto;
+        flex-shrink: 0;
+        padding: 2.5px;
+        border-radius: 9px;
+      }
+
+      #th {
+        order: 1;
+        width: 32px;
+        height: 32px;
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      nav .btn-contribute-cta.nav-contrib {
+        order: 2;
+        padding: 7px 12px;
+        font-size: 12.5px;
+        gap: 4px;
+        flex-shrink: 0;
+        white-space: nowrap;
+      }
+
+      #mb {
+        order: 3;
+        width: 32px;
+        height: 32px;
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .hero-actions {
+        width: 100%;
+        gap: 10px
+      }
+
+      .hero-contrib,
+      .hero-reg {
+        font-size: 14px;
+        padding: 12px 20px
+      }
+    }
+
+    @media(max-width:380px) {
+      nav {
+        gap: 5px;
+        padding: 5px 8px;
+      }
+
+      nav .lg {
+        font-size: 14px;
+        gap: 6px;
+      }
+
+      nav .lg .lgi {
+        height: 30px;
+        padding: 2px;
+        border-radius: 8px;
+      }
+
+      #th {
+        width: 30px;
+        height: 30px;
+      }
+
+      nav .btn-contribute-cta.nav-contrib {
+        padding: 6px 10px;
+        font-size: 11.5px;
+        gap: 3px;
+      }
+
+      #mb {
+        width: 30px;
+        height: 30px;
+      }
+    }
+
+    @media(max-width:330px) {
+      nav {
+        gap: 4px;
+        padding: 4px 6px;
+      }
+
+      nav .lg {
+        font-size: 13px;
+        gap: 5px;
+      }
+
+      nav .lg .lgi {
+        height: 28px;
+        padding: 1.5px;
+        border-radius: 7px;
+      }
+
+      #th {
+        width: 28px;
+        height: 28px;
+      }
+
+      nav .btn-contribute-cta.nav-contrib {
+        padding: 5px 8px;
+        font-size: 11px;
+        gap: 2.5px;
+      }
+
+      #mb {
+        width: 28px;
+        height: 28px;
+      }
+    }
+
+    @media(max-width:380px) {
+      .tiers {
+        grid-template-columns: 1fr
+      }
+
+      .st {
+        grid-template-columns: 1fr
+      }
+
+      .cd {
+        flex-wrap: wrap;
+        justify-content: center
+      }
+
+      .cd div {
+        min-width: 64px;
+        padding: 8px 10px
+      }
+
+      .cd b {
+        font-size: 20px
+      }
+
+      .pw {
+        max-width: 260px;
+        overflow: hidden
+      }
+
+      .aur {
+        max-width: 100vw;
+        overflow: hidden;
+        pointer-events: none
+      }
+
+      #glow {
+        pointer-events: none;
+        max-width: 100vw;
+        overflow: hidden
+      }
+
+      .orb b {
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+        box-shadow: 0 0 12px -3px rgba(255, 255, 255, 0.18)
+      }
+
+      #schedule .hd {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px
+      }
+
+      #schedule .hd .big {
+        font-size: clamp(1.8rem, 6vw, 3rem);
+        line-height: 1.05;
+        word-break: break-word
+      }
+
+      #schedule .hd .tag {
+        margin-bottom: 4px
+      }
+    }
+
+    @media(prefers-reduced-motion:reduce) {
+
+      *,
+      *:before,
+      *:after {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important
+      }
+
+      .btn-contribute-cta::after {
+        animation: none !important;
+        display: none !important
+      }
+
+      .btn-contribute-cta {
+        transition: none !important;
+        transform: none !important
+      }
+
+      .js .rv {
+        opacity: 1;
+        transform: none
+      }
+    }
+
+    .lgi {
+      background: #fffbe0;
+      border-radius: 12px;
+      padding: 3px;
+      height: 40px;
+      width: auto;
+      display: block
+    }
+
+    .hbg {
+      position: absolute;
+      inset: -6%;
+      z-index: -2;
+      background: center/cover;
+      filter: blur(36px) saturate(1.25);
+      opacity: .5
+    }
+
+    :root[data-theme="dark"] .hbg {
+      opacity: .22
+    }
+
+    @media(prefers-color-scheme:dark) {
+      :root:not([data-theme="light"]) .hbg {
+        opacity: .22
+      }
+    }
+
+    #home:after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background: linear-gradient(180deg, transparent 55%, var(--bg))
+    }
+
+    .pw {
+      position: relative;
+      max-width: 430px;
+      width: 100%;
+      margin: auto
+    }
+
+    .pw .ring {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 140%;
+      max-width: none;
+      translate: -50% -50%;
+      opacity: .75
+    }
+
+    .pst {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      height: auto;
+      border-radius: 22px;
+      box-shadow: 0 40px 90px -30px #000b, 0 0 0 1px var(--line);
+      transform: perspective(1100px) rotateY(var(--ry, -7deg)) rotateX(var(--rx, 3deg));
+      transition: transform .25s ease-out
+    }
+
+    #cf {
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      overflow: hidden;
+      pointer-events: none
+    }
+
+    #cf i {
+      position: absolute;
+      top: -20px;
+      width: 8px;
+      height: 14px;
+      opacity: .8;
+      animation: fall linear infinite
+    }
+
+    @keyframes fall {
+      to {
+        transform: translateY(110vh) rotate(540deg)
+      }
+    }
+
+    .ci {
+      width: 100%;
+      height: 190px;
+      object-fit: cover;
+      object-position: top;
+      border-radius: 14px
+    }
+
+    @media(max-width:900px) {
+      .pw {
+        max-width: 300px
+      }
+
+      .pw .ring {
+        width: 125%
+      }
+    }
+
+    @media(prefers-reduced-motion:reduce) {
+      #cf {
+        display: none
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="glow"></div>
+  <nav class="glass" id="nav"><a class="lg" href="#home"><img class="lgi" data-img="logo"
+        alt="HLF logo"><span>HLF<i>✦</i>2026</span></a>
+    <div class="ls"><a href="#home" class="on">Home</a><a href="#about">About</a><a href="#schedule">Schedule</a><a
+        href="#contributions">Contributions</a><a href="#quiz" class="nav-quiz" role="button"
+        aria-label="Register for Quiz Competition">Quiz </a><a href="#gallery">Gallery</a><a href="#contact">Contact</a>
+    </div>
+
+    <a class="btn btn-contribute-cta nav-contrib" href="javascript:void(0)" role="button"
+      aria-label="Contribute to HLF 2026"
+      onclick="if(typeof openContributionModal==='function'){openContributionModal('custom','Custom Contribution');}else if(typeof pay==='function'){pay('custom','Custom Contribution');}"><span
+        class="btn-sparkle">✦</span><span>Contribute</span></a>
+    <button id="th" aria-label="Toggle theme">◐</button>
+    <button id="mb" aria-label="Menu">☰</button>
+  </nav>
+
+  <section id="home">
+    <div class="hbg"></div>
+    <div id="cf" aria-hidden="true"></div><i class="aur"
+      style="width:480px;height:480px;background:var(--red);left:-140px;top:60px"></i><i class="aur"
+      style="width:520px;height:520px;background:var(--teal);right:-160px;bottom:0;animation-delay:-5s"></i>
+    <div class="w hero">
+      <div>
+        <p class="tag"><b>HLF / 2026</b> &nbsp;A celebration of knowledge &amp; culture</p>
+        <h1><span class="r">Hadith</span><span class="a">Literature</span><span class="t">Festival</span></h1>
+        <div class="orb"><b style="background:var(--red);color:#fff">18</b><b
+            style="background:var(--amb);color:#fff">19</b><b style="background:var(--teal);color:#fff">20</b>
+          <div style="align-self:center;margin-left:8px"><b style="all:unset;font-weight:700">OCTOBER 2026</b><br><small
+              class="tag">Chemmad · Kerala</small></div>
+        </div>
+        <p class="tl">Where Hadith meets thought, expression &amp; creativity.</p>
+        <div class="hero-actions">
+          <a class="btn btn-contribute-cta hero-contrib" href="javascript:void(0)" role="button"
+            aria-label="Contribute to HLF 2026">
+            <span class="btn-sparkle">✦</span><span>Contribute</span>
+          </a>
+          <a class="btn reg hero-reg" href="javascript:void(0)" role="button" aria-label="Register for HLF 2026">
+            <span>Register for HLF ↗</span>
+          </a>
+          <a class="btn hero-quiz-btn" href="#quiz" role="button" aria-label="Register for Quiz Competition"
+            style="border-color: var(--teal); color: var(--teal); text-decoration: none; cursor: pointer;">
+            <span>Quiz Competition 🏆</span>
+          </a>
+        </div>
+
+        <!-- LIMITED SEAT AVAILABILITY PROGRESS & FAST REGISTRATION CTA -->
+        <div class="hero-seat-card glass" id="hero-seat-card">
+          <div class="hero-seat-top">
+            <div class="hero-seat-tag">
+              <span class="seat-pulse-dot" aria-hidden="true"></span>
+              <span class="seat-tag-label" id="seat-tag-label">LIMITED SEATS AVAILABLE</span>
+            </div>
+            <span class="hero-seat-remaining-badge" id="seat-remaining-badge">18 seats remaining</span>
+          </div>
+
+          <div class="hero-seat-body">
+            <div class="hero-seat-progress-area">
+              <div class="hero-seat-stats">
+                <span class="hero-seat-booked" id="seat-booked-text">
+                  <strong id="seat-booked-num">12</strong> of <span id="seat-total-num">30</span> seats booked
+                </span>
+                <span class="hero-seat-pct" id="seat-pct-badge">40% filled</span>
+              </div>
+              <div class="hero-seat-track" role="progressbar" id="hero-seat-progressbar" aria-valuenow="12" aria-valuemin="0" aria-valuemax="30" aria-label="Programme seat booking progress">
+                <div class="hero-seat-fill" id="hero-seat-fill" style="width: 40%;"></div>
+              </div>
+            </div>
+
+            <div class="hero-seat-cta-wrap">
+              <a class="btn p seat-reg-btn" id="seat-reg-cta" href="javascript:void(0)" role="button" aria-label="Register for HLF 2026">
+                <span id="seat-cta-label">Register Now →</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div class="cd" id="cd"></div>
+      </div>
+      <div class="pw"><svg class="ring" viewBox="0 0 200 200" aria-hidden="true">
+          <g id="rg"></g>
+        </svg><img class="pst" data-img="poster" alt="HLF 2026 official poster" width="720" height="900"></div>
+    </div>
+  </section>
+  <div class="mq" aria-hidden="true">
+    <div id="mqi"></div>
+  </div>
+
+  <section id="feed">
+    <div class="w">
+      <div class="hd rv">
+        <div>
+          <p class="tag"><b>[01]</b> The festival journal</p>
+          <h2 class="big">Something worth <span class="t">sharing.</span></h2>
+        </div>
+        <p>Announcements, conversations and little glimpses of HLF. Follow the festival as it unfolds.</p>
+      </div>
+      <div class="chips" id="chips"></div>
+      <div class="feed" id="feed-g"></div>
+    </div>
+  </section>
+
+  <section id="about">
+    <div class="w">
+      <div class="ab">
+        <div class="rv">
+          <p class="tag"><b>[02]</b> About HLF</p>
+          <h2 class="big" style="margin-top:18px">Rooted in <span class="t">tradition.</span> Alive with <span
+              class="r">possibility.</span></h2><img class="lgi" data-img="logo" alt="HLF logo"
+            style="height:auto;width:min(340px,100%);padding:22px;border-radius:24px;margin-top:40px">
+        </div>
+        <div class="rv">
+          <p class="lead">A meeting of minds. A celebration of the <span class="a">Prophetic tradition.</span></p>
+          <p>HLF is an academic and cultural initiative bringing Hadith literature into conversation with thought,
+            expression and creativity.</p>
+          <p>Organized by the Department of Hadith and Related Sciences at Darul Huda Islamic University, the festival
+            celebrates the rich legacy of the Prophetic tradition and its scholarly heritage.</p>
+          <p>Through lectures, panel discussions, exhibitions and interactive sessions, we explore how Hadith has been
+            preserved, transmitted and understood — and why it continues to matter today.</p>
+          <p class="t">For students, researchers, scholars and curious minds across campuses.</p>
+        </div>
+      </div>
+      <div class="st rv" id="st"></div>
+    </div>
+  </section>
+
+  <section id="schedule">
+    <div class="w">
+      <div class="hd rv">
+        <div>
+          <p class="tag"><b>[03]</b> The programme</p>
+          <h2 class="big"><span style="background:var(--red);color:#fff;padding:0 .15em">Three days.</span><br><span
+              class="a">Open possibilities.</span></h2>
+        </div>
+        <p>18, 19 and 20 October. A space for ideas, discovery and shared learning.</p>
+      </div>
+      <div class="tabs" id="tabs" role="tablist"></div>
+      <div class="day glass rv" id="day"></div>
+    </div>
+  </section>
+
+  <!-- SPECIAL EVENT: HADITH LIVE QUIZ BANNER -->
+  <section id="quiz-banner" style="padding: 20px 0 60px;">
+    <div class="w">
+      <div class="glass rv"
+        style="padding: clamp(24px, 4vw, 36px); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 20px; border-left: 6px solid var(--teal);">
+        <div style="flex: 1; min-width: 280px;">
+          <p class="tag" style="margin: 0 0 8px;"><b>SPECIAL EVENT · DAY 3</b> Darul Hikma</p>
+          <h3 style="font-size: clamp(1.4rem, 3vw, 2.2rem); margin: 0 0 8px; color: var(--ink);">
+            Hadith Live Quiz Competition
+          </h3>
+          <p style="margin: 0; color: var(--mute); font-size: 14px;">
+            Join the intellectual arena of the festival on 20 October 2026 (2:00 PM – 5:00 PM). Free registration open
+            to students and researchers.
+          </p>
+        </div>
+        <div>
+          <a href="#quiz" class="btn p quiz-banner-cta" role="button" aria-label="Register for Quiz Competition"
+            onclick="if(typeof window.openQuizModal==='function'){window.openQuizModal();event.preventDefault();}"
+            style="padding: 12px 24px; font-size: 14px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
+            <span>Register for Quiz Competition 🏆 →</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="contributions">
+    <div class="w">
+      <div class="hd rv">
+        <div>
+          <p class="tag"><b>[04]</b> Make it possible</p>
+          <h2 class="big">Big ideas. <span class="y">Shared support.</span></h2>
+        </div>
+        <p>Support HLF. Your contribution helps bring students, scholarship and culture together for three memorable
+          days.</p>
+      </div>
+
+      <!-- Tier cards: 01 Minimal, 02 Bronze, 03 Silver, 04 Golden -->
+      <div class="tiers-4" id="tiers"></div>
+
+      <!-- Community Support Area: Top Contributors + Support Target -->
+      <div class="contrib-community-grid">
+        <!-- TOP CONTRIBUTORS -->
+        <div class="contrib-leaderboard-card glass rv" id="contrib-leaderboard-card">
+          <div class="contrib-card-header">
+            <div>
+              <h3 class="contrib-card-title"><span class="y">✦</span> TOP CONTRIBUTORS</h3>
+              <p class="contrib-card-sub">Celebrating those who support HLF 2026</p>
+            </div>
+            <span class="tag"
+              style="font-size: 10px; padding: 3px 8px; border-radius: 99px; border: 1px solid var(--line);">LEADERBOARD</span>
+          </div>
+          <div id="contrib-leaderboard-list">
+            <div class="contrib-empty-state">
+              <span class="empty-icon">✦</span>
+              <p class="empty-title">Be the first supporter</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- HLF 2026 SUPPORT TARGET -->
+        <div class="contrib-target-card glass rv" id="contrib-target-card">
+          <div class="contrib-card-header">
+            <div>
+              <h3 class="contrib-card-title"><span class="t">✦</span> HLF 2026 SUPPORT TARGET</h3>
+              <p class="contrib-card-sub">Community-powered academic &amp; cultural festival</p>
+            </div>
+            <span class="tag"
+              style="font-size: 10px; padding: 3px 8px; border-radius: 99px; border: 1px solid var(--line);">PROGRESS</span>
+          </div>
+
+          <div class="contrib-target-figures">
+            <div class="amount-raised">
+              <span id="contrib-raised-amount" class="accent">₹0</span>
+              <span style="font-size: 1.1rem; font-weight: 500; color: var(--mute);"> raised of </span>
+              <span id="contrib-goal-amount">₹50,000</span>
+            </div>
+            <div class="amount-goal">Directly powering student sessions, research &amp; publications.</div>
+          </div>
+
+          <div>
+            <div class="contrib-progress-track">
+              <div class="contrib-progress-fill" id="contrib-progress-fill" style="width: 0%;"></div>
+            </div>
+            <div class="contrib-target-footer">
+              <span>Funding Scale</span>
+              <span class="contrib-target-pct" id="contrib-target-pct">0%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 05 Custom Contribution Card -->
+      <div class="custom-contrib-card glass rv">
+        <div class="custom-contrib-info">
+          <div>
+            <small class="num">05</small>
+            <h3>Custom</h3>
+            <small class="tag" style="letter-spacing: 0.15em;">CONTRIBUTION</small>
+          </div>
+          <div>
+            <p class="desc">Contribute any custom amount to champion Hadith scholarship and student culture. Every rupee
+              makes a difference (Min ₹1).</p>
+          </div>
+        </div>
+        <button class="contrib-btn p"
+          style="background: var(--teal); color: var(--on); --btn-glow: rgba(18, 144, 122, 0.5);"
+          onclick="pay('custom','Custom Contribution')">Choose Amount ✦</button>
+      </div>
+
+      <h2 class="sub rv">Sponsor a <span class="t">festival day.</span></h2>
+      <div class="sp" id="sp"></div>
+    </div>
+  </section>
+
+  <section id="gallery">
+    <div class="w">
+      <div class="hd rv">
+        <div>
+          <p class="tag"><b>[05]</b> The visual diary</p>
+          <h2 class="big">A festival. <span class="r">A thousand stories.</span></h2>
+        </div>
+        <p>Our colours, our campus, our collective memories.</p>
+      </div>
+      <div class="chips" id="gchips"></div>
+      <div class="gal" id="gal"></div>
+    </div>
+  </section>
+
+  <section id="contact">
+    <div class="w">
+      <div class="ct">
+        <div class="rv">
+          <p class="tag"><b>[06]</b> Let's connect</p>
+          <h2 class="big" style="margin:18px 0 30px">Come curious. <span class="t">Leave inspired.</span></h2>
+          <div id="cl"></div>
+        </div>
+        <div class="qr glass rv">
+          <p class="tag">HLF / 2026 ✦</p>
+          <div class="qb">
+            <div id="qr"></div>
+          </div>
+          <h3 style="font-size:1.4rem;margin-bottom:18px">Scan to Connect with HLF</h3><a class="btn p reg"
+            href="javascript:void(0)" role="button">Register for HLF ↗</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="w">
+      <div><img class="lgi" data-img="logo" alt="HLF logo" style="height:64px;margin-bottom:14px"><b>HLF<span
+            class="r">✦</span>2026</b>
+        <p>Hadith Literature Festival<br>18–20 October 2026 · Chemmad<br><span id="fm"></span></p>
+      </div>
+      <div class="fl"><a href="#about">About</a><a href="#schedule">Schedule</a><a
+          href="#contributions">Contributions</a><a href="#gallery">Gallery</a><a href="#contact">Contact</a><a id="fi"
+          target="_blank" rel="noopener">Instagram</a><a href="admin.html" style="color:var(--teal)">✦ Admin Portal</a>
+      </div>
+    </div>
+    <div class="w" style="margin-top:30px"><small>© 2026 HLF. All Rights Reserved.</small></div>
+  </footer>
+
+  <dialog id="pd"><button class="x" onclick="pd.close()" aria-label="Close">×</button>
+    <p class="tag" id="pl"></p>
+    <h2 id="pa" style="font-size:3rem;margin:6px 0 4px"></h2>
+    <p style="color:var(--mute);font-size:14px">Pay with Google Pay or any UPI app.</p>
+    <div style="display:grid;gap:10px"><a class="btn p" id="gp">Pay with Google Pay</a><a class="btn" id="up">Pay via
+        UPI</a></div>
+    <div class="copy"><span id="ui"></span><button type="button" class="btn" id="cp" style="padding:8px 14px">Copy UPI
+        ID</button>
+    </div>
+    <div class="reg-payment-disclaimer"
+      style="margin-top:12px;font-size:11.5px;line-height:1.55;background:rgba(230,162,60,0.08);border:1px solid rgba(230,162,60,0.35);border-left:3.5px solid var(--amb);border-radius:10px;padding:12px 14px;color:var(--ink);text-align:left;">
+      <div style="font-weight:700;color:var(--amb);margin-bottom:4px;display:flex;gap:6px;align-items:center;">
+        <span>ℹ️</span> <strong>Payment Help</strong>
+      </div>
+      <p style="margin:0;font-size:11.5px;line-height:1.55;color:var(--ink);">If you are unable to complete your payment
+        using the UPI payment button, or your UPI app displays a warning or payment error, you can copy our official UPI
+        ID and pay manually from your preferred UPI app. Open Google Pay, Paytm, PhonePe, or another supported UPI app,
+        choose the option to pay using a UPI ID, and enter the copied ID. Before paying, verify that the displayed
+        recipient name and amount are correct. If the warning persists or the recipient details do not match, do not
+        proceed; contact the HLF organizers for assistance.</p>
+    </div>
+    <small id="pn" style="color:var(--red)"></small>
+  </dialog>
+  <dialog class="lb" id="lb"><button class="x" onclick="lb.close()" aria-label="Close" style="color:#fff">×</button>
+    <div id="lc"></div>
+    <div style="display:flex;justify-content:space-between;margin-top:10px"><button class="btn" onclick="go(-1)">←
+        Prev</button><span id="lt"></span><button class="btn" onclick="go(1)">Next →</button></div>
+  </dialog>
+
+  <!-- QUIZ COMPETITION REGISTRATION MODAL -->
+  <dialog id="quiz-dialog" class="reg-dialog glass">
+    <div class="reg-dialog-inner">
+      <!-- Close Button -->
+      <button type="button" class="reg-close-btn" id="quiz-close-x" aria-label="Close">×</button>
+
+      <!-- FORM VIEW -->
+      <div id="quiz-form-view">
+        <div class="reg-dialog-header">
+          <p class="tag"><b>[SPECIAL EVENT]</b> ✦ HLF 2026</p>
+          <h2 class="reg-title">Hadith Live Quiz Registration</h2>
+          <p class="reg-subtitle">Hadith Literature Festival · 20 October 2026 · Darul Hikma, Chemmad</p>
+
+          <div class="reg-fee-badge" style="border-left-color: var(--teal);">
+            <span class="fee-label">ENTRY</span>
+            <span class="fee-val" style="color: var(--teal);">FREE</span>
+            <span class="fee-desc">Official Entry · Day 3 Live Quiz Programme</span>
+          </div>
+        </div>
+
+        <form id="quiz-registration-form" novalidate>
+          <div class="reg-form-section">
+            <h3 class="reg-section-title"><span class="step" style="background: var(--teal); color: #fff;">1</span>
+              Participant Information</h3>
+            <div class="reg-grid">
+              <!-- Full Name -->
+              <div class="reg-field reg-col-2">
+                <label class="reg-label" for="quiz-fullname">Full Name <span class="req">*</span></label>
+                <input type="text" id="quiz-fullname" class="reg-input" placeholder="e.g. Muhammed Shinas" required
+                  autocomplete="name">
+              </div>
+
+              <!-- Mobile -->
+              <div class="reg-field">
+                <label class="reg-label" for="quiz-mobile">WhatsApp Number <span class="req">*</span></label>
+                <input type="tel" id="quiz-mobile" class="reg-input" placeholder="10-digit mobile number" maxlength="10"
+                  required autocomplete="tel">
+              </div>
+
+              <!-- Email -->
+              <div class="reg-field">
+                <label class="reg-label" for="quiz-email">Email Address <span class="opt">(Optional)</span></label>
+                <input type="email" id="quiz-email" class="reg-input" placeholder="name@example.com"
+                  autocomplete="email">
+              </div>
+
+              <!-- College / Institution (Required Searchable Combobox) -->
+              <div class="reg-field reg-col-2">
+                <label class="reg-label" for="quiz-inst-search">College / Institution <span class="req">*</span></label>
+                <div class="reg-combobox" id="quiz-inst-combobox">
+                  <div class="reg-combobox-input-wrap">
+                    <input type="text" id="quiz-inst-search" class="reg-input"
+                      placeholder="Type to search or select institution..." autocomplete="off">
+                    <button type="button" class="reg-combobox-toggle" id="quiz-inst-toggle-btn" tabindex="-1"
+                      aria-label="Toggle dropdown">▾</button>
+                  </div>
+                  <input type="hidden" id="quiz-institution" value="">
+                  <div class="reg-combobox-dropdown" id="quiz-inst-dropdown" style="display: none;">
+                    <ul class="reg-combobox-list" id="quiz-inst-options-list"></ul>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Custom Institution Field (Shown when 'Other' selected) -->
+              <div class="reg-field reg-col-2" id="quiz-other-inst-group" style="display: none;">
+                <label class="reg-label" for="quiz-other-inst">Institution Name <span class="req">*</span></label>
+                <input type="text" id="quiz-other-inst" class="reg-input"
+                  placeholder="Enter your full college / institution name">
+              </div>
+
+              <!-- Course / Class -->
+              <div class="reg-field">
+                <label class="reg-label" for="quiz-course">Course / Class <span class="opt">(Optional)</span></label>
+                <input type="text" id="quiz-course" class="reg-input" placeholder="e.g. Degree / PG / Sanad">
+              </div>
+
+              <!-- Department -->
+              <div class="reg-field">
+                <label class="reg-label" for="quiz-department">Department <span class="opt">(Optional)</span></label>
+                <input type="text" id="quiz-department" class="reg-input"
+                  placeholder="e.g. Hadith &amp; Related Sciences">
+              </div>
+
+              <!-- District -->
+              <div class="reg-field reg-col-2">
+                <label class="reg-label" for="quiz-district">District / State <span
+                    class="opt">(Optional)</span></label>
+                <input type="text" id="quiz-district" class="reg-input" placeholder="e.g. Malappuram, Kerala">
+              </div>
+
+              <!-- Special Requirements / Notes -->
+              <div class="reg-field reg-col-2">
+                <label class="reg-label" for="quiz-notes">Special Requirements / Notes <span
+                    class="opt">(Optional)</span></label>
+                <textarea id="quiz-notes" class="reg-textarea" rows="2"
+                  placeholder="Any special notes or queries for the competition organizers"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Consent -->
+          <label class="reg-consent-box">
+            <input type="checkbox" id="quiz-consent" required>
+            <span>I confirm that the details provided are accurate and agree to participate in the HLF 2026 Quiz
+              Competition.</span>
+          </label>
+
+          <!-- Error Banner -->
+          <div id="quiz-error-banner" class="reg-error-msg" role="alert" style="display: none;"></div>
+
+          <!-- Submit Button -->
+          <button type="submit" id="quiz-submit-btn" class="btn p"
+            style="width: 100%; justify-content: center; font-size: 1.05rem; padding: 16px;">
+            <span>Submit Free Registration 🏆 →</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- SUCCESS / CONFIRMATION VIEW -->
+      <div id="quiz-success-view" class="reg-success-view" style="display: none;">
+        <div class="reg-success-icon">🏆</div>
+        <h2 class="reg-success-title">Quiz Registration Confirmed</h2>
+        <p class="reg-success-sub" id="quiz-success-subtitle">Your entry for the HLF 2026 Hadith Live Quiz Competition
+          has been confirmed.</p>
+
+        <div class="reg-id-card">
+          <span class="id-label">OFFICIAL QUIZ REFERENCE ID</span>
+          <div class="id-number" id="quiz-success-ref" style="color: var(--teal);">HLF26-QUIZ-XXXX</div>
+          <div style="margin-top: 10px;">
+            <span class="reg-status-pill verified" id="quiz-success-status-badge">Registered · Free Entry</span>
+          </div>
+          <div style="margin-top: 14px;">
+            <button type="button" class="reg-btn-sm" id="quiz-copy-ref-btn">📋 Copy Reference ID</button>
+            <span id="quiz-copy-feedback"
+              style="display: none; margin-left: 8px; font-size: 12px; color: var(--teal); font-weight: 600;">Copied
+              ✓</span>
+          </div>
+        </div>
+
+        <table class="reg-details-table">
+          <tr>
+            <td>Participant Name:</td>
+            <td id="quiz-success-name">—</td>
+          </tr>
+          <tr>
+            <td>Institution:</td>
+            <td id="quiz-success-inst">—</td>
+          </tr>
+          <tr>
+            <td>WhatsApp Number:</td>
+            <td id="quiz-success-mobile">—</td>
+          </tr>
+          <tr>
+            <td>Event Date &amp; Time:</td>
+            <td><strong>20 October 2026 · 2:00 PM – 5:00 PM</strong></td>
+          </tr>
+          <tr>
+            <td>Venue:</td>
+            <td>Darul Hikma, Chemmad</td>
+          </tr>
+          <tr>
+            <td>Registration Fee:</td>
+            <td><strong style="color: var(--teal);">FREE ENTRY</strong></td>
+          </tr>
+        </table>
+
+        <div class="reg-instructions-box" id="quiz-instructions-box">
+          <strong>Important Instructions:</strong><br>
+          • Please save or screenshot your Quiz Reference ID.<br>
+          • Report at Darul Hikma by 1:30 PM on 20 October 2026 with a valid student or institution ID card.<br>
+          • Present this Reference ID at the competition verification desk upon arrival.
+        </div>
+
+        <div class="reg-success-actions">
+          <button type="button" class="btn p" id="quiz-print-btn">🖨️ Print / Download Confirmation Pass</button>
+          <button type="button" class="btn" id="quiz-done-btn">Done / Return to Site</button>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script>
+    const IMG = {
+      logo: (window.HLF_SITE_IMAGES && window.HLF_SITE_IMAGES.logo) || 'assets/images/logo/hlf-logo.png',
+      favicon: (window.HLF_SITE_IMAGES && window.HLF_SITE_IMAGES.favicon) || 'assets/images/logo/favicon.png',
+      poster: (window.HLF_SITE_IMAGES && window.HLF_SITE_IMAGES.officialPoster) || 'assets/images/posters/hlf-2026-official-poster.png'
+    };
+  </script>
+  <script>
+    /* ===== CONTENT: edit here ===== */
+    const PAYMENT_CONFIG = (window.HLF_CONFIG && window.HLF_CONFIG.payment) ? { upiId: window.HLF_CONFIG.payment.upiId, payeeName: window.HLF_CONFIG.payment.payeeName, note: "HLF Contribution" } : { upiId: "9847411637@kotakbank", payeeName: "SHINAS", note: "HLF Contribution" };
+    const SITE = { register: "#register", email: "hadithliteraturefestival@gmail.com", phones: ["+91 7510411637"], insta: "https://www.instagram.com/hadith_literature_festival/", instaName: "@hadith_literature_festival", venue: "Darul Huda Islamic University, Chemmad, Kerala", dept: "Department of Hadith and Related Sciences", qr: window.location.href.split('#')[0] + "#register", start: "2026-10-18T00:00:00+05:30" };
+    const STATS = [["100", "Students", "r"], ["20", "Colleges", "a"], ["15", "Academic sessions", "t"], ["5", "Programs", "bl"]];
+    const POSTS = [{ cat: "Announcement", title: "A new chapter. A shared celebration.", text: "Hadith Literature Festival comes to Darul Huda, Chemmad, on 18–20 October 2026. Save the dates.", date: "18–20 Oct 2026", c: "--red", wide: 1, img: "poster" },
+    { cat: "Academic", title: "Timeless knowledge. New conversations.", text: "Explore the preservation, transmission, interpretation and contemporary relevance of Hadith literature.", date: "18–20 Oct 2026", c: "--teal" },
+    { cat: "Festival", title: "See you in Chemmad.", text: "Hosted at Darul Huda Islamic University. Powered by the Department of Hadith and Related Sciences.", date: "18–20 Oct 2026", c: "--amb" }];
+    const SCHEDULE = [
+      { day: 1, date: "18 October 2026", dateNum: "18", month: "October 2026", items: [] },
+      { day: 2, date: "19 October 2026", dateNum: "19", month: "October 2026", items: [] },
+      { day: 3, date: "20 October 2026", dateNum: "20", month: "October 2026", items: [] }
+    ];
+    window.SCHEDULE = SCHEDULE; window.POSTS = POSTS;
+    const TIERS = [["Minimal", 99, "--red"], ["Bronze", 313, "--amb"], ["Silver", 500, "--teal"], ["Golden", 786, "--yel"]];
+    const DAYS = [[1, 7000], [2, 5000], [3, 4000]];
+    let MEDIA = [{ type: "image", src: IMG.poster, cat: "Events", title: "Official poster", span: 2 }, { type: "image", src: IMG.logo, cat: "Events", title: "HLF logo", fit: "contain", bg: "#fffbe0" }]; window.MEDIA = MEDIA;
+    /* ===== /CONTENT ===== */
+    const $ = s => document.querySelector(s), e = encodeURIComponent, inr = n => "₹" + n.toLocaleString("en-IN");
+    document.querySelectorAll(".reg").forEach(a => { a.href = "javascript:void(0)"; a.setAttribute("role", "button"); a.onclick = (e) => { e.preventDefault(); e.stopPropagation(); if (typeof window.openRegistrationModal === 'function') window.openRegistrationModal(); }; });
+    document.querySelectorAll(".btn-contribute-cta").forEach(a => { a.href = "javascript:void(0)"; a.setAttribute("role", "button"); a.onclick = (e) => { e.preventDefault(); e.stopPropagation(); if (typeof window.openContributionModal === 'function') { window.openContributionModal(); } else if (typeof window.pay === 'function') { window.pay(99, 'Festival Contribution'); } }; });
+    document.addEventListener('click', function (e) {
+      const c = e.target.closest('.btn-contribute-cta');
+      if (c) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof window.openContributionModal === 'function') {
+          window.openContributionModal();
+        } else if (typeof window.pay === 'function') {
+          window.pay(99, 'Festival Contribution');
+        }
+        return;
+      }
+      const b = e.target.closest('.reg');
+      if (!b) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof window.openRegistrationModal === 'function') {
+        window.openRegistrationModal();
+      } else if (window.__HLF_BOOT_TRIED) {
+        console.error('HLF registration handler unavailable');
+      }
+    });
+    document.querySelectorAll("[data-img]").forEach(i => i.src = IMG[i.dataset.img]); document.querySelector(".hbg").style.backgroundImage = "url(" + IMG.poster + ")";
+    const dynamicImagesPromise = window.loadDynamicSiteImagesPromise || (window.loadDynamicSiteImages ? window.loadDynamicSiteImages() : null);
+    if (dynamicImagesPromise) {
+      dynamicImagesPromise.then(imgs => {
+        if (!imgs) return;
+        if (imgs.officialPoster) {
+          IMG.poster = imgs.officialPoster;
+          const hbg = document.querySelector(".hbg");
+          if (hbg) hbg.style.backgroundImage = "url(" + IMG.poster + ")";
+        }
+        if (imgs.logo) IMG.logo = imgs.logo;
+        if (imgs.favicon) {
+          IMG.favicon = imgs.favicon;
+          document.querySelectorAll("link[rel*='icon']").forEach(l => {
+            l.href = imgs.favicon;
+          });
+        }
+        document.querySelectorAll("[data-img]").forEach(i => i.src = IMG[i.dataset.img]);
+      }).catch(() => { });
+    }
+    const cc = ["--red", "--amb", "--yel", "--grn", "--teal", "--blue"]; $("#cf").innerHTML = Array.from({ length: 26 }, () => `<i style="left:${Math.random() * 100}%;background:var(${cc[Math.random() * 6 | 0]});animation-duration:${9 + Math.random() * 10}s;animation-delay:-${Math.random() * 12}s"></i>`).join("");
+    $("#mqi").innerHTML = ("KNOWLEDGE <span>✦</span> CULTURE <span>✦</span> CONVERSATION <span>✦</span> CREATIVITY <span>✦</span> COMMUNITY <span>✦</span> ").repeat(4);
+    // ring
+    $("#rg").innerHTML = ["--red", "--amb", "--yel", "--grn", "--teal", "--blue"].map((c, i) => { const r = 92 - i * 11; return `<circle cx="100" cy="100" r="${r}" stroke="var(${c})" stroke-dasharray="${r * (2.2 + i * .35)} ${r * 7}" style="animation-duration:${14 + i * 6}s;animation-direction:${i % 2 ? "reverse" : "normal"}"/>` }).join("");
+    // countdown
+    const cd = $("#cd"); function tick() { let d = new Date(SITE.start) - Date.now(); if (d <= 0) { cd.innerHTML = '<b class="glass" style="padding:14px 20px">HLF is live ✦</b>'; return } const v = [[864e5, "Days"], [36e5, "Hrs"], [6e4, "Min"], [1e3, "Sec"]]; cd.innerHTML = v.map(([m, l]) => { const n = Math.floor(d / m); d -= n * m; return `<div class="glass"><b>${String(n).padStart(2, "0")}</b><small>${l}</small></div>` }).join("") } tick(); setInterval(tick, 1000);
+    // feed
+    const cats = ["All", ...new Set(POSTS.map(p => p.cat))];
+    function chips(el, list, fn) { el.innerHTML = list.map((c, i) => `<button class="${i ? "" : "on"}">${c}</button>`).join(""); el.onclick = ev => { const b = ev.target.closest("button"); if (!b) return;[...el.children].forEach(x => x.classList.toggle("on", x === b)); fn(b.textContent) } }
+    function feed(c) { $("#feed-g").innerHTML = POSTS.filter(p => c == "All" || p.cat == c).map(p => `<article class="card glass ${p.wide ? "wd" : ""}" style="--c:var(${p.c})">${p.img ? `<img class="ci" src="${IMG[p.img]}" alt="">` : ""}<span class="cat">${p.cat}</span><h3>${p.title}</h3><p>${p.text}</p><time>${p.date}</time></article>`).join("") }
+    chips($("#chips"), cats, feed); feed("All");
+    // stats
+    $("#st").innerHTML = STATS.map(([n, l, c]) => `<div><b class="${c}" data-n="${n}">0+</b><small>${l}</small></div>`).join("");
+    // schedule
+    let cur = 0;
+    function getScheduleDayMeta(d, i) {
+      const dayNum = (d && d.day) || i + 1;
+      let dateNum = String(17 + dayNum);
+      let month = "October 2026";
+      let fullDate = `${dateNum} October 2026`;
+      let tabText = `${dateNum} OCT`;
+
+      if (d) {
+        if (d.dateNum) dateNum = String(d.dateNum);
+        if (d.month) month = d.month;
+        if (typeof d.date === "string" && d.date.trim()) {
+          const s = d.date.trim();
+          const iso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+          if (iso) {
+            dateNum = String(parseInt(iso[3], 10));
+            month = "October 2026";
+            fullDate = `${dateNum} October 2026`;
+            tabText = `${dateNum} OCT`;
+          } else {
+            const parts = s.match(/^(\d{1,2})\s+([a-zA-Z]+)(?:\s+(\d{4}))?/);
+            if (parts) {
+              dateNum = parts[1];
+              month = `${parts[2]} ${parts[3] || "2026"}`;
+              fullDate = s;
+              tabText = `${dateNum} ${parts[2].slice(0, 3).toUpperCase()}`;
+            } else {
+              fullDate = s;
+              tabText = `${dateNum} OCT`;
+            }
+          }
+        }
+      }
+      return { dayNum, dateNum, month, fullDate, tabText };
+    }
+
+    function escapeHtml(s) {
+      if (!s) return '';
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function renderScheduleItem(i) {
+      const timeStr = `${i.start_time || ''}${i.end_time ? ' – ' + i.end_time : ''}`.trim();
+      const numBadge = (i.session_number || '').trim();
+      const typeTag = (i.session_type || i.category || '').trim();
+
+      let mainTitle = (i.title || '').trim();
+      let subjectText = (i.subject || '').trim();
+
+      // If title is "SESSION 01" and subject is "Hadith Studies...", display subject as main headline
+      if (subjectText && mainTitle && mainTitle.toUpperCase().startsWith('SESSION')) {
+        mainTitle = subjectText;
+        subjectText = '';
+      }
+
+      // Group participants by role
+      let participantsHtml = '';
+      const parts = Array.isArray(i.participants) ? i.participants : [];
+      if (parts.length > 0) {
+        const roleGroups = {};
+        parts.forEach(p => {
+          if (!p || !p.name) return;
+          const r = (p.role || 'Participant').trim();
+          if (!roleGroups[r]) roleGroups[r] = [];
+          roleGroups[r].push(p.name);
+        });
+
+        const groupsHtml = Object.keys(roleGroups).map(role => {
+          const names = roleGroups[role];
+          const count = names.length;
+          let label = role;
+          if (count > 1) {
+            if (role.toLowerCase() === 'panelist') label = 'Panelists';
+            else if (role.toLowerCase() === 'guest') label = 'Guests';
+            else if (role.toLowerCase() === 'speaker') label = 'Speakers';
+            else if (role.toLowerCase() === 'performer') label = 'Performers';
+          }
+          const chips = names.map(n => `<span class="prog-person-chip">${escapeHtml(n)}</span>`).join('');
+          return `
+            <div class="prog-role-group">
+              <span class="prog-role-label">${escapeHtml(label)}:</span>
+              <div class="prog-role-names">${chips}</div>
+            </div>
+          `;
+        }).join('');
+
+        if (groupsHtml) {
+          participantsHtml = `<div class="prog-participants-box">${groupsHtml}</div>`;
+        }
+      }
+
+      // Venue / Category meta
+      let metaHtml = '';
+      const metaItems = [];
+      if (i.venue && i.venue.trim()) {
+        metaItems.push(`<span class="prog-meta-item">📍 ${escapeHtml(i.venue)}</span>`);
+      }
+      if (metaItems.length > 0) {
+        metaHtml = `<div class="prog-meta-row">${metaItems.join('')}</div>`;
+      }
+
+      return `
+        <div class="it prog-item">
+          <div class="prog-time-wrap">
+            <b class="prog-time-badge">${escapeHtml(timeStr)}</b>
+            ${typeTag && typeTag.toLowerCase() !== 'session' ? `<span class="prog-type-pill">${escapeHtml(typeTag)}</span>` : ''}
+          </div>
+          <div class="prog-body">
+            ${numBadge ? `<div class="prog-num-tag">${escapeHtml(numBadge)}</div>` : ''}
+            <h3 class="prog-title">${escapeHtml(mainTitle)}</h3>
+            ${subjectText ? `<p class="prog-subject">${escapeHtml(subjectText)}</p>` : ''}
+            ${participantsHtml}
+            ${metaHtml}
+          </div>
+        </div>
+      `;
+    }
+
+    let isScheduleLoading = true;
+    let scheduleLoadError = false;
+
+    function sched() {
+      const schedList = (window.SCHEDULE && window.SCHEDULE.length > 0) ? window.SCHEDULE : SCHEDULE;
+      const tabContainer = $("#tabs");
+      if (tabContainer) {
+        tabContainer.innerHTML = schedList.map((d, i) => {
+          const m = getScheduleDayMeta(d, i);
+          return `<button role="tab" class="${i === cur ? "on" : ""}" onclick="cur=${i};window.cur=${i};sched()"><b>DAY 0${i + 1}</b><span>${m.tabText}</span></button>`;
+        }).join("");
+      }
+      const d = schedList[cur] || { items: [] };
+      const m = getScheduleDayMeta(d, cur);
+      const dayContainer = $("#day");
+      if (dayContainer) {
+        let contentHtml = '';
+        if (scheduleLoadError) {
+          contentHtml = `
+            <div class="prog-state-card prog-error-state glass">
+              <span class="tag r">Connection Error</span>
+              <h3 style="font-size:1.4rem;margin:12px 0 8px">Unable to load programme schedule</h3>
+              <p style="color:var(--mute);font-size:13px">Could not retrieve official schedule data from Supabase.</p>
+              <button class="btn" onclick="loadScheduleFromDatabase()" style="margin-top:12px;padding:8px 16px;cursor:pointer">Retry</button>
+            </div>
+          `;
+        } else if (isScheduleLoading && (!d.items || d.items.length === 0)) {
+          contentHtml = `
+            <div class="prog-state-card prog-loading-state glass">
+              <div class="prog-spinner"></div>
+              <p class="tag t" style="margin:12px 0 6px">Loading Official Programme...</p>
+              <p style="color:var(--mute);font-size:13px">Fetching published sessions and participants...</p>
+            </div>
+          `;
+        } else if (d.items && d.items.length > 0) {
+          contentHtml = d.items.map(renderScheduleItem).join("");
+        } else {
+          contentHtml = `
+            <div class="prog-state-card prog-empty-state glass">
+              <span class="tag t">No Sessions Scheduled</span>
+              <h3 style="font-size:clamp(1.4rem,3vw,2rem);margin:12px 0 8px">Sessions for this day will be published soon.</h3>
+              <p style="color:var(--mute);font-size:13px">Check back for upcoming announcements for ${escapeHtml(m.fullDate)}.</p>
+            </div>
+          `;
+        }
+
+        dayContainer.innerHTML = `<div><p class="tag r">Day 0${cur + 1}</p><div class="n">${m.dateNum}</div><p class="tag r">${m.month}</p></div><div>${contentHtml}</div>`;
+      }
+    }
+
+    async function loadScheduleFromDatabase(retryCount = 0) {
+      const sb = (typeof window.getSupabase === 'function') ? window.getSupabase() : null;
+      if (!sb) {
+        if (retryCount < 10) {
+          setTimeout(() => loadScheduleFromDatabase(retryCount + 1), 200);
+          return;
+        }
+        console.warn('Supabase client unavailable after retries.');
+        isScheduleLoading = false;
+        scheduleLoadError = true;
+        sched();
+        return;
+      }
+      try {
+        const [{ data: daysData, error: daysErr }, { data: itemsData, error: itemsErr }] = await Promise.all([
+          sb.from('programme_days').select('*').eq('is_published', true).order('display_order', { ascending: true }),
+          sb.from('programme_items')
+            .select('*, programme_session_participants(role, display_order, programme_people(id, name, designation))')
+            .eq('is_published', true)
+            .order('day_number', { ascending: true })
+            .order('display_order', { ascending: true })
+            .order('sort_order', { ascending: true })
+        ]);
+
+        if (daysErr) console.warn('Programme days error:', daysErr);
+        if (itemsErr) console.warn('Programme items error:', itemsErr);
+
+        if (itemsData) {
+          itemsData.forEach(item => {
+            if (Array.isArray(item.programme_session_participants) && item.programme_session_participants.length > 0) {
+              const relParts = item.programme_session_participants
+                .slice()
+                .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
+                .map(p => ({
+                  name: p.programme_people ? p.programme_people.name : '',
+                  role: p.role || 'Participant'
+                }))
+                .filter(p => Boolean(p.name));
+              if (relParts.length > 0) {
+                item.participants = relParts;
+              }
+            }
+          });
+        }
+
+        if (daysData && daysData.length > 0) {
+          const loadedSchedule = daysData.map((d, idx) => {
+            const dayItems = (itemsData || [])
+              .filter(item => item.day_number === d.day_number || item.day_id === d.id)
+              .sort((a, b) => {
+                const ordA = a.display_order ?? a.sort_order ?? 0;
+                const ordB = b.display_order ?? b.sort_order ?? 0;
+                if (ordA !== ordB) return ordA - ordB;
+                return (a.start_time || '').localeCompare(b.start_time || '');
+              });
+
+            return {
+              id: d.id,
+              day: d.day_number,
+              dayName: d.day_name,
+              date: d.date,
+              dateNum: String(parseInt(String(d.date).split('-')[2] || (17 + d.day_number), 10)),
+              month: 'October 2026',
+              items: dayItems
+            };
+          });
+
+          window.SCHEDULE = loadedSchedule;
+          SCHEDULE.splice(0, SCHEDULE.length, ...loadedSchedule);
+          isScheduleLoading = false;
+          scheduleLoadError = false;
+          sched();
+        } else if (itemsData && itemsData.length > 0) {
+          const days = [1, 2, 3];
+          const loadedSchedule = days.map(dayNum => {
+            const dayItems = itemsData.filter(i => i.day_number === dayNum);
+            return {
+              day: dayNum,
+              date: `2026-10-${17 + dayNum}`,
+              dateNum: String(17 + dayNum),
+              month: 'October 2026',
+              items: dayItems
+            };
+          });
+          window.SCHEDULE = loadedSchedule;
+          SCHEDULE.splice(0, SCHEDULE.length, ...loadedSchedule);
+          isScheduleLoading = false;
+          scheduleLoadError = false;
+          sched();
+        } else {
+          isScheduleLoading = false;
+          scheduleLoadError = false;
+          sched();
+        }
+      } catch (err) {
+        console.warn('Error loading schedule from database:', err);
+        isScheduleLoading = false;
+        scheduleLoadError = true;
+        sched();
+      }
+    }
+
+    sched();
+    loadScheduleFromDatabase();
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => loadScheduleFromDatabase());
+    }
+    window.sched = sched; window.feed = feed; window.chips = chips; window.getScheduleDayMeta = getScheduleDayMeta; window.loadScheduleFromDatabase = loadScheduleFromDatabase;
+    // pay - Render 01 to 04 Tier Cards
+    $("#tiers").innerHTML = TIERS.map(([n, a, c], i) => `
+      <div class="tier glass rv" style="--c:var(${c})">
+        <small>0${i + 1}</small>
+        <h3>${n}</h3>
+        <small class="tag" style="letter-spacing: 0.15em;">CONTRIBUTION</small>
+        <div class="am">${inr(a)}</div>
+        <button class="contrib-btn" style="background:var(${c});color:var(--on);--btn-glow:var(${c})" onclick="pay(${a},'${n} Contribution')">Contribute ${inr(a)}</button>
+      </div>
+    `).join("");
+
+    // Public Contribution Target & Top Contributors System
+    async function loadPublicContributionData() {
+      const DEFAULT_TARGET = 50000;
+      let target = DEFAULT_TARGET;
+      let raised = 0;
+      let topContributors = [];
+
+      const sb = (typeof window.getSupabase === 'function') ? window.getSupabase() : null;
+      if (sb) {
+        try {
+          const { data, error } = await sb.rpc('get_public_contribution_data');
+          if (!error && data) {
+            if (typeof data.target === 'number' && data.target > 0) target = data.target;
+            if (typeof data.raised === 'number') raised = data.raised;
+            if (Array.isArray(data.top_contributors)) topContributors = data.top_contributors;
+          } else {
+            const { data: sRow } = await sb.from('festival_settings').select('donation_goal').eq('id', 'general').maybeSingle();
+            if (sRow && sRow.donation_goal && Number(sRow.donation_goal) > 0) {
+              target = Number(sRow.donation_goal);
+            }
+          }
+        } catch (err) {
+          console.warn('Could not load public contribution data, using safe fallback:', err);
+        }
+      }
+
+      renderSupportTargetUI(raised, target);
+      renderTopContributorsUI(topContributors);
+    }
+
+    function renderSupportTargetUI(raised, target) {
+      const safeTarget = (typeof target === 'number' && target > 0) ? target : 50000;
+      const safeRaised = (typeof raised === 'number' && raised >= 0) ? raised : 0;
+      const rawPct = safeTarget > 0 ? (safeRaised / safeTarget) * 100 : 0;
+      const displayPct = rawPct > 0 ? (rawPct >= 100 ? 100 : Math.round(rawPct * 10) / 10) : 0;
+      const barPct = Math.min(100, Math.max(0, rawPct));
+
+      const raisedEl = document.getElementById('contrib-raised-amount');
+      const goalEl = document.getElementById('contrib-goal-amount');
+      const pctEl = document.getElementById('contrib-target-pct');
+      const barEl = document.getElementById('contrib-progress-fill');
+
+      if (raisedEl) raisedEl.textContent = '₹' + safeRaised.toLocaleString('en-IN');
+      if (goalEl) goalEl.textContent = '₹' + safeTarget.toLocaleString('en-IN');
+      if (pctEl) pctEl.textContent = displayPct + '%';
+      if (barEl) {
+        requestAnimationFrame(() => {
+          barEl.style.width = barPct + '%';
+        });
+      }
+    }
+
+    function renderTopContributorsUI(contributors) {
+      const listEl = document.getElementById('contrib-leaderboard-list');
+      if (!listEl) return;
+
+      if (!contributors || contributors.length === 0) {
+        listEl.innerHTML = `
+          <div class="contrib-empty-state">
+            <span class="empty-icon">✦</span>
+            <p class="empty-title">Be the first supporter</p>
+            <p style="margin:2px 0 0;font-size:11px;color:var(--mute);">Contributions will appear here once verified.</p>
+          </div>
+        `;
+        return;
+      }
+
+      const escapeHtml = str => String(str).replace(/[&<>"']/g, s => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[s]));
+      const top5 = contributors.slice(0, 5);
+      const c1 = top5[0];
+      const c2 = top5[1];
+      const c3 = top5[2];
+      const runners = top5.slice(3);
+
+      const c1Name = escapeHtml(c1.name || 'Anonymous');
+      const c1Amt = '₹' + Number(c1.amount).toLocaleString('en-IN');
+
+      let html = '<div class="contrib-podium-wrap">';
+
+      // #1 Champion Podium (Center Focus)
+      html += `
+        <div class="contrib-podium-champion">
+          <div class="podium-crown">🥇</div>
+          <div class="podium-name-hero" title="${c1Name}">${c1Name}</div>
+          <div class="podium-divider-hero"></div>
+          <div class="podium-amount-hero">${c1Amt}</div>
+        </div>
+      `;
+
+      // Secondary Podium (#2 and #3 side-by-side)
+      if (c2) {
+        const c2Name = escapeHtml(c2.name || 'Anonymous');
+        const c2Amt = '₹' + Number(c2.amount).toLocaleString('en-IN');
+        const hasC3 = Boolean(c3);
+
+        html += `<div class="contrib-podium-secondary ${hasC3 ? '' : 'single-sub'}">`;
+        html += `
+          <div class="contrib-podium-sub rank-2">
+            <div class="podium-sub-badge">🥈 02</div>
+            <div class="podium-sub-name" title="${c2Name}">${c2Name}</div>
+            <div class="podium-sub-amount">${c2Amt}</div>
+          </div>
+        `;
+
+        if (hasC3) {
+          const c3Name = escapeHtml(c3.name || 'Anonymous');
+          const c3Amt = '₹' + Number(c3.amount).toLocaleString('en-IN');
+          html += `
+            <div class="contrib-podium-sub rank-3">
+              <div class="podium-sub-badge">🥉 03</div>
+              <div class="podium-sub-name" title="${c3Name}">${c3Name}</div>
+              <div class="podium-sub-amount">${c3Amt}</div>
+            </div>
+          `;
+        }
+        html += `</div>`;
+      } else {
+        // Only 1 verified contributor: show encouragement notice
+        html += `
+          <div class="contrib-podium-invite">
+            <span class="invite-star">✦</span> More supporters can join the leaderboard
+          </div>
+        `;
+      }
+
+      // Runners up: #4 and #5 (if present)
+      if (runners.length > 0) {
+        html += `<div class="contrib-podium-runners">`;
+        runners.forEach((r, idx) => {
+          const rankNum = String(idx + 4).padStart(2, '0');
+          const rName = escapeHtml(r.name || 'Anonymous');
+          const rAmt = '₹' + Number(r.amount).toLocaleString('en-IN');
+          html += `
+            <div class="contrib-leaderboard-row" style="--row-i: ${idx + 3};">
+              <div class="contrib-rank-name">
+                <span class="contrib-rank">${rankNum}</span>
+                <span class="contrib-name" title="${rName}">${rName}</span>
+              </div>
+              <div class="contrib-amount">${rAmt}</div>
+            </div>
+          `;
+        });
+        html += `</div>`;
+      }
+
+      html += '</div>';
+      listEl.innerHTML = html;
+    }
+
+    loadPublicContributionData();
+    window.loadPublicContributionData = loadPublicContributionData;
+    $("#sp").innerHTML = DAYS.map(([d, a]) => `<div class="glass rv"><p class="tag">Day 0${d} · ${17 + d} October</p><h3 style="font-size:1.6rem;margin-top:10px">Day ${d} Sponsorship</h3><div class="am ${["r", "a", "t"][d - 1]}">${inr(a)}</div><button class="btn p" onclick="pay(${a},'Day ${d} Sponsorship')">Sponsor This Day ♥</button></div>`).join("");
+    function pay(a, l) { if (window.openContributionModal) { return window.openContributionModal(a, l) } const P = PAYMENT_CONFIG, q = `pa=${e(P.upiId)}&pn=${e(P.payeeName)}&am=${a}&cu=INR&tn=${e(P.note + " - " + l)}`; $("#pl").textContent = l; $("#pa").textContent = inr(a); $("#gp").href = "tez://upi/pay?" + q; $("#up").href = "upi://pay?" + q; $("#ui").textContent = P.upiId || "UPI ID not set"; const off = !P.upiId; $("#gp").classList.toggle("p", !off);[$("#gp"), $("#up"), $("#cp")].forEach(b => b.style.opacity = off ? .45 : 1); $("#pn").textContent = off ? "Organizer: add the UPI ID in PAYMENT_CONFIG to enable payments." : ""; pd.showModal() }
+    $("#cp").onclick = async (e) => {
+      if (e && e.preventDefault) e.preventDefault();
+      try {
+        const uId = PAYMENT_CONFIG.upiId;
+        let ok = false;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          try { await navigator.clipboard.writeText(uId); ok = true; } catch (x) { }
+        }
+        if (!ok && typeof document !== "undefined") {
+          try {
+            const ta = document.createElement("textarea");
+            ta.value = uId; ta.style.position = "fixed"; ta.style.left = "-9999px";
+            document.body.appendChild(ta); ta.select();
+            ok = document.execCommand("copy");
+            document.body.removeChild(ta);
+          } catch (x) { }
+        }
+        if (ok) {
+          $("#cp").textContent = "UPI ID copied ✓";
+          setTimeout(() => { $("#cp").textContent = "Copy UPI ID"; }, 2500);
+        } else {
+          $("#cp").textContent = "Manual copy needed";
+          setTimeout(() => { $("#cp").textContent = "Copy UPI ID"; }, 3000);
+        }
+      } catch (x) { }
+    };
+    // gallery
+    let list = [], li = 0; const gc = ["All", "Events", "Sessions", "Guests", "Moments"];
+    function gal(c) { list = (window.MEDIA || MEDIA).filter(m => c == "All" || m.cat == c); $("#gal").innerHTML = list.length ? list.map((m, i) => `<figure onclick="op(${i})" style="grid-row:span ${m.span || 1}"><${m.type == "video" ? "video" : "img"} src="${m.src}" loading="lazy" alt="${m.title}" style="object-fit:${m.fit || "cover"};background:${m.bg || "none"}" muted></${m.type == "video" ? "video" : "img"}><figcaption>${m.cat} · ${m.title}</figcaption></figure>`).join("") : `<div class="empty glass" style="grid-column:1/-1"><h3 class="t">The moments are yet to come.</h3><p>Photographs, guest portraits and videos from HLF will be added as the festival unfolds.</p></div>` }
+    chips($("#gchips"), gc, gal); gal("All"); window.gal = gal; window.op = op;
+    function op(i) { li = i; const m = list[i]; if (!m) return; $("#lc").innerHTML = m.type == "video" ? `<video src="${m.src}" controls autoplay></video>` : `<img src="${m.src}" alt="${m.title}">`; $("#lt").textContent = m.title; if (!lb.open) lb.showModal() }
+    function go(d) { op((li + d + list.length) % list.length) }
+    document.addEventListener("keydown", k => { if (lb.open) { if (k.key == "ArrowRight") go(1); if (k.key == "ArrowLeft") go(-1) } });
+    // contact
+    const L = [["✉", "Email", SITE.email, "mailto:" + SITE.email], ...SITE.phones.map(p => ["☏", "Phone", p, "tel:" + p.replace(/\s/g, "")]), ["◎", "Instagram", SITE.instaName, SITE.insta], ["⌖", "The place to be", SITE.venue + " — " + SITE.dept, "https://maps.google.com/?q=" + e(SITE.venue)]];
+    $("#cl").innerHTML = L.map(([i, t, v, h]) => `<a class="ln" href="${h}" target="_blank" rel="noopener"><i>${i}</i><div><small>${t.toUpperCase()}</small>${v}</div></a>`).join("");
+    $("#fm").textContent = SITE.email; $("#fi").href = SITE.insta;
+    try { new QRCode($("#qr"), { text: SITE.qr, width: 200, height: 200, colorDark: "#0b2a22", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M }) } catch (x) { }
+    // ui
+    const nav = $("#nav"); $("#mb").onclick = () => nav.classList.toggle("o"); nav.onclick = ev => { if (ev.target.closest(".ls a")) nav.classList.remove("o") };
+    $("#th").onclick = () => { const t = document.documentElement.dataset.theme == "dark" ? "light" : "dark"; document.documentElement.dataset.theme = t; try { localStorage.setItem("hlf-theme", t) } catch (x) { } };
+    const rm = matchMedia("(prefers-reduced-motion:reduce)").matches;
+    document.querySelectorAll(".card").forEach(c => c.classList.add("rv"));
+    const io = new IntersectionObserver(es => es.forEach(x => { if (!x.isIntersecting) return; x.target.classList.add("in"); x.target.querySelectorAll("[data-n]").forEach(b => { const n = +b.dataset.n; if (rm) { b.textContent = n + "+"; return } const t0 = performance.now(); (function f(t) { const p = Math.min((t - t0) / 1400, 1); b.textContent = Math.round(n * (1 - Math.pow(1 - p, 3))) + "+"; if (p < 1) requestAnimationFrame(f) })(t0) }); io.unobserve(x.target) }), { threshold: .15 });
+    document.querySelectorAll(".rv").forEach(n => io.observe(n));
+    const so = new IntersectionObserver(es => es.forEach(x => { if (x.isIntersecting) document.querySelectorAll(".ls a").forEach(a => a.classList.toggle("on", a.getAttribute("href") == "#" + x.target.id)) }), { rootMargin: "-45% 0px -50% 0px" });
+    document.querySelectorAll("section[id]").forEach(s => so.observe(s));
+    if (matchMedia("(pointer:fine)").matches && !rm) addEventListener("pointermove", p => { $("#glow").style.left = p.clientX + "px"; $("#glow").style.top = p.clientY + "px" });
+    const pw = $(".pw"); if (matchMedia("(pointer:fine)").matches && !rm) pw.addEventListener("pointermove", p => { const b = pw.getBoundingClientRect(); pw.style.setProperty("--ry", ((p.clientX - b.left) / b.width - .5) * 16 + "deg"); pw.style.setProperty("--rx", -((p.clientY - b.top) / b.height - .5) * 12 + "deg") });
+  </script>
+</body>
+
+</html>

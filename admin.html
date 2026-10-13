@@ -754,6 +754,11 @@
             <div class="value" id="stat-quiz-total" style="color: var(--amb);">0</div>
             <div class="sub">Hadith Live Quiz entries</div>
           </div>
+          <div class="stat-card" style="border-top: 4px solid var(--teal);">
+            <div class="label">Programme Seats</div>
+            <div class="value" id="stat-seats-booked" style="color: var(--teal);">12 / 30</div>
+            <div class="sub" id="stat-seats-sub">18 seats remaining (40% filled)</div>
+          </div>
         </div>
 
         <div class="panel">
@@ -1578,6 +1583,14 @@
 
           <form id="festival-settings-form">
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+              <div class="form-group">
+                <label for="set-total-seats">Total Programme Seats (Capacity)</label>
+                <input type="number" id="set-total-seats" min="1" max="1000" placeholder="30" required>
+              </div>
+              <div class="form-group">
+                <label for="set-baseline-seats">Baseline / Offline Booked Seats</label>
+                <input type="number" id="set-baseline-seats" min="0" max="1000" placeholder="10" required>
+              </div>
               <div class="form-group">
                 <label for="set-upi-id">Official UPI ID</label>
                 <input type="text" id="set-upi-id" placeholder="9847411637@kotakbank" required>

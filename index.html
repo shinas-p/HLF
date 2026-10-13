@@ -1703,6 +1703,38 @@
             <span>Quiz Competition 🏆</span>
           </a>
         </div>
+
+        <!-- LIMITED SEAT AVAILABILITY PROGRESS & FAST REGISTRATION CTA -->
+        <div class="hero-seat-card glass" id="hero-seat-card">
+          <div class="hero-seat-top">
+            <div class="hero-seat-tag">
+              <span class="seat-pulse-dot" aria-hidden="true"></span>
+              <span class="seat-tag-label" id="seat-tag-label">LIMITED SEATS AVAILABLE</span>
+            </div>
+            <span class="hero-seat-remaining-badge" id="seat-remaining-badge">18 seats remaining</span>
+          </div>
+
+          <div class="hero-seat-body">
+            <div class="hero-seat-progress-area">
+              <div class="hero-seat-stats">
+                <span class="hero-seat-booked" id="seat-booked-text">
+                  <strong id="seat-booked-num">12</strong> of <span id="seat-total-num">30</span> seats booked
+                </span>
+                <span class="hero-seat-pct" id="seat-pct-badge">40% filled</span>
+              </div>
+              <div class="hero-seat-track" role="progressbar" id="hero-seat-progressbar" aria-valuenow="12" aria-valuemin="0" aria-valuemax="30" aria-label="Programme seat booking progress">
+                <div class="hero-seat-fill" id="hero-seat-fill" style="width: 40%;"></div>
+              </div>
+            </div>
+
+            <div class="hero-seat-cta-wrap">
+              <a class="btn p seat-reg-btn" id="seat-reg-cta" href="javascript:void(0)" role="button" aria-label="Register for HLF 2026">
+                <span id="seat-cta-label">Register Now →</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
         <div class="cd" id="cd"></div>
       </div>
       <div class="pw"><svg class="ring" viewBox="0 0 200 200" aria-hidden="true">

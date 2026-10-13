@@ -302,6 +302,30 @@
     document.getElementById('stat-rejected').textContent = rejected;
     document.getElementById('stat-today').textContent = today;
     document.getElementById('stat-revenue').textContent = '₹' + revenue.toLocaleString('en-IN');
+
+    updateSeatAvailabilityCard();
+  }
+
+  async function updateSeatAvailabilityCard() {
+    const seatVal = document.getElementById('stat-seats-booked');
+    const seatSub = document.getElementById('stat-seats-sub');
+    if (!seatVal) return;
+
+    try {
+      const sb = window.getSupabase();
+      if (!sb) return;
+      const { data, error } = await sb.rpc('get_seat_availability');
+      if (!error && data && data.success) {
+        seatVal.textContent = `${data.booked_seats} / ${data.total_seats}`;
+        if (seatSub) {
+          seatSub.textContent = data.is_full
+            ? 'Full Capacity (0 remaining)'
+            : `${data.remaining_seats} seats remaining (${data.booking_progress}% filled)`;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to load seat availability card:', e);
+    }
   }
 
   function renderRecentRegistrations() {
@@ -3319,6 +3343,12 @@
     try {
       const { data } = await sb.from('festival_settings').select('*').eq('id', 'general').single();
       if (data) {
+        if (document.getElementById('set-total-seats')) {
+          document.getElementById('set-total-seats').value = data.total_programme_seats !== undefined && data.total_programme_seats !== null ? data.total_programme_seats : 30;
+        }
+        if (document.getElementById('set-baseline-seats')) {
+          document.getElementById('set-baseline-seats').value = data.baseline_booked_seats !== undefined && data.baseline_booked_seats !== null ? data.baseline_booked_seats : 10;
+        }
         document.getElementById('set-upi-id').value = data.upi_id || '9847411637@kotakbank';
         document.getElementById('set-payee-name').value = data.upi_payee_name || 'SHINAS';
         document.getElementById('set-qr-url').value = data.upi_qr_image_url || 'assets/hlf-upi-qr.png';
@@ -3344,6 +3374,8 @@
 
   document.getElementById('festival-settings-form').onsubmit = async (e) => {
     e.preventDefault();
+    const total_programme_seats = parseInt(document.getElementById('set-total-seats')?.value || '30', 10);
+    const baseline_booked_seats = parseInt(document.getElementById('set-baseline-seats')?.value || '10', 10);
     const upi_id = document.getElementById('set-upi-id').value.trim();
     const upi_payee_name = document.getElementById('set-payee-name').value.trim();
     const upi_qr_image_url = document.getElementById('set-qr-url').value.trim();
@@ -3356,6 +3388,8 @@
       const { error } = await sb.from('festival_settings').upsert({
         id: 'general',
         donation_goal: currentContributionTarget,
+        total_programme_seats: isNaN(total_programme_seats) ? 30 : total_programme_seats,
+        baseline_booked_seats: isNaN(baseline_booked_seats) ? 10 : baseline_booked_seats,
         upi_id,
         upi_payee_name,
         upi_qr_image_url,
@@ -3366,6 +3400,7 @@
       });
       if (error) throw error;
       showToast('Festival settings saved successfully!');
+      updateSeatAvailabilityCard();
     } catch (err) {
       alert('Error updating settings: ' + err.message);
     }

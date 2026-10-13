@@ -393,6 +393,113 @@
     "Other"
   ];
 
+  // 0. Seat availability & Capacity Tracking
+  let activeSeatData = {
+    total_seats: 30,
+    booked_seats: 12,
+    remaining_seats: 18,
+    booking_progress: 40,
+    is_full: false
+  };
+
+  async function syncSeatAvailability() {
+    try {
+      const sb = window.getSupabase ? window.getSupabase() : null;
+      if (!sb) {
+        renderSeatAvailabilityUI(activeSeatData);
+        return;
+      }
+
+      const { data, error } = await sb.rpc('get_seat_availability');
+      if (error) {
+        console.warn('Could not fetch seat availability from RPC:', error);
+        renderSeatAvailabilityUI(activeSeatData);
+        return;
+      }
+
+      if (data && data.success) {
+        activeSeatData = data;
+        renderSeatAvailabilityUI(data);
+      }
+    } catch (err) {
+      console.warn('Seat availability sync error:', err);
+      renderSeatAvailabilityUI(activeSeatData);
+    }
+  }
+
+  function renderSeatAvailabilityUI(data) {
+    const total = data.total_seats || 30;
+    const booked = typeof data.booked_seats === 'number' ? data.booked_seats : 12;
+    const remaining = typeof data.remaining_seats === 'number' ? data.remaining_seats : Math.max(0, total - booked);
+    const pct = typeof data.booking_progress === 'number' ? data.booking_progress : Math.round((booked / total) * 100);
+    const isFull = data.is_full === true || remaining <= 0;
+
+    const card = document.getElementById('hero-seat-card');
+    const tagLabel = document.getElementById('seat-tag-label');
+    const remainingBadge = document.getElementById('seat-remaining-badge');
+    const bookedNum = document.getElementById('seat-booked-num');
+    const totalNum = document.getElementById('seat-total-num');
+    const pctBadge = document.getElementById('seat-pct-badge');
+    const fill = document.getElementById('hero-seat-fill');
+    const progressbar = document.getElementById('hero-seat-progressbar');
+    const ctaLabel = document.getElementById('seat-cta-label');
+    const regBtn = document.getElementById('seat-reg-cta');
+
+    if (card) {
+      card.classList.toggle('is-full', isFull);
+    }
+    if (bookedNum) bookedNum.textContent = booked;
+    if (totalNum) totalNum.textContent = total;
+    if (pctBadge) pctBadge.textContent = `${pct}% filled`;
+
+    if (fill) {
+      fill.style.width = `${Math.min(100, Math.max(0, pct))}%`;
+    }
+    if (progressbar) {
+      progressbar.setAttribute('aria-valuenow', booked);
+      progressbar.setAttribute('aria-valuemax', total);
+    }
+
+    if (isFull) {
+      if (tagLabel) tagLabel.textContent = 'ALL SEATS BOOKED';
+      if (remainingBadge) {
+        remainingBadge.textContent = 'Full Capacity (0 remaining)';
+      }
+      if (ctaLabel) ctaLabel.textContent = 'All Seats Booked';
+      if (regBtn) {
+        regBtn.setAttribute('aria-disabled', 'true');
+        regBtn.classList.add('disabled');
+      }
+    } else {
+      if (tagLabel) tagLabel.textContent = 'LIMITED SEATS AVAILABLE';
+      if (remainingBadge) {
+        remainingBadge.textContent = `${remaining} seats remaining`;
+      }
+      if (ctaLabel) ctaLabel.textContent = 'Register Now →';
+      if (regBtn) {
+        regBtn.removeAttribute('aria-disabled');
+        regBtn.classList.remove('disabled');
+      }
+    }
+  }
+
+  function setupSeatProgressCTA() {
+    const btn = document.getElementById('seat-reg-cta');
+    if (!btn) return;
+
+    btn.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (activeSeatData && activeSeatData.is_full) {
+        alert('All 30 programme seats are booked for HLF 2026. Delegate registration is currently at full capacity.');
+        return;
+      }
+      if (typeof window.openRegistrationModal === 'function') {
+        window.openRegistrationModal();
+      }
+    };
+  }
+
   function bootHLFInteractions() {
     if (window.__HLF_INTERACTIONS_READY) return;
     window.__HLF_INTERACTIONS_READY = true;
@@ -425,6 +532,13 @@
       setupContactQR();
     } catch (error) {
       console.error('Contact QR initialization failed:', error);
+    }
+
+    try {
+      setupSeatProgressCTA();
+      syncSeatAvailability();
+    } catch (error) {
+      console.error('Seat availability initialization failed:', error);
     }
 
     try {
@@ -1377,6 +1491,12 @@
     const dialog = document.getElementById('reg-dialog');
     if (!dialog) return;
 
+    // Check programme capacity if candidate does not already have an active session
+    if (activeSeatData && activeSeatData.is_full && (!activeRegistrationData || !activeRegistrationData.registration_id)) {
+      alert('All programme seats are currently booked for HLF 2026. Delegate registration is closed.');
+      return;
+    }
+
     // Lock page background scrolling
     document.body.style.overflow = 'hidden';
 
@@ -1437,6 +1557,8 @@
     const district = document.getElementById('reg-district').value.trim();
     const notes = document.getElementById('reg-notes').value.trim();
     const consent = document.getElementById('reg-consent').checked;
+    const accommodationRequired = Boolean(document.getElementById('reg-accommodation')?.checked);
+    const foodRequired = Boolean(document.getElementById('reg-food')?.checked);
 
     // Validation
     if (!fullName || fullName.length < 2) {
@@ -1502,6 +1624,13 @@
       let regId = activeRegistrationData ? activeRegistrationData.registration_id : null;
 
       if (!regId) {
+        if (activeSeatData && activeSeatData.is_full) {
+          showError(1, 'All seats are booked. Delegate registration is currently full.');
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = origBtnHtml;
+          return;
+        }
+
         const { data, error } = await sb.rpc('initiate_registration', {
           p_full_name: fullName,
           p_mobile: mobileClean,
@@ -1510,6 +1639,8 @@
           p_course: course || null,
           p_department: department || null,
           p_district: district || null,
+          p_accommodation_required: accommodationRequired,
+          p_food_required: foodRequired,
           p_special_requirements: notes || null
         });
 
@@ -3413,6 +3544,7 @@
           if (activeContributionData && activeContributionData.amount) {
             renderContributionUpi(activeContributionData.amount, activeContributionData.tierName || 'Supporter');
           }
+          await syncSeatAvailability();
         }
       } catch (err) {
         console.warn('Could not sync festival settings:', err);
@@ -3430,9 +3562,24 @@
   window.closeContributionModal = closeContributionModal;
   window.loadSupabaseData = loadSupabaseData;
   window.bootHLFInteractions = bootHLFInteractions;
+  window.syncSeatAvailability = syncSeatAvailability;
+  window.renderSeatAvailabilityUI = renderSeatAvailabilityUI;
+  window.getSeatAvailabilityData = () => activeSeatData;
 
   // Delegated click handler: Guaranteed to intercept all .reg and .btn-contribute-cta clicks anywhere in document
   document.addEventListener('click', function (e) {
+    const seatRegButton = e.target.closest('#seat-reg-cta');
+    if (seatRegButton) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (activeSeatData && activeSeatData.is_full) {
+        alert('All 30 programme seats are booked for HLF 2026. Delegate registration is currently at full capacity.');
+        return;
+      }
+      openRegistrationModal();
+      return;
+    }
+
     const contributeButton = e.target.closest('.btn-contribute-cta');
     if (contributeButton) {
       e.preventDefault();
@@ -3443,6 +3590,14 @@
 
     const registerButton = e.target.closest('.reg');
     if (!registerButton) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (activeSeatData && activeSeatData.is_full && (!activeRegistrationData || !activeRegistrationData.registration_id)) {
+      alert('All programme seats are currently booked for HLF 2026. Delegate registration is closed.');
+      return;
+    }
 
     e.preventDefault();
     e.stopPropagation();
